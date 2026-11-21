@@ -22,6 +22,7 @@ describe('manifest', () => {
     expect(manifest.permissions).toContain('declarativeNetRequest');
     expect(manifest.permissions).toContain('declarativeNetRequestFeedback');
     expect(manifest.permissions).toContain('storage');
+    expect(manifest.permissions).toContain('scripting');
     expect(manifest.host_permissions).toContain('<all_urls>');
   });
 

@@ -1,0 +1,135 @@
+import { describe, expect, it, vi } from 'vitest';
+
+import {
+  applyCosmetic,
+  buildCosmeticCss,
+  isCosmeticData,
+  matchingDomains,
+  pageHost,
+  selectorsForHost,
+  MAX_SELECTORS_PER_CHUNK,
+  type CosmeticData,
+} from '../../src/content/cosmetic';
+
+const DATA: CosmeticData = {
+  generic: { selectors: ['.ad-banner', '.ad-slot'], exceptions: [] },
+  domains: {
+    'example.org': { selectors: ['.promo-box'], exceptions: ['.ad-banner'] },
+    'news.example': { selectors: ['.inline-ad'], exceptions: [] },
+  },
+};
+
+describe('pageHost', () => {
+  it('returns the hostname for http(s) pages, lower-cased', () => {
+    expect(pageHost('https://News.Example/Story')).toBe('news.example');
+    expect(pageHost('http://127.0.0.1:8080/')).toBe('127.0.0.1');
+  });
+
+  it('returns undefined for pages that cannot be styled', () => {
+    expect(pageHost(undefined)).toBeUndefined();
+    expect(pageHost('chrome://extensions')).toBeUndefined();
+    expect(pageHost('about:blank')).toBeUndefined();
+    expect(pageHost('not a url')).toBeUndefined();
+  });
+});
+
+describe('matchingDomains', () => {
+  it('matches the host itself and any parent suffix', () => {
+    expect(matchingDomains('example.org', DATA.domains)).toEqual(['example.org']);
+    expect(matchingDomains('sub.example.org', DATA.domains)).toEqual(['example.org']);
+    expect(matchingDomains('news.example', DATA.domains)).toEqual(['news.example']);
+  });
+
+  it('does not match unrelated or suffix-lookalike hosts', () => {
+    expect(matchingDomains('notexample.org', DATA.domains)).toEqual([]);
+    expect(matchingDomains('example', DATA.domains)).toEqual([]);
+  });
+});
+
+describe('selectorsForHost', () => {
+  it('returns the generic set when no domain rule matches', () => {
+    expect(selectorsForHost('unrelated.test', DATA)).toEqual(['.ad-banner', '.ad-slot']);
+  });
+
+  it('adds matching domain selectors and subtracts the exceptions', () => {
+    expect(selectorsForHost('example.org', DATA)).toEqual(['.ad-slot', '.promo-box']);
+  });
+
+  it('applies a domain rule to its subdomains', () => {
+    expect(selectorsForHost('shop.example.org', DATA)).toEqual(['.ad-slot', '.promo-box']);
+  });
+
+  it('keeps first-seen order and removes duplicates', () => {
+    const data: CosmeticData = {
+      generic: { selectors: ['.a', '.a'], exceptions: [] },
+      domains: { 'x.test': { selectors: ['.a', '.b'], exceptions: [] } },
+    };
+
+    expect(selectorsForHost('x.test', data)).toEqual(['.a', '.b']);
+  });
+});
+
+describe('buildCosmeticCss', () => {
+  it('emits nothing for an empty selector list', () => {
+    expect(buildCosmeticCss([])).toEqual([]);
+  });
+
+  it('joins selectors into one display:none rule', () => {
+    expect(buildCosmeticCss(['.a', '.b'])).toEqual(['.a,\n.b { display: none !important; }\n']);
+  });
+
+  it('chunks at MAX_SELECTORS_PER_CHUNK', () => {
+    const selectors = Array.from({ length: MAX_SELECTORS_PER_CHUNK + 1 }, (_, i) => `.s${i}`);
+
+    const chunks = buildCosmeticCss(selectors);
+
+    expect(chunks).toHaveLength(2);
+    expect(chunks[0]?.split(',').length).toBe(MAX_SELECTORS_PER_CHUNK);
+    expect(chunks[1]?.split(',').length).toBe(1);
+  });
+});
+
+describe('isCosmeticData', () => {
+  it('accepts the build output shape', () => {
+    expect(isCosmeticData(DATA)).toBe(true);
+  });
+
+  it('rejects malformed payloads', () => {
+    expect(isCosmeticData(null)).toBe(false);
+    expect(isCosmeticData({ generic: { selectors: [1], exceptions: [] }, domains: {} })).toBe(
+      false,
+    );
+    expect(isCosmeticData({ generic: { selectors: [] }, domains: {} })).toBe(false);
+    expect(isCosmeticData({ domains: {} })).toBe(false);
+  });
+});
+
+describe('applyCosmetic', () => {
+  it('injects one CSS chunk per matching host and reports the count', async () => {
+    const insertCss = vi.fn<(tabId: number, css: string) => Promise<void>>(() => Promise.resolve());
+
+    const count = await applyCosmetic(
+      { loadData: () => Promise.resolve(DATA), insertCss },
+      7,
+      'https://example.org/',
+    );
+
+    expect(count).toBe(1);
+    expect(insertCss).toHaveBeenCalledTimes(1);
+    expect(insertCss).toHaveBeenCalledWith(
+      7,
+      '.ad-slot,\n.promo-box { display: none !important; }\n',
+    );
+  });
+
+  it('does nothing (and loads no data) for an unstylable page', async () => {
+    const loadData = vi.fn(() => Promise.resolve(DATA));
+    const insertCss = vi.fn(() => Promise.resolve());
+
+    const count = await applyCosmetic({ loadData, insertCss }, 3, 'chrome://newtab');
+
+    expect(count).toBe(0);
+    expect(loadData).not.toHaveBeenCalled();
+    expect(insertCss).not.toHaveBeenCalled();
+  });
+});

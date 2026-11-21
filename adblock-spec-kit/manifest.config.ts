@@ -5,7 +5,9 @@
  * shape can be unit-tested. T012 adds the P1 network-blocking surface: the
  * `declarativeNetRequest` permission, `<all_urls>` host permission (so rules
  * apply on every site) and the static rulesets produced by the build
- * (see `STATIC_RULESETS`). All of these are justified in plan.md §3.
+ * (see `STATIC_RULESETS`). T021 adds the `scripting` permission so the worker
+ * can inject cosmetic element-hiding CSS (algorithms §D). All of these are
+ * justified in plan.md §3.
  */
 import { STATIC_RULESETS } from './scripts/static-rulesets.ts';
 
@@ -57,7 +59,7 @@ export function createManifest(): ManifestV3 {
       default_title: EXTENSION_NAME,
       default_popup: 'src/popup/index.html',
     },
-    permissions: ['declarativeNetRequest', 'declarativeNetRequestFeedback', 'storage'],
+    permissions: ['declarativeNetRequest', 'declarativeNetRequestFeedback', 'storage', 'scripting'],
     host_permissions: ['<all_urls>'],
     declarative_net_request: {
       rule_resources: STATIC_RULESETS.map(({ id, enabled, output }) => ({
