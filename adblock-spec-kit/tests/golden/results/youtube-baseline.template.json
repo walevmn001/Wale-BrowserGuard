@@ -1,0 +1,33 @@
+{
+  "_howTo": "T069 — ghi số liệu cơ sở YouTube trên trang thật. Sao chép file này thành youtube-baseline.<YYYY-MM-DD>.json rồi điền số THẬT (không bịa). Chạy 5–10 video thật, module bật và tắt.",
+  "_note": "Tất cả giá trị null là placeholder chờ người dùng điền sau khi kiểm chứng bằng DevTools (xem docs/youtube-verification.md).",
+  "date": null,
+  "generatedAt": null,
+  "module": {
+    "enabledForTest": null,
+    "configVersion": null
+  },
+  "videos": [
+    {
+      "url": null,
+      "hasInStreamAd": null,
+      "adBlockedOrSkipped": null,
+      "playbackError": null,
+      "notes": null
+    }
+  ],
+  "summary": {
+    "videosTested": null,
+    "adsBlockedOrSkipped": null,
+    "adsObserved": null,
+    "playbackErrors": null,
+    "result": null
+  },
+  "todoVerifyChecked": {
+    "endpoints": false,
+    "adFields": false,
+    "selectors": false,
+    "adClassName": false,
+    "configUrl": false
+  }
+}
