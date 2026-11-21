@@ -34,4 +34,11 @@ export const STATIC_RULESETS: readonly StaticRuleSetDescriptor[] = [
     source: 'rules/source/trackers.txt',
     output: 'rules/static/trackers.json',
   },
+  {
+    id: 'malware',
+    category: 'malware',
+    enabled: true,
+    source: 'rules/source/malware.txt',
+    output: 'rules/static/malware.json',
+  },
 ];

@@ -29,9 +29,10 @@ test('the options page toggles list groups and shows the version', async () => {
   await options.goto(optionsUrl);
 
   // One checkbox per declared ruleset group, all on by default.
-  await expect(options.locator('#group-list input[type="checkbox"]')).toHaveCount(2);
+  await expect(options.locator('#group-list input[type="checkbox"]')).toHaveCount(3);
   await expect(options.locator('[data-group="ads"]')).toBeChecked();
   await expect(options.locator('[data-group="trackers"]')).toBeChecked();
+  await expect(options.locator('[data-group="malware"]')).toBeChecked();
 
   // "Version" section: the packaged extension version plus the data summary.
   const version = await worker.evaluate(() => chrome.runtime.getManifest().version);
@@ -49,13 +50,13 @@ test('the options page toggles list groups and shows the version', async () => {
     .toEqual(['trackers']);
   await expect
     .poll(() => worker.evaluate(() => chrome.declarativeNetRequest.getEnabledRulesets()))
-    .toEqual(['ads']);
+    .toEqual(['ads', 'malware']);
 
   // Switching it back on re-enables the ruleset.
   await options.locator('[data-group="trackers"]').check();
   await expect
     .poll(() => worker.evaluate(() => chrome.declarativeNetRequest.getEnabledRulesets()))
-    .toEqual(expect.arrayContaining(['ads', 'trackers']));
+    .toEqual(expect.arrayContaining(['ads', 'trackers', 'malware']));
 });
 
 test('the manual update button runs and reports a result', async () => {

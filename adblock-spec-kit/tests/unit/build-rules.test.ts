@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   convertFilterList,
   groupByCategory,
+  MALWARE_WARNING_PAGE,
   summarize,
   type SkipReason,
 } from '../../scripts/build-rules';
@@ -79,11 +80,29 @@ describe('convertFilterList — exceptions and priority', () => {
     expect(result.rules[1]?.rule.condition.resourceTypes).toEqual(['script']);
   });
 
-  it('uses MALWARE_BLOCK priority for malware-category blocks', () => {
+  it('redirects a malware domain navigation and blocks its sub-resources', () => {
     const result = convertFilterList(['||malware.example^'], 'malware');
 
-    expect(result.rules[0]?.rule.priority).toBe(PRIORITY.MALWARE_BLOCK);
-    expect(result.rules[0]?.category).toBe('malware');
+    expect(result.rules).toHaveLength(2);
+    const [redirect, block] = result.rules;
+
+    expect(redirect?.category).toBe('malware');
+    expect(redirect?.rule.priority).toBe(PRIORITY.MALWARE_BLOCK);
+    expect(redirect?.rule.action.type).toBe('redirect');
+    expect(redirect?.rule.action.redirect?.extensionPath).toBe(MALWARE_WARNING_PAGE);
+    expect(redirect?.rule.condition.resourceTypes).toEqual(['main_frame']);
+
+    expect(block?.rule.action.type).toBe('block');
+    expect(block?.rule.priority).toBe(PRIORITY.MALWARE_BLOCK);
+    expect(block?.rule.condition.excludedResourceTypes).toEqual(['main_frame']);
+  });
+
+  it('leaves a resource-type-constrained malware line as a plain block', () => {
+    const result = convertFilterList(['||malware.example^$script'], 'malware');
+
+    expect(result.rules).toHaveLength(1);
+    expect(result.rules[0]?.rule.action.type).toBe('block');
+    expect(result.rules[0]?.rule.condition.resourceTypes).toEqual(['script']);
   });
 
   it('assigns unique ids from startId', () => {
@@ -151,7 +170,8 @@ describe('groupByCategory', () => {
 
     expect(grouped.ads).toHaveLength(1);
     expect(grouped.trackers).toHaveLength(1);
-    expect(grouped.malware).toHaveLength(1);
+    // A bare malware domain expands to a redirect + a sub-resource block.
+    expect(grouped.malware).toHaveLength(2);
     expect(grouped.privacy).toHaveLength(0);
     expect(grouped.ads[0]?.condition.urlFilter).toBe('||ads.example^');
   });

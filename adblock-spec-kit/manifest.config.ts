@@ -8,8 +8,9 @@
  * (see `STATIC_RULESETS`). T021 adds the `scripting` permission so the worker
  * can inject cosmetic element-hiding CSS (algorithms §D). T023 adds `alarms` so
  * the filter lists refresh on a schedule (algorithm §E). T024 adds the options
- * page (per-group toggles, manual update). All of these are justified in
- * plan.md §3.
+ * page (per-group toggles, manual update). T030 adds the `web_accessible_resources`
+ * entry for the malware warning page (the malware ruleset's redirect target).
+ * All of these are justified in plan.md §3.
  */
 import { STATIC_RULESETS } from './scripts/static-rulesets.ts';
 
@@ -42,6 +43,10 @@ export interface ManifestV3 {
   };
   readonly permissions: readonly string[];
   readonly host_permissions: readonly string[];
+  readonly web_accessible_resources: readonly {
+    readonly resources: readonly string[];
+    readonly matches: readonly string[];
+  }[];
   readonly declarative_net_request: {
     readonly rule_resources: readonly RuleResource[];
   };
@@ -77,6 +82,15 @@ export function createManifest(): ManifestV3 {
       'alarms',
     ],
     host_permissions: ['<all_urls>'],
+    // T030: the malware ruleset redirects a blocked top-level navigation to the
+    // warning page, so that page must be reachable from a web-initiated
+    // navigation.
+    web_accessible_resources: [
+      {
+        resources: ['src/warning/warning.html'],
+        matches: ['<all_urls>'],
+      },
+    ],
     declarative_net_request: {
       rule_resources: STATIC_RULESETS.map(({ id, enabled, output }) => ({
         id,

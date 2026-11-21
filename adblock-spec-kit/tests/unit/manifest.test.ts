@@ -34,6 +34,14 @@ describe('manifest', () => {
     expect(manifest.host_permissions).toContain('<all_urls>');
   });
 
+  it('exposes the malware warning page as a web-accessible resource', () => {
+    const manifest = createManifest();
+
+    expect(manifest.web_accessible_resources).toEqual([
+      { resources: ['src/warning/warning.html'], matches: ['<all_urls>'] },
+    ]);
+  });
+
   it('declares every static ruleset with a matching path', () => {
     const manifest = createManifest();
 

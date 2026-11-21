@@ -63,6 +63,7 @@ export default defineConfig({
       input: {
         popup: 'src/popup/index.html',
         options: 'src/options/index.html',
+        warning: 'src/warning/warning.html',
         'service-worker': 'src/background/service-worker.ts',
       },
       output: {

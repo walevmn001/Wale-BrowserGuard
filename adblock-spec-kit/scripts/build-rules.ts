@@ -69,8 +69,16 @@ type ConditionOutcome =
   | { readonly kind: 'error'; readonly reason: SkipReason };
 
 type LineOutcome =
-  | { readonly kind: 'rule'; readonly converted: ConvertedRule }
+  | { readonly kind: 'rules'; readonly rules: readonly chrome.declarativeNetRequest.Rule[] }
   | { readonly kind: 'skip'; readonly reason: SkipReason };
+
+/**
+ * Redirect target for a blocked top-level navigation to a malware domain
+ * (algorithm.md §F). A path relative to the extension root, which is what DNR
+ * `redirect.extensionPath` expects; the matching file is emitted by the build
+ * from `src/warning/warning.html`.
+ */
+export const MALWARE_WARNING_PAGE = '/src/warning/warning.html';
 
 /** `urlFilter` only accepts printable ASCII (use punycode for other hosts). */
 const PRINTABLE_ASCII = /^[\x21-\x7e]+$/;
@@ -214,6 +222,41 @@ function priorityFor(line: NetworkLine, category: RuleCategory): number {
   return PRIORITY.BLOCK;
 }
 
+/**
+ * Builds the rules for one malware-category line (algorithm.md §F).
+ *
+ * A bare domain gets two rules at {@link PRIORITY.MALWARE_BLOCK}: the top-level
+ * navigation is redirected to the warning page so the user sees an explanation,
+ * and the domain's sub-resource loads are blocked. Blocking sub-resources while
+ * redirecting the document is the only way to get both from DNR, since a higher
+ * `block` would otherwise win over the `redirect` for the same request.
+ *
+ * If the line already constrains `resourceTypes` (e.g. `$script`), `main_frame`
+ * cannot be added to the redirect condition, so it is left as a plain block.
+ */
+function malwareRules(
+  condition: chrome.declarativeNetRequest.RuleCondition,
+  id: number,
+): readonly chrome.declarativeNetRequest.Rule[] {
+  if (condition.resourceTypes !== undefined) {
+    return [{ id, priority: PRIORITY.MALWARE_BLOCK, action: { type: 'block' }, condition }];
+  }
+  return [
+    {
+      id,
+      priority: PRIORITY.MALWARE_BLOCK,
+      action: { type: 'redirect', redirect: { extensionPath: MALWARE_WARNING_PAGE } },
+      condition: { ...condition, resourceTypes: ['main_frame'] },
+    },
+    {
+      id: id + 1,
+      priority: PRIORITY.MALWARE_BLOCK,
+      action: { type: 'block' },
+      condition: { ...condition, excludedResourceTypes: ['main_frame'] },
+    },
+  ];
+}
+
 function convertLine(rawLine: string, id: number, category: RuleCategory): LineOutcome {
   const parsed = parseLine(rawLine);
   if (parsed.kind === 'skip') {
@@ -223,17 +266,19 @@ function convertLine(rawLine: string, id: number, category: RuleCategory): LineO
   if (condition.kind === 'error') {
     return { kind: 'skip', reason: condition.reason };
   }
+  if (category === 'malware' && !parsed.line.isException) {
+    return { kind: 'rules', rules: malwareRules(condition.condition, id) };
+  }
   return {
-    kind: 'rule',
-    converted: {
-      category,
-      rule: {
+    kind: 'rules',
+    rules: [
+      {
         id,
         priority: priorityFor(parsed.line, category),
         action: { type: parsed.line.isException ? 'allow' : 'block' },
         condition: condition.condition,
       },
-    },
+    ],
   };
 }
 
@@ -254,9 +299,11 @@ export function convertFilterList(
 
   for (const line of lines) {
     const outcome = convertLine(line, nextId, category);
-    if (outcome.kind === 'rule') {
-      rules.push(outcome.converted);
-      nextId += 1;
+    if (outcome.kind === 'rules') {
+      for (const rule of outcome.rules) {
+        rules.push({ category, rule });
+        nextId += 1;
+      }
     } else {
       skipped.push({ line: line.trim(), reason: outcome.reason });
     }
