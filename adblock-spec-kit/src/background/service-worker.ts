@@ -30,6 +30,9 @@
  * warning page's "continue anyway" publishes, and clears a pass once its alarm
  * fires (AC-5.2, AC-5.3).
  *
+ * T035: applies the opt-in WebRTC IP handling policy (`security/privacy-settings.ts`)
+ * on startup and whenever the choice changes (AC-6.4).
+ *
  * No module-level mutable state: the worker can be stopped at any time
  * (Constitution 14); state lives in `chrome.storage`.
  */
@@ -42,6 +45,7 @@ import {
 } from '../content/cosmetic';
 import { installCosmeticObserver, OBSERVER_OPTIONS } from '../content/cosmetic-observer';
 import { createFilterUpdater, UPDATE_ALARM } from './filter-updater';
+import { createPrivacySettings } from './security/privacy-settings';
 import { createRulesetManager } from './ruleset-manager';
 import { createStatsCounter } from './stats';
 import { createTempException, TEMP_EXCEPTION_ALARM } from './temp-exception';
@@ -81,6 +85,15 @@ async function pollStats(): Promise<void> {
   }
 }
 
+/** Applies the opt-in WebRTC IP handling policy (AC-6.4). */
+async function applyStoredPrivacy(): Promise<void> {
+  try {
+    await createPrivacySettings().applyStored();
+  } catch (error) {
+    logger.error('failed to apply the WebRTC privacy setting', error);
+  }
+}
+
 /** Arms the daily filter-update alarm if it is not already scheduled (AC-7.1). */
 async function scheduleFilterUpdates(): Promise<void> {
   try {
@@ -105,6 +118,7 @@ function applyStoredState(): void {
   void applyStoredTempExceptions();
   void pollStats();
   void scheduleFilterUpdates();
+  void applyStoredPrivacy();
 }
 
 async function fetchJson(path: string): Promise<unknown> {
@@ -178,6 +192,9 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
   if (changes['tempExceptions'] !== undefined) {
     void applyStoredTempExceptions();
+  }
+  if (changes['webrtcProtection'] !== undefined) {
+    void applyStoredPrivacy();
   }
 });
 

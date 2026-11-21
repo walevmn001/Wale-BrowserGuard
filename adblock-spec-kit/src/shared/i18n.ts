@@ -44,6 +44,10 @@ const VI = {
   optionsVersionHeading: 'Phiên bản',
   optionsVersion: 'Phiên bản: {version}',
   optionsDataRules: 'Dữ liệu: {rules} rule trong {groups} nhóm',
+  optionsWebrtcHeading: 'Chặn rò rỉ IP qua WebRTC',
+  optionsWebrtcLabel: 'Bật chặn rò rỉ IP qua WebRTC',
+  optionsWebrtcHint:
+    'Khi bật, WebRTC chỉ dùng giao diện mạng công khai, giảm lộ địa chỉ IP cục bộ.',
   warningHeading: 'Trang cảnh báo',
   warningMessage:
     'Trang này có thể chứa mã độc hoặc lừa đảo. Vì an toàn, AdBlock Security đã ngăn trang tải.',
@@ -86,6 +90,10 @@ const EN: Record<MessageKey, string> = {
   optionsVersionHeading: 'Version',
   optionsVersion: 'Version: {version}',
   optionsDataRules: 'Data: {rules} rules in {groups} groups',
+  optionsWebrtcHeading: 'WebRTC IP leak protection',
+  optionsWebrtcLabel: 'Block WebRTC IP leaks',
+  optionsWebrtcHint:
+    'When on, WebRTC uses only the public network interface, exposing less of your local IP.',
   warningHeading: 'Security warning',
   warningMessage:
     'This page may host malware or a phishing attempt. AdBlock Security stopped it from loading to keep you safe.',

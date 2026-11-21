@@ -25,6 +25,19 @@
         <p id="version-ext">…</p>
         <p id="version-data">…</p>
       </section>
+
+      <section aria-labelledby="webrtc-heading">
+        <h2 id="webrtc-heading" data-i18n="optionsWebrtcHeading">
+          Chặn rò rỉ IP qua WebRTC
+        </h2>
+        <label>
+          <input id="webrtc-protection" type="checkbox" />
+          <span data-i18n="optionsWebrtcLabel">Bật chặn rò rỉ IP qua WebRTC</span>
+        </label>
+        <p data-i18n="optionsWebrtcHint">
+          Khi bật, WebRTC chỉ dùng giao diện mạng công khai, giảm lộ địa chỉ IP cục bộ.
+        </p>
+      </section>
     </main>
     <script type="module" src="./options.ts"></script>
   </body>

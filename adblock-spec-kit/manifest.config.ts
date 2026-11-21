@@ -15,6 +15,9 @@
  * T032 adds the `privacy` static ruleset (generated in code, see
  * `scripts/privacy-rules.ts`) — no new permission is needed, `upgradeScheme`
  * rides on `declarativeNetRequest`.
+ * T035 adds the `privacy` permission so the opt-in WebRTC IP handling policy
+ * (`src/background/security/privacy-settings.ts`) can be set and restored
+ * (AC-6.4).
  * All of these are justified in plan.md §3.
  */
 import { EXTENSION_KEY } from './scripts/extension-key.ts';
@@ -92,6 +95,7 @@ export function createManifest(): ManifestV3 {
       'storage',
       'scripting',
       'alarms',
+      'privacy',
     ],
     host_permissions: ['<all_urls>'],
     // T030: the malware ruleset redirects a blocked top-level navigation to the

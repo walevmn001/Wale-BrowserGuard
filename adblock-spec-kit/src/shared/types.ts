@@ -60,4 +60,9 @@ export interface StorageSchema {
   filterFailures: number;
   /** When the next update attempt is due, ms since epoch (US-7 / AC-7.1). */
   filterNextAttemptAt: number;
+  /**
+   * Opt-in WebRTC leak protection (US-6 / AC-6.4, T035). `true` means WebRTC is
+   * kept on the public interface; off (the default) leaves Chrome untouched.
+   */
+  webrtcProtection: boolean;
 }

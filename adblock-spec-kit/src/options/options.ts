@@ -12,6 +12,7 @@
 
 import { createFilterUpdater, type FilterUpdater } from '../background/filter-updater';
 import { createRulesetManager } from '../background/ruleset-manager';
+import { createPrivacySettings } from '../background/security/privacy-settings';
 import { isMessageKey, resolveLocale, t, type Locale } from '../shared/i18n';
 import { logger } from '../shared/logger';
 import { describeUpdateResult, formatTimestamp, groupLabel, summarizeGroups } from './format';
@@ -23,6 +24,7 @@ interface Elements {
   readonly updateNow: HTMLButtonElement;
   readonly versionExt: HTMLElement;
   readonly versionData: HTMLElement;
+  readonly webrtc: HTMLInputElement;
 }
 
 function elementById(id: string): HTMLElement {
@@ -41,6 +43,14 @@ function buttonById(id: string): HTMLButtonElement {
   return element;
 }
 
+function inputById(id: string): HTMLInputElement {
+  const element = elementById(id);
+  if (!(element instanceof HTMLInputElement)) {
+    throw new Error(`options: #${id} is not an input`);
+  }
+  return element;
+}
+
 function collectElements(): Elements {
   return {
     groupList: elementById('group-list'),
@@ -48,6 +58,7 @@ function collectElements(): Elements {
     updateNow: buttonById('update-now'),
     versionExt: elementById('version-ext'),
     versionData: elementById('version-data'),
+    webrtc: inputById('webrtc-protection'),
   };
 }
 
@@ -135,6 +146,7 @@ async function main(): Promise<void> {
   const elements = collectElements();
   const rulesets = createRulesetManager();
   const updater = createFilterUpdater();
+  const privacy = createPrivacySettings();
 
   const ids = rulesets.listGroups();
   const enabledById = new Map<string, boolean>();
@@ -143,6 +155,12 @@ async function main(): Promise<void> {
   }
   renderGroups(elements.groupList, ids, enabledById, locale, (id, enabled) => {
     void rulesets.setGroupEnabled(id, enabled).catch(reportError);
+  });
+
+  // Opt-in WebRTC leak protection (AC-6.4): off unless the user ticks it.
+  elements.webrtc.checked = await privacy.isEnabled();
+  elements.webrtc.addEventListener('change', () => {
+    void privacy.setEnabled(elements.webrtc.checked).catch(reportError);
   });
 
   await renderVersion(elements, locale, updater);

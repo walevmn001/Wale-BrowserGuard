@@ -32,6 +32,7 @@ describe('manifest', () => {
     expect(manifest.permissions).toContain('storage');
     expect(manifest.permissions).toContain('scripting');
     expect(manifest.permissions).toContain('alarms');
+    expect(manifest.permissions).toContain('privacy');
     expect(manifest.host_permissions).toContain('<all_urls>');
   });
 
