@@ -122,14 +122,21 @@ export function buildCosmeticCss(selectors: readonly string[]): string[] {
 export interface CosmeticInjector {
   readonly loadData: () => Promise<CosmeticData>;
   readonly insertCss: (tabId: number, css: string) => Promise<void>;
+  /**
+   * Optional page-side observer (T022) run with the same selectors as the CSS,
+   * so late-injected ads are pinned too. Skipped when omitted or when there is
+   * nothing to hide.
+   */
+  readonly runObserver?: (tabId: number, selectors: readonly string[]) => Promise<void>;
 }
 
 /**
- * Injects the element-hiding CSS for `url`'s host into `tabId`.
+ * Injects the element-hiding CSS for `url`'s host into `tabId`, then runs the
+ * optional late-injection observer with the same selectors.
  *
  * Returns the number of style chunks inserted (0 when the page cannot be
- * styled or has no matching selector). Errors from `insertCss` propagate so the
- * caller can log them.
+ * styled or has no matching selector). Errors from `insertCss`/`runObserver`
+ * propagate so the caller can log them.
  */
 export async function applyCosmetic(
   injector: CosmeticInjector,
@@ -141,9 +148,13 @@ export async function applyCosmetic(
     return 0;
   }
   const data = await injector.loadData();
-  const chunks = buildCosmeticCss(selectorsForHost(host, data));
+  const selectors = selectorsForHost(host, data);
+  const chunks = buildCosmeticCss(selectors);
   for (const css of chunks) {
     await injector.insertCss(tabId, css);
+  }
+  if (injector.runObserver !== undefined && selectors.length > 0) {
+    await injector.runObserver(tabId, selectors);
   }
   return chunks.length;
 }

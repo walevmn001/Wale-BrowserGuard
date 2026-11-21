@@ -25,6 +25,7 @@ import {
   COSMETIC_PATHS,
   type CosmeticData,
 } from '../content/cosmetic';
+import { installCosmeticObserver, OBSERVER_OPTIONS } from '../content/cosmetic-observer';
 import { createRulesetManager } from './ruleset-manager';
 import { createStatsCounter } from './stats';
 import { createWhitelist } from './whitelist';
@@ -89,6 +90,15 @@ async function injectCosmetic(tabId: number, url: string | undefined): Promise<v
         insertCss: async (id, css) => {
           await chrome.scripting.insertCSS({ target: { tabId: id }, css });
         },
+        // T022: pin ads injected after load. The function is serialised, so it
+        // ships its own selectors/options as arguments (no shared scope).
+        runObserver: async (id, selectors) => {
+          await chrome.scripting.executeScript({
+            target: { tabId: id },
+            func: installCosmeticObserver,
+            args: [selectors, OBSERVER_OPTIONS],
+          });
+        },
       },
       tabId,
       url,
@@ -123,6 +133,9 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete') {
     void pollStats();
+    // Re-run so the observer lands in the finished document even if the early
+    // `loading` injection hit the previous one; the page-side guard de-dupes.
+    void injectCosmetic(tabId, tab.url);
   }
   // Hide leftover banners as early as the navigation gives us a URL.
   if (changeInfo.status === 'loading') {
