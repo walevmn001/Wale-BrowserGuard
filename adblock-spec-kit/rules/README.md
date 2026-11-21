@@ -36,6 +36,15 @@ the absence of `resourceTypes` keep the rules off first-party requests and off
 top-level navigation. `tests/e2e/allow-benign-hosts.spec.ts` guards against
 over-blocking with a list of legitimate hosts that must never be blocked.
 
+B2b-2 added the **vendor-specific** endpoints the `<prefix>.` convention cannot
+reach (their first label is not an ad/measurement word): ad servers
+(`an.yandex.ru`, `adfox.yandex.ru`, `adfstat.yandex.ru`, `bat.bing.com`,
+`gemini.yahoo.com`) in `ads.txt`, and Social / measurement hosts
+(`mc.yandex.ru`, `an.facebook.com`, `udc.yahoo.com`, `pixel.reddit.com`,
+`tr.snapchat.com`, `px.ads.linkedin.com`) in `trackers.txt`. Same policy and
+license as above — domain-anchored, no `resourceTypes`, **self-authored for this
+project (MIT)**, not copied from any list.
+
 Full third-party lists (EasyList, EasyPrivacy, URLhaus) are layered in later
 tasks. Each must carry its own license note here when added, e.g.:
 

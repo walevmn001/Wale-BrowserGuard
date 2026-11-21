@@ -9,9 +9,10 @@ import { chromium, expect, test, type BrowserContext, type Page } from '@playwri
 const EXTENSION_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '../../dist');
 
 /**
- * A ~20-host sample of the Social / ad-pixel / error-tracking entries that B2
- * added to `rules/source/trackers.txt`. Self-authored for this project (MIT) —
- * none of these hostnames were copied from a third-party list.
+ * A sample of the Social / ad-pixel / error-tracking entries that B2 and B2b-2
+ * added to `rules/source/trackers.txt` and `rules/source/ads.txt`.
+ * Self-authored for this project (MIT) — none of these hostnames were copied
+ * from a third-party list.
  *
  * `prefix` keeps the path-anchored Facebook rule (`||facebook.com/tr^`) honest:
  * only requests under `/tr/` are meant to be blocked there, not all of
@@ -43,6 +44,19 @@ const TRACKER_TARGETS: readonly TrackerTarget[] = [
   { host: 'cdn.taboola.com', prefix: '/' },
   { host: 'taboola.com', prefix: '/' },
   { host: 'outbrain.com', prefix: '/' },
+  // B2b-2: vendor-specific ad-server / Social / measurement endpoints that the
+  // generic `<prefix>.` rules cannot reach.
+  { host: 'an.yandex.ru', prefix: '/' },
+  { host: 'adfox.yandex.ru', prefix: '/' },
+  { host: 'adfstat.yandex.ru', prefix: '/' },
+  { host: 'bat.bing.com', prefix: '/' },
+  { host: 'gemini.yahoo.com', prefix: '/' },
+  { host: 'mc.yandex.ru', prefix: '/' },
+  { host: 'an.facebook.com', prefix: '/' },
+  { host: 'udc.yahoo.com', prefix: '/' },
+  { host: 'pixel.reddit.com', prefix: '/' },
+  { host: 'tr.snapchat.com', prefix: '/' },
+  { host: 'px.ads.linkedin.com', prefix: '/' },
 ];
 
 const PAGE_HTML = `<!doctype html>
@@ -102,7 +116,7 @@ function appLoaded(page: Page): Promise<boolean> {
   return page.evaluate(() => (window as unknown as { __appLoaded?: boolean }).__appLoaded ?? false);
 }
 
-test('blocks every B2 tracker host for both fetch() and image requests', async () => {
+test('blocks every tracker host for both fetch() and image requests', async () => {
   const page = await context.newPage();
   await page.goto(baseUrl);
 

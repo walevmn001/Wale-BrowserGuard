@@ -77,6 +77,17 @@
 ||adserver.$third-party
 ||adx.$third-party
 
+! --- B2b-2: vendor ad-server endpoints (third-party sub-resources only) ---
+! Vendor-specific hostnames the generic `<prefix>.` rules above cannot reach
+! (their first label is not a known ad word). Public vendor endpoints,
+! self-authored for this project (MIT). Domain-anchored and, with no
+! `resourceTypes`, never applied to main_frame (see rules/README.md).
+||an.yandex.ru^
+||adfox.yandex.ru^
+||adfstat.yandex.ru^
+||bat.bing.com^
+||gemini.yahoo.com^
+
 ! --- Common ad-script paths (rarely overlap with site code) ---
 ||googlesyndication.com/pagead/js/adsbygoogle.js$script
 ||securepubads.g.doubleclick.net^$script

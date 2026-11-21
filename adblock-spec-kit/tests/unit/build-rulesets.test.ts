@@ -197,3 +197,50 @@ describe('rulesets — B2b-1 generic subdomain prefixes', () => {
   });
 });
 
+/**
+ * B2b-2 vendor tracking / ad endpoints.
+ *
+ * B2b-1 only covers the *generic* `<prefix>.` convention, so a host like
+ * `an.yandex.ru` (whose first label is not a known ad/measurement word) slips
+ * through. These are the vendor-specific ad-server and Social / measurement
+ * endpoints, addressed by their own hostname. Like every block rule here they
+ * are domain-anchored and set no `resourceTypes`, so they never match
+ * `main_frame` — the vendor's own site still opens (T033). Names are public
+ * vendor endpoints, self-authored for this project (MIT — see rules/README.md),
+ * not copied from any third-party list.
+ */
+describe('rulesets — B2b-2 vendor tracking hosts', () => {
+  const rulesOf = (id: string): readonly chrome.declarativeNetRequest.Rule[] =>
+    report.ruleSets.find(({ descriptor }) => descriptor.id === id)?.rules ?? [];
+
+  // Ad-serving endpoints live in ads.txt; Social / measurement in trackers.txt.
+  const adVendors = [
+    'an.yandex.ru',
+    'adfox.yandex.ru',
+    'adfstat.yandex.ru',
+    'bat.bing.com',
+    'gemini.yahoo.com',
+  ];
+  const trackerVendors = [
+    'mc.yandex.ru',
+    'an.facebook.com',
+    'udc.yahoo.com',
+    'pixel.reddit.com',
+    'tr.snapchat.com',
+    'px.ads.linkedin.com',
+  ];
+
+  const cases = [
+    ...adVendors.map((host) => ['ads', host] as const),
+    ...trackerVendors.map((host) => ['trackers', host] as const),
+  ];
+
+  it.each(cases)('%s blocks ||%s^ as a sub-resource-only rule', (id, host) => {
+    const rule = rulesOf(id).find((entry) => entry.condition.urlFilter === `||${host}^`);
+
+    expect(rule?.action.type).toBe('block');
+    // No resourceTypes => sub-resources only; the vendor's own page still opens.
+    expect(rule?.condition.resourceTypes).toBeUndefined();
+  });
+});
+

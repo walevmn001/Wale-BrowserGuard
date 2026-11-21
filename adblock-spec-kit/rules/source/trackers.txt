@@ -84,3 +84,14 @@
 ||events.$third-party
 ||stats.$third-party
 ||beacon.$third-party
+!
+! B2b-2: vendor-specific Social / measurement endpoints (third-party
+! sub-resources only). Hostnames whose first label is not a generic
+! ad/measurement prefix, so B2b-1's `||<prefix>.` rules never reach them.
+! Public vendor endpoints, self-authored for this project (MIT).
+||mc.yandex.ru^
+||an.facebook.com^
+||udc.yahoo.com^
+||pixel.reddit.com^
+||tr.snapchat.com^
+||px.ads.linkedin.com^
