@@ -16,9 +16,14 @@
  * All strings come from `shared/i18n.ts`, chosen from the browser UI language.
  */
 
-import { createTempException } from '../background/temp-exception';
+import { createTempException, type TempException } from '../background/temp-exception';
 import { isMessageKey, resolveLocale, t } from '../shared/i18n';
 import { logger } from '../shared/logger';
+
+/** How long the "continue anyway" button waits for the worker to install the pass. */
+const EXCEPTION_WAIT_MS = 2000;
+/** Poll cadence while waiting for the pass to appear. */
+const EXCEPTION_POLL_MS = 25;
 
 /** The original URL the malware rule carried in the fragment, if valid. */
 function readTargetUrl(href: string): URL | undefined {
@@ -46,7 +51,9 @@ function applyTranslations(): void {
   const target = readTargetUrl(window.location.href);
   const targetText = document.getElementById('warning-target');
   if (targetText !== null && target !== undefined) {
-    targetText.textContent = t('warningBlockedDomain', locale, { domain: target.host });
+    // `hostname` (not `host`): a DNR `requestDomains` condition is a bare
+    // hostname and rejects a trailing port, so the pass must key off it too.
+    targetText.textContent = t('warningBlockedDomain', locale, { domain: target.hostname });
   }
 
   document.getElementById('warning-back')?.addEventListener('click', () => {
@@ -68,16 +75,37 @@ function applyTranslations(): void {
 }
 
 /**
- * Publishes a 10-minute pass for the host (the worker installs the rule off its
- * `storage.onChanged` listener) and then navigates to the original URL.
+ * Publishes a 10-minute pass for the host, waits for the worker to install the
+ * matching rule, then navigates to the original URL.
  */
 async function continueTo(target: URL): Promise<void> {
+  const temp = createTempException();
   try {
-    await createTempException().allow(target.host);
+    await temp.allow(target.hostname);
+    await waitForPass(temp, target.hostname);
   } catch (error) {
     logger.error('failed to grant a temporary exception', error);
   }
   window.location.replace(target.href);
+}
+
+/**
+ * Waits (bounded) until the "continue anyway" pass is actually in force.
+ *
+ * `allow` only publishes the host to `chrome.storage`; the worker installs the
+ * `allowAllRequests` rule off its `storage.onChanged` listener a moment later.
+ * Navigating before that would be rejected by the malware rule and bounce the
+ * user straight back here, so the button holds until the rule is present.
+ */
+async function waitForPass(temp: TempException, host: string): Promise<void> {
+  const deadline = Date.now() + EXCEPTION_WAIT_MS;
+  while (Date.now() < deadline) {
+    if (await temp.isActive(host)) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, EXCEPTION_POLL_MS));
+  }
+  logger.warn(`temporary exception for ${host} was not installed in time`);
 }
 
 applyTranslations();
