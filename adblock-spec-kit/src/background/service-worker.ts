@@ -22,6 +22,10 @@
  * so the filter lists refresh on schedule without ever losing the previous set
  * on failure (AC-7.1, AC-7.2).
  *
+ * T024: re-applies the static rulesets when the per-group toggles change
+ * (`disabledRuleSets`), so the options page switches individual list groups on
+ * and off.
+ *
  * No module-level mutable state: the worker can be stopped at any time
  * (Constitution 14); state lives in `chrome.storage`.
  */
@@ -149,6 +153,9 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     return;
   }
   if (changes['enabled'] !== undefined) {
+    void applyStoredRulesets();
+  }
+  if (changes['disabledRuleSets'] !== undefined) {
     void applyStoredRulesets();
   }
   if (changes['whitelist'] !== undefined) {

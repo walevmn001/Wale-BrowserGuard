@@ -16,6 +16,13 @@ describe('manifest', () => {
     expect(manifest.action.default_popup).toBe('src/popup/index.html');
   });
 
+  it('declares the options page', () => {
+    const manifest = createManifest();
+
+    expect(manifest.options_ui.page).toBe('src/options/index.html');
+    expect(manifest.options_ui.open_in_tab).toBe(true);
+  });
+
   it('declares the network-blocking permissions from plan.md §3', () => {
     const manifest = createManifest();
 

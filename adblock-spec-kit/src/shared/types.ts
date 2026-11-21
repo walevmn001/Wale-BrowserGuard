@@ -26,6 +26,11 @@ export interface StorageSchema {
    */
   enabled: boolean;
   /**
+   * Static ruleset ids the user switched off (US-7 / T024). The master switch
+   * stays on; these groups just do not run. Missing means every group is on.
+   */
+  disabledRuleSets: string[];
+  /**
    * Domains the user has whitelisted (US-2 / AC-2.2). Stored even though the
    * matching dynamic rules also persist in the browser, so the list survives a
    * restart and can be shown/edited by the popup.

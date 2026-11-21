@@ -84,6 +84,68 @@ describe('RulesetManager', () => {
 
     expect(calls).toEqual([]);
   });
+
+  it('lists the declared groups', async () => {
+    const { manager } = createHarness();
+
+    expect(manager.listGroups()).toEqual(['ads', 'trackers']);
+  });
+
+  it('keeps every group on by default', async () => {
+    const { manager } = createHarness();
+
+    await expect(manager.disabledGroups()).resolves.toEqual([]);
+    await expect(manager.isGroupEnabled('ads')).resolves.toBe(true);
+    await expect(manager.isGroupEnabled('trackers')).resolves.toBe(true);
+  });
+
+  it('switches a group off and disables only that ruleset (AC-7.1)', async () => {
+    const { manager, calls } = createHarness();
+
+    await manager.setGroupEnabled('trackers', false);
+
+    await expect(manager.disabledGroups()).resolves.toEqual(['trackers']);
+    expect(calls.at(-1)).toEqual({
+      enableRulesetIds: ['ads'],
+      disableRulesetIds: ['trackers'],
+    });
+    await expect(manager.isGroupEnabled('trackers')).resolves.toBe(false);
+    await expect(manager.isGroupEnabled('ads')).resolves.toBe(true);
+  });
+
+  it('switches a group back on', async () => {
+    const { manager, calls } = createHarness();
+
+    await manager.setGroupEnabled('trackers', false);
+    await manager.setGroupEnabled('trackers', true);
+
+    await expect(manager.disabledGroups()).resolves.toEqual([]);
+    expect(calls.at(-1)).toEqual({ enableRulesetIds: ['ads', 'trackers'] });
+  });
+
+  it('treats every group as off while the master switch is off', async () => {
+    const { manager } = createHarness();
+
+    await manager.setGroupEnabled('trackers', false);
+    await expect(manager.isGroupEnabled('ads')).resolves.toBe(true);
+
+    await manager.setEnabled(false);
+
+    await expect(manager.isGroupEnabled('ads')).resolves.toBe(false);
+    await expect(manager.isGroupEnabled('trackers')).resolves.toBe(false);
+  });
+
+  it('re-applies the stored group toggles', async () => {
+    const { manager, calls } = createHarness();
+
+    await manager.setGroupEnabled('ads', false);
+    await manager.applyStored();
+
+    expect(calls.at(-1)).toEqual({
+      enableRulesetIds: ['trackers'],
+      disableRulesetIds: ['ads'],
+    });
+  });
 });
 
 describe('ruleSetIdsFromManifest', () => {

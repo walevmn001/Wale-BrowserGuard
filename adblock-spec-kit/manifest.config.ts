@@ -7,8 +7,9 @@
  * apply on every site) and the static rulesets produced by the build
  * (see `STATIC_RULESETS`). T021 adds the `scripting` permission so the worker
  * can inject cosmetic element-hiding CSS (algorithms §D). T023 adds `alarms` so
- * the filter lists refresh on a schedule (algorithm §E). All of these are
- * justified in plan.md §3.
+ * the filter lists refresh on a schedule (algorithm §E). T024 adds the options
+ * page (per-group toggles, manual update). All of these are justified in
+ * plan.md §3.
  */
 import { STATIC_RULESETS } from './scripts/static-rulesets.ts';
 
@@ -35,6 +36,10 @@ export interface ManifestV3 {
     readonly default_title: string;
     readonly default_popup: string;
   };
+  readonly options_ui: {
+    readonly page: string;
+    readonly open_in_tab: boolean;
+  };
   readonly permissions: readonly string[];
   readonly host_permissions: readonly string[];
   readonly declarative_net_request: {
@@ -59,6 +64,10 @@ export function createManifest(): ManifestV3 {
     action: {
       default_title: EXTENSION_NAME,
       default_popup: 'src/popup/index.html',
+    },
+    options_ui: {
+      page: 'src/options/index.html',
+      open_in_tab: true,
     },
     permissions: [
       'declarativeNetRequest',
