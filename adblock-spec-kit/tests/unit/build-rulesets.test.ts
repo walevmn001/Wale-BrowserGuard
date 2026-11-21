@@ -34,10 +34,17 @@ describe('buildStaticRuleSets', () => {
     expect(filters).toContain('||ads.example.test^');
   });
 
-  it('includes the code-generated privacy ruleset (https upgrade)', () => {
+  it('includes the code-generated privacy ruleset (https upgrade + tracking strip)', () => {
     const privacy = report.ruleSets.find(({ descriptor }) => descriptor.id === 'privacy');
 
     expect(privacy?.rules.some((rule) => rule.action.type === 'upgradeScheme')).toBe(true);
+    expect(
+      privacy?.rules.some(
+        (rule) =>
+          rule.action.type === 'redirect' &&
+          (rule.action.redirect?.transform?.queryTransform?.removeParams?.length ?? 0) > 0,
+      ),
+    ).toBe(true);
   });
 
   it('emits JSON that round-trips to the same rules', () => {
