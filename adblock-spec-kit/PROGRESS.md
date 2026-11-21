@@ -4,14 +4,14 @@
 > Ghi chú chi tiết T001–T043, B0–B5, T0 đã chuyển sang `docs/history.md` (không xoá nội dung).
 
 ## Trạng thái
-- Giai đoạn hiện tại: **P4 ĐÃ XONG (T040–T043)** — tag `phase-P4-done`; **v1.0 ĐÃ PHÁT HÀNH** (tag + GitHub release `v1.0`), asset đã cập nhật lên **v1.0.1**.
+- Giai đoạn hiện tại: **P4 ĐÃ XONG (T040–T043)** — tag `phase-P4-done`; **v1.0 ĐÃ PHÁT HÀNH** (tag + GitHub release `v1.0`), asset đã cập nhật lên **v1.0.2**.
 - Task đã xong: T001–T004 (P0), T010–T018 (P1), T020–T025 (P2), T030–T037 (P3), T040–T043 (P4); Prompt 14 (B0–B5); Prompt 15 (B2 + G1 + D1 → `v1.0`).
 - Task kế tiếp: **Prompt 16 — nâng độ phủ chặn** (KHÔNG đổi giấy phép MIT, KHÔNG dùng list copyleft, KHÔNG vá theo từng domain của bài test; rule chặn chỉ tầng sub-resource):
   - **T0 ĐÃ XONG** — dọn `PROGRESS.md` (≤ ~80 dòng), chuyển chi tiết sang `docs/history.md`.
   - **B2b-1 ĐÃ XONG** — 14 rule prefix `||<prefix>.$third-party` (ads: `ads`,`ad`,`adserver`,`adx`; trackers: `analytics`,`metrics`,`telemetry`,`tracking`,`tracker`,`pixel`,`trk`,`events`,`stats`,`beacon`), không `resourceTypes` ⇒ không `main_frame`; test unit 45/45, e2e "phải cho qua" 36 host + e2e "chặn mỗi prefix" 14 host đều xanh; toàn bộ e2e 38/38, unit 282/282.
   - **B2b-2 ĐÃ XONG** — 11 host theo họ hãng (không `resourceTypes` ⇒ chỉ chặn sub-resource): ads `||an.yandex.ru^`,`||adfox.yandex.ru^`,`||adfstat.yandex.ru^`,`||bat.bing.com^`,`||gemini.yahoo.com^`; trackers `||mc.yandex.ru^`,`||an.facebook.com^`,`||udc.yahoo.com^`,`||pixel.reddit.com^`,`||tr.snapchat.com^`,`||px.ads.linkedin.com^`; test đỏ trước (unit 11 đỏ) rồi xanh; e2e tracker-host mở rộng lên 31 host × 2 (fetch+image); toàn bộ unit 293/293, e2e 38/38.
   - **B2b-3 ĐÃ XONG** — bộ vàng thêm **36 host "phải cho qua"** (`BENIGN_HOSTS` ở `tests/golden/fixtures.ts`; resolver `FIXTURE_HOSTS` map cả host chặn lẫn host benign) + test **"B2b-3 guard"** (đặt TRƯỚC AC-1.3 để nhiễu trễ không che khuất); `results.ts` thêm mục **`benignHosts`** (36/36 thăm dò, 0 bị chặn); **validate-rules**: +3 test tích hợp chạy `validateRules` trên ruleset thật (ngân sách DNR) ở `tests/unit/build-rulesets.test.ts`. Test vàng: **5 lần xanh** (delta 3.5–4.5ms) / 4 lần chỉ trượt AC-1.3 do tải host ≥4. Toàn bộ unit **296/296**.
-  - Chưa làm: **Release 1.0.2** (bump version + `npm run package` + cập nhật asset release `v1.0`).
+  - Chưa làm: _(không — Prompt 16 B0–B2b xong; còn G1 bằng URL thật do người dùng điền ở mục dưới.)_
 - Test vàng gần nhất: 2026-11-21 (B2b-3) — chặn **173/173 (100%)**, vỡ **0/40 (0%)**, trễ **+4.5ms**, restart pass, heap **1.235MB**, host benign **36/36 không bị chặn** (`tests/golden/results/2026-11-21.json`).
 - **Mốc Toolz (Kiwi, chỉ số phụ)**: tắt ~10% → trước sửa ~36% → sau B1/B3/B4 ~52% → sau B2 **69/135 (~51%)**; theo nhóm Ads 16/20, Analytics 26/30, Error 5/6, **Social 7/20**, Mix 8/20, OEM 3/35, **bỏ-OEM 62/96 (~65%)**.
 - Mục tiêu v1 (chỉ số phụ): bỏ-OEM ≥80%, tổng ≥55%, **Social ≥80%**, Ads/Analytics/Error ≥80%. **Tiêu chí thật: vỡ trang ≤2%.**
@@ -30,7 +30,7 @@
 - `filter-updater` (T023) mới validate/lưu mô tả list tải về, **chưa** biến thành rule chặn — việc giai đoạn sau.
 
 ## Dở dang / việc kế tiếp
-- **Phát hành `1.0.1`**: ĐÃ XONG — bump `1.0.0` → `1.0.1`, zip `release/adblock-security-1.0.1.zip` (md5 `2d0c64c9118ef327e6d4048f82724621`), cập nhật asset cho release `v1.0` (giữ nguyên tag `v1.0`).
+- **Phát hành `1.0.2`**: ĐÃ XONG — bump `1.0.1` → `1.0.2` (`package.json` + `EXTENSION_VERSION`), zip `release/adblock-security-1.0.2.zip` (32 file, md5 `81c00bc2010ccd704de2fcc215a521d4`, sha256 `ad4e75380819e2710def77e121f65c29ceaaedbf49c69c684a7cd5f757535bf2`), cập nhật asset cho release `v1.0` (giữ nguyên tag `v1.0`). (Trước đó: `1.0.1` = B2b-1, `1.0.0` = v1.0.)
 - **Sau B2b**: nếu vẫn chưa đạt mục tiêu Toolz → người dùng quyết định (mở rộng thủ công hoặc đổi giấy phép); Trae KHÔNG tự quyết.
 - **G1 bằng URL thật do người dùng điền** vẫn phải làm trước khi gắn `v1.0` (hiện có khung 40 trang offline).
 - Nhật ký chi tiết (từng task + commit): `docs/history.md`.
