@@ -3,6 +3,7 @@ import { defineConfig, type Plugin } from 'vite';
 import { buildCosmeticAssets, buildStaticRuleSets } from './scripts/build-rulesets.ts';
 import { createManifest } from './manifest.config.ts';
 import { packageRelease } from './scripts/package-release.ts';
+import { UI_ASSETS, readUiAsset } from './scripts/ui-assets.ts';
 
 /**
  * Emits `dist/manifest.json` from `manifest.config.ts` so the manifest is
@@ -67,6 +68,24 @@ function releasePlugin(): Plugin {
   };
 }
 
+/**
+ * Copies the shared UI assets (design tokens, component stylesheet, icon SVG
+ * and the rasterised PNG icons) into `dist/` at fixed, unhashed paths (T070).
+ * Pages link them relatively and the manifest references the PNGs, so the
+ * paths must stay stable.
+ */
+function uiAssetsPlugin(): Plugin {
+  return {
+    name: 'adblock-emit-ui-assets',
+    apply: 'build',
+    generateBundle() {
+      for (const asset of UI_ASSETS) {
+        this.emitFile({ type: 'asset', fileName: asset.to, source: readUiAsset(process.cwd(), asset) });
+      }
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => ({
   // Relative asset URLs are required for pages loaded from chrome-extension://.
   base: './',
@@ -88,5 +107,10 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-  plugins: [manifestPlugin(), rulesPlugin(), ...(mode === 'release' ? [releasePlugin()] : [])],
+  plugins: [
+    manifestPlugin(),
+    rulesPlugin(),
+    uiAssetsPlugin(),
+    ...(mode === 'release' ? [releasePlugin()] : []),
+  ],
 }));

@@ -24,6 +24,18 @@ describe('manifest', () => {
     expect(manifest.options_ui.open_in_tab).toBe(true);
   });
 
+  it('declares toolbar icons at the sizes Chrome requests (T070)', () => {
+    const manifest = createManifest();
+
+    expect(manifest.icons).toEqual({
+      '16': 'icons/icon-16.png',
+      '32': 'icons/icon-32.png',
+      '48': 'icons/icon-48.png',
+      '128': 'icons/icon-128.png',
+    });
+    expect(manifest.action.default_icon).toEqual(manifest.icons);
+  });
+
   it('declares the network-blocking permissions from plan.md §3', () => {
     const manifest = createManifest();
 

@@ -1,0 +1,35 @@
+/* Design tokens — trắng + xanh mint. Dùng chung cho popup, options, warning, overlay. */
+:root{
+  --mint-50:#F3FCF9; --mint-100:#E3F8F1; --mint-200:#C5EFE2; --mint-400:#3DD6B0;
+  --mint-500:#0FA37D; /* icon, toggle, viền nhấn (≥3:1 trên nền trắng) */
+  --mint-600:#0B8466; /* chữ nhấn, nút chính (chữ trắng ≥4.5:1) */
+  --mint-700:#09694F;
+  --bg:#FFFFFF; --surface:#F6FBF9; --card:#FFFFFF;
+  --ink:#0F2A24; --muted:#5B7A72; --line:#D6EBE4;
+  --accent:var(--mint-600); --accent-soft:var(--mint-100);
+  --btn-bg:#0B8466; --btn-ink:#FFFFFF; --btn-hover:#09694F;
+  --danger:#C93B3B; --danger-bg:#FDECEC; --warn:#8A5A00; --warn-bg:#FFF4DC;
+  --radius-sm:8px; --radius:12px; --radius-lg:16px; --radius-pill:999px;
+  --shadow-1:0 1px 2px rgba(15,42,36,.06),0 4px 14px rgba(15,42,36,.07);
+  --focus:0 0 0 3px rgba(15,163,125,.40);
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
+  --t-fast:120ms; --t-med:200ms;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C1815; --surface:#11201C; --card:#152A25; --ink:#E6F5F0; --muted:#8FB0A6; --line:#23403A;
+    --mint-50:#10261F; --mint-100:#163A31; --mint-200:#1E4F43; --accent:#5BE0BE; --accent-soft:#163A31;
+    --btn-bg:#19C39B; --btn-ink:#06231C; --btn-hover:#3DD6B0;
+    --danger:#FF8A8A; --danger-bg:#3A1B1B; --warn:#F5C26B; --warn-bg:#3A2D12;
+    --shadow-1:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.35); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1815; --surface:#11201C; --card:#152A25; --ink:#E6F5F0; --muted:#8FB0A6; --line:#23403A;
+  --mint-50:#10261F; --mint-100:#163A31; --mint-200:#1E4F43; --accent:#5BE0BE; --accent-soft:#163A31;
+  --btn-bg:#19C39B; --btn-ink:#06231C; --btn-hover:#3DD6B0;
+  --danger:#FF8A8A; --danger-bg:#3A1B1B; --warn:#F5C26B; --warn-bg:#3A2D12;
+  --shadow-1:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.35); color-scheme:dark;
+}
