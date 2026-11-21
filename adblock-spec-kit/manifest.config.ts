@@ -64,6 +64,12 @@ export interface ManifestV3 {
   readonly permissions: readonly string[];
   readonly host_permissions: readonly string[];
   /**
+   * Permissions the build does *not* hold by default (P6, US-16): the user grants
+   * them on demand — `management` only when they run the extension scan
+   * (`src/background/ext-scan.ts`, AC-16.1).
+   */
+  readonly optional_permissions: readonly string[];
+  /**
    * Keyboard shortcuts (Phase 9 §10). `_execute_action` opens the popup; the
    * other three are handled in the service worker. Users can rebind them in
    * `chrome://extensions/shortcuts`.
@@ -118,6 +124,7 @@ export function createManifest(): ManifestV3 {
       'notifications',
     ],
     host_permissions: ['<all_urls>'],
+    optional_permissions: ['management'],
     commands: {
       _execute_action: {
         suggested_key: { default: 'Alt+Shift+W' },

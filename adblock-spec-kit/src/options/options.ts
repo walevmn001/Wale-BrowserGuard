@@ -12,6 +12,7 @@ import { logger } from '../shared/logger';
 import { TypedStorage } from '../shared/storage';
 import { createAbout } from './about';
 import { createActivity } from './activity';
+import { createAdvanced } from './advanced';
 import { createData } from './data';
 import { createDiagnostics } from './diagnostics';
 import { applyStaticText, applyTheme, optionsLocale, q } from './elements';
@@ -40,6 +41,7 @@ const PAGES = [
   'rules',
   'data',
   'diagnostics',
+  'advanced',
   'settings',
   'about',
 ] as const;
@@ -66,6 +68,7 @@ function buildSections(ctx: Ctx): ReadonlyMap<PageId, Section> {
     ['rules', createRules(ctx)],
     ['data', createData(ctx)],
     ['diagnostics', createDiagnostics(ctx)],
+    ['advanced', createAdvanced(ctx)],
     ['settings', createSettingsSection(ctx)],
     ['about', createAbout(ctx)],
   ]);

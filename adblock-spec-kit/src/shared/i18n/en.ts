@@ -98,6 +98,7 @@ export const EN: Record<keyof typeof VI, string> = {
   navRules: 'Custom rules',
   navData: 'Data',
   navDiagnostics: 'Diagnostics',
+  navAdvanced: 'Advanced',
   navSettings: 'Settings',
   navAbout: 'About',
   navGroupMonitor: 'Monitor',
@@ -317,6 +318,20 @@ export const EN: Record<keyof typeof VI, string> = {
   diagCopy: 'Copy diagnostics',
   diagExport: 'Export report',
   diagNote: 'The report contains no browsing history or personal URLs.',
+
+  // ---- Advanced (opt-in, P6 — AC-16.1) ----
+  advTitle: 'Advanced',
+  advSub: 'Optional features, off by default. Only enable what you really need.',
+  extScanTitle: 'Scan installed extensions',
+  extScanDesc:
+    'Lists your other extensions and a risk score based on the permissions they hold. Read-only — WALE GUARD never disables or removes anything.',
+  extScanBtn: 'Scan now',
+  extScanEmpty: 'No other extensions found.',
+  extScanDenied: 'You declined the permission needed to scan extensions.',
+  extReasonPermission: 'Permission: {name}',
+  extReasonBroadHosts: 'Access to all sites',
+  extReasonUnpacked: 'Installed outside the store (unpacked)',
+  extReasonNoUpdate: 'Cannot auto-update',
 
   // ---- Settings ----
   setTitle: 'Settings',

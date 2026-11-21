@@ -75,6 +75,11 @@
               ><path d="M12 3v18M5 8l7 5 7-5" /></svg
             ><span data-i18n="navDiagnostics"></span></a
           >
+          <a href="#advanced" data-nav="advanced"
+            ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              ><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" /></svg
+            ><span data-i18n="navAdvanced"></span></a
+          >
           <a href="#settings" data-nav="settings"
             ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               ><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M5 5l2 2M17 17l2 2M2 12h3M19 12h3M5 19l2-2M17 7l2-2" /></svg
@@ -540,6 +545,24 @@
               </div>
               <pre class="mono scroll" id="diag-report" style="margin-top: var(--s3); white-space: pre-wrap">…</pre>
               <p class="small muted-2" data-i18n="diagNote"></p>
+            </div>
+          </section>
+
+          <!-- ===== Advanced (P6, optional) ===== -->
+          <section class="page" id="advanced" aria-labelledby="adv-h">
+            <div class="page-head">
+              <h1 id="adv-h" data-i18n="advTitle"></h1>
+              <p class="sub" data-i18n="advSub"></p>
+            </div>
+            <div class="card">
+              <div class="row">
+                <div>
+                  <div class="t" data-i18n="extScanTitle"></div>
+                  <div class="d" data-i18n="extScanDesc"></div>
+                </div>
+                <button class="btn" id="ext-scan-btn" data-i18n="extScanBtn"></button>
+              </div>
+              <div id="ext-scan-out" hidden style="margin-top: var(--s3)"></div>
             </div>
           </section>
 

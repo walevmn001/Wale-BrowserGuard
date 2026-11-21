@@ -48,6 +48,15 @@ describe('manifest', () => {
     expect(manifest.host_permissions).toContain('<all_urls>');
   });
 
+  it('asks for the risky permissions only on demand, not up front (AC-16.1)', () => {
+    const manifest = createManifest();
+
+    // `management` is optional: the extension scan requests it when the user
+    // runs it, and the default install must not hold it.
+    expect(manifest.optional_permissions).toContain('management');
+    expect(manifest.permissions).not.toContain('management');
+  });
+
   it('exposes the malware warning page as a web-accessible resource', () => {
     const manifest = createManifest();
 

@@ -97,6 +97,7 @@ export const VI = {
   navRules: 'Quy tắc riêng',
   navData: 'Dữ liệu',
   navDiagnostics: 'Chẩn đoán',
+  navAdvanced: 'Nâng cao',
   navSettings: 'Cài đặt',
   navAbout: 'Giới thiệu',
   navGroupMonitor: 'Giám sát',
@@ -316,6 +317,20 @@ export const VI = {
   diagCopy: 'Sao chép chẩn đoán',
   diagExport: 'Xuất báo cáo',
   diagNote: 'Báo cáo không chứa lịch sử duyệt web hay URL cá nhân.',
+
+  // ---- Advanced (opt-in, P6 — AC-16.1) ----
+  advTitle: 'Nâng cao',
+  advSub: 'Các tính năng tuỳ chọn, mặc định tắt. Chỉ bật khi bạn thật sự cần.',
+  extScanTitle: 'Quét extension đã cài',
+  extScanDesc:
+    'Liệt kê các extension khác và mức rủi ro theo quyền chúng đang có. Chỉ liệt kê — WALE GUARD không tắt hay gỡ extension nào.',
+  extScanBtn: 'Quét ngay',
+  extScanEmpty: 'Không tìm thấy extension nào khác.',
+  extScanDenied: 'Bạn đã từ chối quyền quét extension.',
+  extReasonPermission: 'Quyền: {name}',
+  extReasonBroadHosts: 'Truy cập mọi trang',
+  extReasonUnpacked: 'Cài ngoài cửa hàng (unpacked)',
+  extReasonNoUpdate: 'Không tự cập nhật',
 
   // ---- Settings ----
   setTitle: 'Cài đặt',
