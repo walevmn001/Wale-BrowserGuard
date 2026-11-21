@@ -344,6 +344,8 @@ export const VI = {
   notifFilterFailBody: 'Cập nhật bộ lọc thất bại — vẫn dùng bộ lọc cũ.',
   notifProtectionOffBody: 'Bảo vệ đã bị tắt.',
   notifErrorBody: 'Extension gặp lỗi. Mở Chẩn đoán để xem chi tiết.',
+  notifYoutubeQ2OffBody: 'Đã tắt lớp lọc nâng cao cho YouTube trong phiên này.',
+  notifYoutubeOffBody: 'Đã tắt toàn bộ tính năng YouTube trong phiên này.',
 
   // ---- About ----
   abtTitle: 'Giới thiệu',

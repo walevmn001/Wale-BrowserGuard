@@ -7,8 +7,8 @@
  * kill-switch). Each layer is driven from here, and every step is fail-open so
  * a YouTube change can never affect the core blocking path.
  *
- * T063 wires Q2 (`prune`), T064 wires Q3 (`cosmetic`) and T065 wires Q4 (`skip`).
- * A later task adds Q5 (health) to the same `handleTab` decision.
+ * T063 wires Q2 (`prune`), T064 wires Q3 (`cosmetic`), T065 wires Q4 (`skip`)
+ * and T066 wires Q5 (the health monitor + its session degrade flags).
  *
  * Every dependency is injected so the decision logic is unit-testable;
  * `createYouTubeModule` wires the real settings, config loader and
@@ -23,6 +23,7 @@ import {
   type CosmeticData,
 } from '../content/cosmetic';
 import { installYouTubeAdSkip, YOUTUBE_AD_SKIP_OPTIONS } from '../content/youtube/ad-skip';
+import { installYouTubeHealth, YOUTUBE_HEALTH_OPTIONS } from '../content/youtube/health';
 import { installYouTubePrune, YOUTUBE_PRUNE_LIMITS } from '../content/youtube/prune-main';
 import { logger } from '../shared/logger';
 import {
@@ -31,6 +32,11 @@ import {
   YOUTUBE_COSMETIC_PATH,
   type YouTubeConfig,
 } from '../shared/youtube-config';
+import {
+  createHealthStorage,
+  readHealthState,
+  type YouTubeHealthState,
+} from './youtube-health';
 import { createYouTubeModuleSettings } from './youtube-settings';
 
 /** Hosts the module runs on; mirrors the `*://*.youtube.com/*` match pattern. */
@@ -56,6 +62,10 @@ export interface YouTubeModuleDeps {
   readonly injectCosmetic: (tabId: number, url: string | undefined) => Promise<void>;
   /** Q4 — watch the player and skip / fast-forward an ad that still plays. */
   readonly injectAdSkip: (tabId: number, config: YouTubeConfig) => Promise<void>;
+  /** Q5 — watch the player for playback faults (health monitor). */
+  readonly injectHealth: (tabId: number) => Promise<void>;
+  /** Q5 — the session degrade flags this navigation must respect. */
+  readonly healthState: () => Promise<YouTubeHealthState>;
 }
 
 export class YouTubeModule {
@@ -86,16 +96,24 @@ export class YouTubeModule {
     if (config === undefined || !config.enabled) {
       return; // Q6 kill-switch: `enabled:false` disables every layer.
     }
-    if (config.layers.prune) {
+    // Q5: a degrade this session drops layers without touching the config.
+    const health = await this.deps.healthState();
+    if (health.moduleDisabled) {
+      return;
+    }
+    if (config.layers.prune && !health.q2Disabled) {
       await this.deps.injectPrune(tabId, config);
     }
-    // Q3/Q4 touch the DOM, so they wait for `complete`; the early pass exists
+    // Q3/Q4/Q5 touch the DOM, so they wait for `complete`; the early pass exists
     // only for Q2's hooks (the page may be about to swap documents at `loading`).
     if (phase === 'complete' && config.layers.cosmetic) {
       await this.deps.injectCosmetic(tabId, url);
     }
     if (phase === 'complete' && config.layers.skip) {
       await this.deps.injectAdSkip(tabId, config);
+    }
+    if (phase === 'complete' && config.layers.health) {
+      await this.deps.injectHealth(tabId);
     }
   }
 }
@@ -164,5 +182,16 @@ export function createYouTubeModule(): YouTubeModule {
         injectImmediately: true,
       });
     },
+    injectHealth: async (tabId) => {
+      // No `world: 'MAIN'`: the monitor runs in the content-script world so it
+      // can reach `chrome.runtime.sendMessage` (health.ts).
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        func: installYouTubeHealth,
+        args: [YOUTUBE_HEALTH_OPTIONS],
+        injectImmediately: true,
+      });
+    },
+    healthState: () => readHealthState(createHealthStorage()),
   });
 }

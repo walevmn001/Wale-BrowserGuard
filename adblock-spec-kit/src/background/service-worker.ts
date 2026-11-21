@@ -35,10 +35,12 @@ import { categoryForRuleset, createStatsCounter } from './stats';
 import { createTempException, TEMP_EXCEPTION_ALARM } from './temp-exception';
 import { createWhitelist } from './whitelist';
 import { createYouTubeModule, isYouTubeHost, type YouTubePhase } from './youtube-module';
+import { createHealthStorage, recordHealthFault } from './youtube-health';
 import { workerLocale } from './locale';
 import { createFingerprintSettings } from './security/fingerprint-settings';
 import { createPrivacySettings } from './security/privacy-settings';
 import { t } from '../shared/i18n';
+import { isYouTubeFaultMessage } from '../shared/messages';
 import { logger } from '../shared/logger';
 
 async function guard(label: string, run: () => Promise<unknown>): Promise<void> {
@@ -65,7 +67,13 @@ const applyStoredCustomRules = (): Promise<void> =>
 /** Locale for worker-originated strings (notifications): stored choice or browser. */
 async function notify(
   kind: 'filterUpdate' | 'securityBlock' | 'protectionOff' | 'errors',
-  bodyKey: 'notifSecurityBody' | 'notifFilterFailBody' | 'notifProtectionOffBody' | 'notifErrorBody',
+  bodyKey:
+    | 'notifSecurityBody'
+    | 'notifFilterFailBody'
+    | 'notifProtectionOffBody'
+    | 'notifErrorBody'
+    | 'notifYoutubeQ2OffBody'
+    | 'notifYoutubeOffBody',
 ): Promise<void> {
   const locale = await workerLocale();
   await createNotifications().notify({
@@ -225,9 +233,46 @@ function runYouTubeModule(
   void guard('run the YouTube module', () => createYouTubeModule().handleTab(tabId, url, phase));
 }
 
+/**
+ * Q5 (US-15.4): records a playback fault the page-side monitor reported and
+ * degrades the module for the session when it crosses the threshold (two faults
+ * in five minutes drop Q2; a fault after that turns the module off). The host is
+ * derived from the sender tab, never trusted from the payload.
+ */
+function registerYouTubeHealth(): void {
+  chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
+    if (!isYouTubeFaultMessage(message)) {
+      return false;
+    }
+    const host = pageHost(sender.tab?.url);
+    if (host === undefined || !isYouTubeHost(host)) {
+      sendResponse({ ok: false });
+      return false;
+    }
+    void (async () => {
+      try {
+        const { degrade } = await recordHealthFault(createHealthStorage(), Date.now());
+        if (degrade === 'q2') {
+          await notify('errors', 'notifYoutubeQ2OffBody');
+        } else if (degrade === 'module') {
+          await notify('errors', 'notifYoutubeOffBody');
+        }
+      } catch (error) {
+        logger.error('failed to record a YouTube health fault', error);
+      } finally {
+        sendResponse({ ok: true });
+      }
+    })();
+    return true;
+  });
+}
+
 // Injected page components (element picker, security banner) talk to the
 // worker through this bridge; it validates and persists what they send.
 registerBridge();
+
+// The YouTube health monitor reports playback faults the same way.
+registerYouTubeHealth();
 
 /** Keyboard commands (Phase 9 §10); the browser owns the shortcut bindings. */
 chrome.commands.onCommand.addListener((command) => {

@@ -26,25 +26,34 @@ interface Harness {
   readonly injectPrune: ReturnType<typeof vi.fn>;
   readonly injectCosmetic: ReturnType<typeof vi.fn>;
   readonly injectAdSkip: ReturnType<typeof vi.fn>;
+  readonly injectHealth: ReturnType<typeof vi.fn>;
 }
 
 function makeModule(
   options: {
     enabled?: boolean;
     config?: YouTubeConfig | undefined;
+    q2Disabled?: boolean;
+    moduleDisabled?: boolean;
   } = {},
 ): Harness {
   const injectPrune = vi.fn(async () => {});
   const injectCosmetic = vi.fn(async () => {});
   const injectAdSkip = vi.fn(async () => {});
+  const injectHealth = vi.fn(async () => {});
   const deps: YouTubeModuleDeps = {
     settings: { isEnabled: async () => options.enabled ?? true },
     loadConfig: async () => ('config' in options ? options.config : makeConfig()),
     injectPrune,
     injectCosmetic,
     injectAdSkip,
+    injectHealth,
+    healthState: async () => ({
+      q2Disabled: options.q2Disabled ?? false,
+      moduleDisabled: options.moduleDisabled ?? false,
+    }),
   };
-  return { module: new YouTubeModule(deps), injectPrune, injectCosmetic, injectAdSkip };
+  return { module: new YouTubeModule(deps), injectPrune, injectCosmetic, injectAdSkip, injectHealth };
 }
 
 describe('isYouTubeHost', () => {
@@ -169,6 +178,56 @@ describe('YouTubeModule.handleTab', () => {
     await module.handleTab(4, 'https://www.youtube.com/watch?v=abc', 'complete');
 
     expect(injectAdSkip).not.toHaveBeenCalled();
+  });
+
+  it('injects the health monitor on the complete pass (Q5)', async () => {
+    const { module, injectHealth } = makeModule();
+
+    await module.handleTab(5, 'https://www.youtube.com/watch?v=abc', 'complete');
+
+    expect(injectHealth).toHaveBeenCalledWith(5);
+  });
+
+  it('does not inject the health monitor on the early loading pass (Q5)', async () => {
+    const { module, injectHealth } = makeModule();
+
+    await module.handleTab(5, 'https://www.youtube.com/watch?v=abc', 'loading');
+
+    expect(injectHealth).not.toHaveBeenCalled();
+  });
+
+  it('skips the health monitor when its flag is off', async () => {
+    const config = makeConfig({
+      layers: { network: true, prune: true, cosmetic: true, skip: true, health: false },
+    });
+    const { module, injectHealth } = makeModule({ config });
+
+    await module.handleTab(5, 'https://www.youtube.com/watch?v=abc', 'complete');
+
+    expect(injectHealth).not.toHaveBeenCalled();
+  });
+
+  it('drops the Q2 prune for the session once it was degraded (Q5)', async () => {
+    const { module, injectPrune, injectCosmetic } = makeModule({ q2Disabled: true });
+
+    await module.handleTab(7, 'https://www.youtube.com/watch?v=abc', 'complete');
+
+    expect(injectPrune).not.toHaveBeenCalled();
+    // The other layers keep running: only the prune is dropped.
+    expect(injectCosmetic).toHaveBeenCalledWith(7, 'https://www.youtube.com/watch?v=abc');
+  });
+
+  it('runs nothing once the whole module was degraded for the session (Q5)', async () => {
+    const { module, injectPrune, injectCosmetic, injectAdSkip, injectHealth } = makeModule({
+      moduleDisabled: true,
+    });
+
+    await module.handleTab(7, 'https://www.youtube.com/watch?v=abc', 'complete');
+
+    expect(injectPrune).not.toHaveBeenCalled();
+    expect(injectCosmetic).not.toHaveBeenCalled();
+    expect(injectAdSkip).not.toHaveBeenCalled();
+    expect(injectHealth).not.toHaveBeenCalled();
   });
 });
 

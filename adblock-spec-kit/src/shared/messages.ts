@@ -16,6 +16,8 @@ export const MSG_HIDE_ELEMENT = 'wg:hide-element';
 export const MSG_TRUST_SITE = 'wg:trust-site';
 /** The popup asks the worker to inject the picker into a tab. */
 export const MSG_START_PICKER = 'wg:start-picker';
+/** The YouTube health monitor reports a playback fault (US-15.4, T066). */
+export const MSG_YOUTUBE_FAULT = 'wg:youtube-fault';
 
 export interface HideElementMessage {
   readonly type: typeof MSG_HIDE_ELEMENT;
@@ -29,6 +31,12 @@ export interface TrustSiteMessage {
 export interface StartPickerMessage {
   readonly type: typeof MSG_START_PICKER;
   readonly tabId: number;
+}
+
+/** A playback fault the page-side monitor noticed (Q5). */
+export interface YouTubeFaultMessage {
+  readonly type: typeof MSG_YOUTUBE_FAULT;
+  readonly kind: string;
 }
 
 export type BridgeMessage = HideElementMessage | TrustSiteMessage | StartPickerMessage;
@@ -64,4 +72,9 @@ export function isBridgeMessage(value: unknown): value is BridgeMessage {
     default:
       return false;
   }
+}
+
+/** Runtime guard for the page-side playback-fault report (Q5). */
+export function isYouTubeFaultMessage(value: unknown): value is YouTubeFaultMessage {
+  return isRecord(value) && value['type'] === MSG_YOUTUBE_FAULT && typeof value['kind'] === 'string';
 }

@@ -57,6 +57,20 @@ export interface CustomRule {
 /** Referer trimming policy (Phase 8). */
 export type RefererPolicy = 'default' | 'third-party';
 
+/**
+ * Session-scoped YouTube health degrade state (US-15 / AC-15.4, T066).
+ *
+ * Kept in `chrome.storage.session`, so a degrade lasts only for the browser
+ * session and the module is never left permanently off. `q2Disabled` drops the
+ * Q2 prune for the session; `moduleDisabled` turns the whole module off.
+ */
+export interface YouTubeHealthSessionState {
+  readonly q2Disabled: boolean;
+  readonly moduleDisabled: boolean;
+  /** Fault timestamps (ms since epoch) inside the recent window. */
+  readonly faults: number[];
+}
+
 /** A user-added filter-list URL (Phase 5). Stored metadata only in v1. */
 export interface CustomList {
   readonly id: string;
@@ -194,4 +208,9 @@ export interface StorageSchema {
    * MAIN-world script, no cosmetic CSS on YouTube.
    */
   youtubeModule?: boolean;
+  /**
+   * YouTube module session health flags (US-15 / AC-15.4, T066). Stored in
+   * `chrome.storage.session`; missing means the module is healthy this session.
+   */
+  youtubeHealthSession?: YouTubeHealthSessionState;
 }

@@ -345,6 +345,8 @@ export const EN: Record<keyof typeof VI, string> = {
   notifFilterFailBody: 'Filter update failed — keeping the previous lists.',
   notifProtectionOffBody: 'Protection has been turned off.',
   notifErrorBody: 'The extension hit an error. Open Diagnostics for details.',
+  notifYoutubeQ2OffBody: 'Advanced YouTube filtering was turned off for this session.',
+  notifYoutubeOffBody: 'The YouTube feature was turned off for this session.',
 
   // ---- About ----
   abtTitle: 'About',
