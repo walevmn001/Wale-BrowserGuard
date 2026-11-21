@@ -19,6 +19,13 @@ describe('isYouTubeConfig', () => {
     expect(isYouTubeConfig(SHIPPED)).toBe(true);
   });
 
+  it('ships available so the opt-in switch can work (Q6 kill-switch semantics)', () => {
+    // `enabled:false` is the *kill-switch* a pushed update may set to disable
+    // the module for everyone; the shipped copy must leave it available,
+    // otherwise the user's own switch (AC-15.1) could never turn anything on.
+    expect((SHIPPED as { enabled: boolean }).enabled).toBe(true);
+  });
+
   it('rejects non-object inputs', () => {
     for (const value of [null, undefined, 'x', 42, [], true]) {
       expect(isYouTubeConfig(value)).toBe(false);

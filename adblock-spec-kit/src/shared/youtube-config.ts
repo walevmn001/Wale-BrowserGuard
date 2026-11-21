@@ -45,6 +45,13 @@ export interface YouTubeConfig {
   readonly skipSelectors: readonly string[];
 }
 
+/**
+ * Where the shipped configuration lives inside the built extension. The build
+ * copies `data/youtube-config.json` to this path (T063) and the worker reads it
+ * at runtime, exactly like the cosmetic data files (algorithm.md §Q6).
+ */
+export const YOUTUBE_CONFIG_PATH = 'data/youtube-config.json';
+
 /** The layer flag names, kept here so the guard and any UI iterate the same set. */
 export const YOUTUBE_LAYER_KEYS = [
   'network',

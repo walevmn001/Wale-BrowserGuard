@@ -1,9 +1,13 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { defineConfig, type Plugin } from 'vite';
 
 import { buildCosmeticAssets, buildStaticRuleSets } from './scripts/build-rulesets.ts';
 import { createManifest } from './manifest.config.ts';
 import { packageRelease } from './scripts/package-release.ts';
 import { UI_ASSETS, readUiAsset } from './scripts/ui-assets.ts';
+import { YOUTUBE_CONFIG_PATH } from './src/shared/youtube-config.ts';
 
 /**
  * Emits `dist/manifest.json` from `manifest.config.ts` so the manifest is
@@ -86,6 +90,25 @@ function uiAssetsPlugin(): Plugin {
   };
 }
 
+/**
+ * Copies the YouTube module configuration into `dist/` unchanged (T063). The
+ * worker fetches it at runtime and the Q6 updater can replace the shipped copy,
+ * so the file must stay a standalone JSON asset — never bundled into code.
+ */
+function youTubeConfigPlugin(): Plugin {
+  return {
+    name: 'adblock-emit-youtube-config',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: YOUTUBE_CONFIG_PATH,
+        source: readFileSync(resolve(process.cwd(), YOUTUBE_CONFIG_PATH), 'utf8'),
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => ({
   // Relative asset URLs are required for pages loaded from chrome-extension://.
   base: './',
@@ -111,6 +134,7 @@ export default defineConfig(({ mode }) => ({
     manifestPlugin(),
     rulesPlugin(),
     uiAssetsPlugin(),
+    youTubeConfigPlugin(),
     ...(mode === 'release' ? [releasePlugin()] : []),
   ],
 }));
