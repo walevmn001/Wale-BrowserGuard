@@ -2,6 +2,11 @@
 
 Quy trình kiểu GitHub Spec Kit: **Spec → Plan → Tasks → Implement**, mỗi bước có "cổng duyệt".
 
+## Tài liệu
+
+- [Chính sách riêng tư](docs/privacy-policy.md) — không thu thập dữ liệu, chỉ lưu cục bộ.
+- [Mô tả store](docs/store-listing.md) — nội dung niêm yết Chrome Web Store (vi/en) + lý do từng quyền.
+
 ## Cấu trúc
 ```
 .specify/memory/constitution.md      ← Luật bất biến (đưa vào context MỌI prompt)
