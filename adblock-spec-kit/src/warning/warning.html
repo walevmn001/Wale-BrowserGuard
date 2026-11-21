@@ -3,17 +3,64 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AdBlock Security — Warning</title>
+    <title>WALE GUARD</title>
+    <link rel="stylesheet" href="../shared/ui/design-tokens.css" />
+    <link rel="stylesheet" href="../shared/ui/components.css" />
+    <link rel="stylesheet" href="./warning.css" />
   </head>
   <body>
-    <main id="app">
+    <main class="card warn-card" role="alert">
+      <div class="warn-ic" aria-hidden="true">
+        <svg
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M12 3 2 20h20z" />
+          <path d="M12 10v5M12 18h.01" />
+        </svg>
+      </div>
+
       <h1 id="warning-heading" data-i18n="warningHeading">Trang cảnh báo</h1>
-      <p id="warning-message" data-i18n="warningMessage">…</p>
-      <p id="warning-target"></p>
-      <button id="warning-back" type="button" data-i18n="warningBack">Quay lại an toàn</button>
-      <button id="warning-continue" type="button" data-i18n="warningContinue">
-        Vẫn tiếp tục (10 phút)
-      </button>
+      <p id="warning-message" class="muted" data-i18n="warningMessage">…</p>
+
+      <div id="warning-target" class="url"></div>
+
+      <div class="warn-why">
+        <p class="strong small" data-i18n="warningWhy">Vì sao bị chặn</p>
+        <p class="small muted" data-i18n="warningWhyBody">…</p>
+      </div>
+
+      <div class="warn-act">
+        <button
+          id="warning-back"
+          class="btn block"
+          type="button"
+          data-i18n="warningBack"
+        >
+          Quay lại an toàn
+        </button>
+        <button
+          id="warning-continue"
+          class="btn link danger-link block"
+          type="button"
+          data-i18n="warningContinue"
+        >
+          Vẫn tiếp tục (10 phút)
+        </button>
+        <p
+          id="warning-continue-hint"
+          class="small muted warn-hint"
+          data-i18n="warningContinueHint"
+        >
+          Vẫn tiếp tục là lựa chọn của bạn — trang có thể gây hại.
+        </p>
+      </div>
     </main>
     <script type="module" src="./warning.ts"></script>
   </body>

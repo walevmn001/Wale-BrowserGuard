@@ -65,12 +65,21 @@ function applyTranslations(): void {
   });
 
   // Only offered when the original URL is known: a pass without a destination
-  // would leave the user nowhere to go.
+  // would leave the user nowhere to go, and a "continue" that does nothing is
+  // worse than none at all. The label stays explicit and is never disguised.
   const continueButton = document.getElementById('warning-continue');
+  const continueHint = document.getElementById('warning-continue-hint');
   if (continueButton !== null && target !== undefined) {
     continueButton.addEventListener('click', () => {
       void continueTo(target);
     });
+  } else {
+    if (continueButton !== null) {
+      continueButton.hidden = true;
+    }
+    if (continueHint !== null) {
+      continueHint.hidden = true;
+    }
   }
 }
 

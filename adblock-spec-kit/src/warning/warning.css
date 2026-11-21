@@ -1,0 +1,67 @@
+/* WALE GUARD — warning page (malware / phishing block screen).
+   Presentation only: white surface card, mint-tinted backdrop, danger accent.
+   Uses the shared tokens/components; nothing is fetched. */
+
+body {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, var(--mint-50), var(--bg));
+  padding: var(--s4);
+}
+
+.warn-card {
+  max-width: 520px;
+  width: 100%;
+  text-align: center;
+  padding: var(--s6) var(--s5);
+  box-shadow: var(--shadow-1);
+}
+
+.warn-ic {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--s4);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+#warning-heading {
+  margin-bottom: var(--s2);
+}
+
+.url {
+  margin: var(--s4) 0;
+  padding: var(--s3);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  word-break: break-all;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.warn-why {
+  text-align: left;
+  padding: var(--s3);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+.warn-why p + p {
+  margin-top: var(--s1);
+}
+
+.warn-act {
+  display: grid;
+  gap: var(--s2);
+  margin-top: var(--s4);
+}
+
+.warn-hint {
+  margin-top: 0;
+}
