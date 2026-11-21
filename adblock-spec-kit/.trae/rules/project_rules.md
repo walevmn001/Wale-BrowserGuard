@@ -25,7 +25,7 @@ Quy tắc này được nạp tự động ở mọi cuộc hội thoại. Tài 
 ## 3. Git & sao lưu (chống mất dữ liệu / lỗi server / hết dung lượng)
 - Sau MỖI task xanh: `git add -A && git commit -m "<TID>: <mô tả>" && git push origin main`.
 - Cập nhật `PROGRESS.md` TRƯỚC khi commit (task vừa xong, task kế tiếp, ghi chú dở dang).
-- Cuối mỗi giai đoạn (P1/P2/P3/P4): chạy test vàng, test xanh hết thì
+- Cuối mỗi giai đoạn (P1…P7): chạy test vàng, test xanh hết thì
   `git tag phase-<P>-done && git push origin main --tags`.
 - Chỉ push khi build + test xanh. Nếu đang dở và test đỏ mà sắp hết phiên: commit vào nhánh `wip/<TID>` rồi push nhánh đó, KHÔNG đẩy code hỏng lên main. Ghi rõ vào `PROGRESS.md`.
 - Không commit: `node_modules/`, file build, file bí mật (token, khoá), file lớn > 5MB. Tuân theo `.gitignore`.
@@ -33,6 +33,12 @@ Quy tắc này được nạp tự động ở mọi cuộc hội thoại. Tài 
 
 ## 4. Khi sắp hết ngữ cảnh / lỗi / bị ngắt
 Trước khi dừng bất kỳ lý do gì, LUÔN cập nhật `PROGRESS.md` (mục "Dở dang") và commit + push. Mục tiêu: phiên mới chỉ cần đọc `PROGRESS.md` là làm tiếp được.
+
+## 4b. Luật riêng cho script can thiệp trang & YouTube
+- Script MAIN world phải fail-open (lỗi → trả dữ liệu gốc), không `eval`, không gửi dữ liệu ra ngoài.
+- Selector/endpoint/tên trường dễ đổi (YouTube…) là DỮ LIỆU JSON, không viết cứng trong code.
+- Module YouTube cô lập, có công tắc riêng; không chặn endpoint phát video chính; làm theo `prompts/11-youtube-module.md`.
+- Quyền rộng (management, history…) chỉ là optional_permissions, xin khi người dùng bật tính năng.
 
 ## 5. Ngôn ngữ
 Trả lời tôi bằng tiếng Việt. Code, tên biến, commit message bằng tiếng Anh.

@@ -33,7 +33,7 @@ prompts/                              ← Prompt dán vào Trae: START-HERE rồ
 ## Nguyên tắc vàng
 - Không có spec thì không code. Không có test thì không merge.
 - Không để Trae "đoán" API: bắt đối chiếu tài liệu chính thức của Chrome/Firefox Extensions.
-- Mỗi lần chỉ 1 giai đoạn (MVP → Cosmetic → Security → Polish).
+- Mỗi lần chỉ 1 giai đoạn: P1 MVP → P2 Cosmetic → P3 Security → P4 Tiện ích → P5 YouTube → P6 Tuỳ chọn → P7 Phát hành.
 
 ## Dùng với GitHub + Trae
 1. Push thư mục lên repo, clone về máy, mở bằng Trae.

@@ -71,3 +71,48 @@ manifest.config.ts
 - Unit: ruleset-manager, whitelist, stats, parser/validator, filter-updater (mock fetch).
 - E2E (Playwright, nạp extension thật): theo test-golden.md.
 - Hiệu năng: đo thời gian điều hướng có/không extension.
+
+---
+## Phụ lục — Kiến trúc cho chức năng mở rộng
+
+### Thư mục bổ sung
+```
+src/background/
+  site-pause.ts            # H: tắt 1 click có hạn
+  protection-levels.ts     # I: mức Nhẹ/Chuẩn/Mạnh
+  export-import.ts         # L
+  bug-report.ts            # L
+  top-trackers.ts          # R
+  ext-scan.ts              # S (P6, optional permission)
+  settings-sync.ts         # T (P6)
+src/content/
+  picker.ts                # J (activeTab + scripting)
+  annoyances.ts            # K
+  phishing-guard.ts        # M
+  http-form-guard.ts       # N
+  popup-guard.ts           # P (MAIN world, mức Mạnh)
+  youtube/
+    prune-main.ts          # Q2 (MAIN world)
+    cosmetic.ts            # Q3
+    ad-skip.ts             # Q4
+    health.ts              # Q5
+rules/static/ (thêm) cryptomining.json, youtube.json
+rules/cosmetic/ (thêm) annoyances.json, youtube.json
+data/ brands.json, psl-min.json, youtube-config.json
+templates/ ci.yml          # mẫu GitHub Actions (T005 đưa vào .github/workflows/)
+```
+
+### Quyền bổ sung
+| Quyền | Lý do | GĐ |
+|-------|-------|----|
+| activeTab | Element picker, chỉ khi người dùng bấm | P4 |
+| commands (khai báo manifest) | Phím tắt | P4 |
+| optional: management | Quét extension, xin khi dùng | P6 |
+| storage.sync (dùng quyền storage) | Đồng bộ cài đặt, tắt mặc định | P6 |
+| host_permissions youtube.com | Đã nằm trong `<all_urls>`; script MAIN world khai báo trong content_scripts | P5 |
+
+### Ghi chú rủi ro
+- Module YouTube: dễ hỏng khi YouTube đổi; phải cô lập, fail-open, cập nhật bằng dữ liệu (Constitution VI).
+- Script MAIN world cần kiểm tra chính sách Chrome Web Store hiện hành trước khi phát hành (TODO(verify)).
+- Dữ liệu PSL/brands: ghi nguồn + giấy phép; kích thước nhỏ để không nặng extension.
+- Cảnh báo giả mạo: ưu tiên ít báo sai; có đường "Tin tưởng trang này".

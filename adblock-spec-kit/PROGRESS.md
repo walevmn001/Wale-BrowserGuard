@@ -5,7 +5,8 @@
 
 ## Trạng thái
 - Giai đoạn hiện tại: **P4 ĐÃ XONG (T040–T043)** — tag `phase-P4-done`; **v1.0 ĐÃ PHÁT HÀNH** (tag + GitHub release `v1.0`), asset đã cập nhật lên **v1.0.2**.
-- Task đã xong: T001–T004 (P0), T010–T018 (P1), T020–T025 (P2), T030–T037 (P3), T040–T043 (P4); Prompt 14 (B0–B5); Prompt 15 (B2 + G1 + D1 → `v1.0`).
+- Task đã xong: T001–T004 (P0), T010–T018 (P1), T020–T025 (P2), T030–T037 (P3), T040–T043 (P4 — **nay đổi số thành T090–T093/P7**); Prompt 14 (B0–B5); Prompt 15 (B2 + G1 + D1 → `v1.0`).
+- **Hợp nhất tài liệu (MERGE, không đổi code)**: đồng bộ khung Spec Kit mở rộng P1–P7 từ thư mục tạm — constitution mục VI (luật YouTube/MAIN world) + dòng giai đoạn P1–P7; spec.md thêm US-8…US-17 (+US-14); plan.md thêm Phụ lục (thư mục/quyền/rủi ro); algorithm.md thêm mục H–T (Q = module YouTube 6 lớp); tasks.md thêm T005, T038–T042 (P3), P4 (T050–T058), P5 (T060–T069), P6 (T080–T082), P7 (T090–T093 — đổi số từ P4 cũ T040–T043); thêm `templates/ci.yml`, `prompts/11-youtube-module.md`, `specs/001-adblock-security/test-golden.md`; cập nhật README + `.trae/rules/project_rules.md` (mục 4b).
 - Task kế tiếp: **Prompt 16 — nâng độ phủ chặn** (KHÔNG đổi giấy phép MIT, KHÔNG dùng list copyleft, KHÔNG vá theo từng domain của bài test; rule chặn chỉ tầng sub-resource):
   - **T0 ĐÃ XONG** — dọn `PROGRESS.md` (≤ ~80 dòng), chuyển chi tiết sang `docs/history.md`.
   - **B2b-1 ĐÃ XONG** — 14 rule prefix `||<prefix>.$third-party` (ads: `ads`,`ad`,`adserver`,`adx`; trackers: `analytics`,`metrics`,`telemetry`,`tracking`,`tracker`,`pixel`,`trk`,`events`,`stats`,`beacon`), không `resourceTypes` ⇒ không `main_frame`; test unit 45/45, e2e "phải cho qua" 36 host + e2e "chặn mỗi prefix" 14 host đều xanh; toàn bộ e2e 38/38, unit 282/282.

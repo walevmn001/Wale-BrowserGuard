@@ -32,5 +32,13 @@ Luật bất biến. Mọi code, mọi task PHẢI tuân thủ. Vi phạm = từ
 21. Xong task = test xanh + lint xanh + build thành công + tiêu chí nghiệm thu của task thỏa.
 
 ## V. Phạm vi
-22. Giai đoạn: **P1 MVP** (chặn mạng + popup + whitelist) → **P2 Cosmetic** → **P3 Security** → **P4 Polish/Firefox**.
+22. Giai đoạn: **P1 MVP** → **P2 Cosmetic & cập nhật** → **P3 Security** → **P4 Tiện ích người dùng** → **P5 YouTube** → **P6 Tuỳ chọn mở rộng** → **P7 Hoàn thiện/Firefox/Phát hành**.
 23. Không làm thứ gì ngoài giai đoạn hiện tại.
+
+## VI. Module YouTube & các lớp can thiệp sâu
+24. Module YouTube là **tính năng cô lập**: có công tắc riêng, lỗi ở đây không được ảnh hưởng phần lõi.
+25. Mọi script can thiệp trang (MAIN world) phải **fail-open**: bọc try/catch, nếu có lỗi thì trả về dữ liệu gốc, không bao giờ làm hỏng trang/video.
+26. Selector, tên trường, endpoint cần sửa nhanh phải là **dữ liệu** (JSON) cập nhật qua filter-updater, không phải code tải từ xa.
+27. Script MAIN world không được gửi dữ liệu trang ra ngoài, không dùng `eval`/`new Function`.
+28. Quyền rộng (`management`, `webNavigation`, `history`…) cấm dùng; nếu thật sự cần thì phải là `optional_permissions`, xin khi người dùng bật tính năng, kèm giải thích.
+29. Tính năng đồng bộ chỉ đồng bộ cài đặt, tắt mặc định, không đồng bộ thống kê/log/lịch sử.
