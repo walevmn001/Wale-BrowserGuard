@@ -128,6 +128,20 @@ test('the popup shows local stats and toggles the site and the master switch', a
   await expect(popup.locator('#stats-total')).toContainText('0');
   await expect(popup.locator('#stats-site')).toContainText('0');
 
+  // AC-6.5: the per-page anti-fingerprinting switch adds the host to the off
+  // list the worker consults before injecting.
+  await expect(popup.locator('#fingerprint-site')).toBeChecked();
+  await popup.locator('#fingerprint-site').uncheck();
+  await expect
+    .poll(() =>
+      worker.evaluate(() =>
+        chrome.storage.local
+          .get('antiFingerprintOffSites')
+          .then((stored) => stored['antiFingerprintOffSites']),
+      ),
+    )
+    .toEqual([SITE_DOMAIN]);
+
   // AC-2.3: one action turns the whole extension off. Assert on the stored flag
   // rather than the localised status text.
   const readEnabled = (): Promise<unknown> =>

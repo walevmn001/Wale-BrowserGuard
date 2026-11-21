@@ -16,6 +16,7 @@
  */
 
 import { createRulesetManager } from '../background/ruleset-manager';
+import { createFingerprintSettings } from '../background/security/fingerprint-settings';
 import { createStatsCounter } from '../background/stats';
 import { createWhitelist } from '../background/whitelist';
 import { isMessageKey, resolveLocale, t, type Locale } from '../shared/i18n';
@@ -27,6 +28,7 @@ interface Elements {
   readonly siteDomain: HTMLElement;
   readonly siteStatus: HTMLElement;
   readonly siteToggle: HTMLButtonElement;
+  readonly fingerprintSite: HTMLInputElement;
   readonly statsSite: HTMLElement;
   readonly statsTotal: HTMLElement;
   readonly statsClear: HTMLButtonElement;
@@ -56,11 +58,20 @@ function buttonById(id: string): HTMLButtonElement {
   return element;
 }
 
+function inputById(id: string): HTMLInputElement {
+  const element = elementById(id);
+  if (!(element instanceof HTMLInputElement)) {
+    throw new Error(`popup: #${id} is not an input`);
+  }
+  return element;
+}
+
 function collectElements(): Elements {
   return {
     siteDomain: elementById('site-domain'),
     siteStatus: elementById('site-status'),
     siteToggle: buttonById('site-toggle'),
+    fingerprintSite: inputById('fingerprint-site'),
     statsSite: elementById('stats-site'),
     statsTotal: elementById('stats-total'),
     statsClear: buttonById('stats-clear'),
@@ -102,6 +113,16 @@ function renderSite(
   elements.siteStatus.textContent = t(blocking ? 'siteBlockingOn' : 'siteBlockingOff', locale);
   elements.siteToggle.disabled = false;
   elements.siteToggle.setAttribute('aria-pressed', String(blocking));
+}
+
+/** AC-6.5: reflects the per-page anti-fingerprinting switch for `domain`. */
+function renderFingerprint(
+  elements: Elements,
+  domain: string | undefined,
+  enabled: boolean,
+): void {
+  elements.fingerprintSite.disabled = domain === undefined;
+  elements.fingerprintSite.checked = domain !== undefined && enabled;
 }
 
 function renderStats(elements: Elements, locale: Locale, siteCount: number, total: number): void {
@@ -169,6 +190,17 @@ async function toggleMaster(elements: Elements, locale: Locale): Promise<void> {
   renderMaster(elements, locale, !enabled);
 }
 
+/**
+ * AC-6.5: the per-page quick switch. Unchecking adds the host to the off list
+ * the worker consults before injecting anti-fingerprinting.
+ */
+async function toggleFingerprintSite(elements: Elements, domain: string | undefined): Promise<void> {
+  if (domain === undefined) {
+    return;
+  }
+  await createFingerprintSettings().setSiteEnabled(domain, elements.fingerprintSite.checked);
+}
+
 function reportError(error: unknown): void {
   logger.error('popup action failed', error);
 }
@@ -184,13 +216,20 @@ async function main(): Promise<void> {
   const whitelist = createWhitelist();
   const blocking =
     target.domain === undefined ? false : !(await whitelist.isAllowed(target.domain));
+  const fingerprints = createFingerprintSettings();
+  const fingerprintSite =
+    target.domain === undefined ? false : await fingerprints.isSiteEnabled(target.domain);
 
   renderSite(elements, locale, target.domain, blocking);
+  renderFingerprint(elements, target.domain, fingerprintSite);
   renderMaster(elements, locale, await createRulesetManager().isEnabled());
   await loadStats(elements, locale, target.id);
 
   elements.siteToggle.addEventListener('click', () => {
     void toggleSite(elements, locale, target.domain).catch(reportError);
+  });
+  elements.fingerprintSite.addEventListener('change', () => {
+    void toggleFingerprintSite(elements, target.domain).catch(reportError);
   });
   elements.statsClear.addEventListener('click', () => {
     void clearStats(elements, locale, target.id).catch(reportError);

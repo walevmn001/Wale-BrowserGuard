@@ -60,6 +60,18 @@ test('the options page toggles list groups and shows the version', async () => {
     .toEqual(expect.arrayContaining(['ads', 'trackers', 'malware', 'privacy']));
 });
 
+test('anti-fingerprinting is opt-in and off by default (AC-6.5)', async () => {
+  const options = await context.newPage();
+  await options.goto(optionsUrl);
+
+  await expect(options.locator('#anti-fingerprint')).not.toBeChecked();
+
+  await options.locator('#anti-fingerprint').check();
+  await expect
+    .poll(() => worker.evaluate(() => chrome.storage.local.get('antiFingerprint')))
+    .toEqual({ antiFingerprint: true });
+});
+
 test('the manual update button runs and reports a result', async () => {
   test.setTimeout(40_000);
   const options = await context.newPage();

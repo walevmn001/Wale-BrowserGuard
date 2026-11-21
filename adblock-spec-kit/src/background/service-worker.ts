@@ -33,18 +33,25 @@
  * T035: applies the opt-in WebRTC IP handling policy (`security/privacy-settings.ts`)
  * on startup and whenever the choice changes (AC-6.4).
  *
+ * T036: injects the opt-in anti-fingerprinting reducer (`content/anti-fingerprint.ts`)
+ * into the page's MAIN world once a navigation completes — only when the user
+ * enabled it and the host is not on the per-page off list (AC-6.5).
+ *
  * No module-level mutable state: the worker can be stopped at any time
  * (Constitution 14); state lives in `chrome.storage`.
  */
 
+import { installAntiFingerprint } from '../content/anti-fingerprint';
 import {
   applyCosmetic,
   isCosmeticData,
+  pageHost,
   COSMETIC_PATHS,
   type CosmeticData,
 } from '../content/cosmetic';
 import { installCosmeticObserver, OBSERVER_OPTIONS } from '../content/cosmetic-observer';
 import { createFilterUpdater, UPDATE_ALARM } from './filter-updater';
+import { createFingerprintSettings } from './security/fingerprint-settings';
 import { createPrivacySettings } from './security/privacy-settings';
 import { createRulesetManager } from './ruleset-manager';
 import { createStatsCounter } from './stats';
@@ -168,6 +175,27 @@ async function injectCosmetic(tabId: number, url: string | undefined): Promise<v
   }
 }
 
+/**
+ * Injects the anti-fingerprinting reducer (AC-6.5) into the page's MAIN world,
+ * but only when the global opt-in is on and the host is not switched off.
+ */
+async function injectAntiFingerprint(tabId: number, url: string | undefined): Promise<void> {
+  try {
+    const host = pageHost(url);
+    if (host === undefined || !(await createFingerprintSettings().appliesTo(host))) {
+      return;
+    }
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      func: installAntiFingerprint,
+      injectImmediately: true,
+    });
+  } catch (error) {
+    logger.error('failed to inject anti-fingerprinting', error);
+  }
+}
+
 chrome.runtime.onInstalled.addListener(() => {
   logger.info('service worker installed');
   applyStoredState();
@@ -220,6 +248,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete') {
     void pollStats();
     void injectCosmetic(tabId, tab.url);
+    void injectAntiFingerprint(tabId, tab.url);
   }
 });
 

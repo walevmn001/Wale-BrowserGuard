@@ -28,6 +28,8 @@ const VI = {
   masterOff: 'Extension đang tắt',
   masterToggleOff: 'Tắt toàn bộ',
   masterToggleOn: 'Bật lại',
+  fingerprintHeading: 'Chống dấu vết trình duyệt',
+  fingerprintSiteLabel: 'Chống dấu vết trên trang này',
   optionsHeading: 'Tuỳ chọn',
   optionsListsHeading: 'Nhóm danh sách',
   optionsGroupAds: 'Quảng cáo',
@@ -48,6 +50,10 @@ const VI = {
   optionsWebrtcLabel: 'Bật chặn rò rỉ IP qua WebRTC',
   optionsWebrtcHint:
     'Khi bật, WebRTC chỉ dùng giao diện mạng công khai, giảm lộ địa chỉ IP cục bộ.',
+  optionsFingerprintHeading: 'Chống dấu vết trình duyệt',
+  optionsFingerprintLabel: 'Bật giảm dấu vết trình duyệt',
+  optionsFingerprintHint:
+    'Mặc định tắt vì có thể làm hỏng một số trang. Khi bật, giảm một số thông tin nhận dạng cơ bản.',
   warningHeading: 'Trang cảnh báo',
   warningMessage:
     'Trang này có thể chứa mã độc hoặc lừa đảo. Vì an toàn, AdBlock Security đã ngăn trang tải.',
@@ -74,6 +80,8 @@ const EN: Record<MessageKey, string> = {
   masterOff: 'Extension is off',
   masterToggleOff: 'Turn everything off',
   masterToggleOn: 'Turn back on',
+  fingerprintHeading: 'Browser fingerprinting',
+  fingerprintSiteLabel: 'Reduce fingerprinting on this page',
   optionsHeading: 'Options',
   optionsListsHeading: 'List groups',
   optionsGroupAds: 'Ads',
@@ -94,6 +102,10 @@ const EN: Record<MessageKey, string> = {
   optionsWebrtcLabel: 'Block WebRTC IP leaks',
   optionsWebrtcHint:
     'When on, WebRTC uses only the public network interface, exposing less of your local IP.',
+  optionsFingerprintHeading: 'Browser fingerprinting',
+  optionsFingerprintLabel: 'Reduce browser fingerprinting',
+  optionsFingerprintHint:
+    'Off by default because it can break some pages. When on, it trims a few basic identifying signals.',
   warningHeading: 'Security warning',
   warningMessage:
     'This page may host malware or a phishing attempt. AdBlock Security stopped it from loading to keep you safe.',

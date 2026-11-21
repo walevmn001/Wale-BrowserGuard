@@ -65,4 +65,15 @@ export interface StorageSchema {
    * kept on the public interface; off (the default) leaves Chrome untouched.
    */
   webrtcProtection: boolean;
+  /**
+   * Opt-in basic anti-fingerprinting (US-6 / AC-6.5, T036). `false` (the
+   * default) means the reducer never runs, because spoofing the page's own
+   * objects is the easiest way to break a site.
+   */
+  antiFingerprint: boolean;
+  /**
+   * Hosts where anti-fingerprinting is switched off — the per-page quick
+   * switch (US-6 / AC-6.5, T036); missing means it runs everywhere it is on.
+   */
+  antiFingerprintOffSites: string[];
 }

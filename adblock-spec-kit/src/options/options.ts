@@ -12,6 +12,7 @@
 
 import { createFilterUpdater, type FilterUpdater } from '../background/filter-updater';
 import { createRulesetManager } from '../background/ruleset-manager';
+import { createFingerprintSettings } from '../background/security/fingerprint-settings';
 import { createPrivacySettings } from '../background/security/privacy-settings';
 import { isMessageKey, resolveLocale, t, type Locale } from '../shared/i18n';
 import { logger } from '../shared/logger';
@@ -25,6 +26,7 @@ interface Elements {
   readonly versionExt: HTMLElement;
   readonly versionData: HTMLElement;
   readonly webrtc: HTMLInputElement;
+  readonly fingerprint: HTMLInputElement;
 }
 
 function elementById(id: string): HTMLElement {
@@ -59,6 +61,7 @@ function collectElements(): Elements {
     versionExt: elementById('version-ext'),
     versionData: elementById('version-data'),
     webrtc: inputById('webrtc-protection'),
+    fingerprint: inputById('anti-fingerprint'),
   };
 }
 
@@ -147,6 +150,7 @@ async function main(): Promise<void> {
   const rulesets = createRulesetManager();
   const updater = createFilterUpdater();
   const privacy = createPrivacySettings();
+  const fingerprints = createFingerprintSettings();
 
   const ids = rulesets.listGroups();
   const enabledById = new Map<string, boolean>();
@@ -161,6 +165,13 @@ async function main(): Promise<void> {
   elements.webrtc.checked = await privacy.isEnabled();
   elements.webrtc.addEventListener('change', () => {
     void privacy.setEnabled(elements.webrtc.checked).catch(reportError);
+  });
+
+  // Opt-in anti-fingerprinting (AC-6.5): off unless the user ticks it, because
+  // spoofing the page's own objects is the easiest way to break a site.
+  elements.fingerprint.checked = await fingerprints.isEnabled();
+  elements.fingerprint.addEventListener('change', () => {
+    void fingerprints.setEnabled(elements.fingerprint.checked).catch(reportError);
   });
 
   await renderVersion(elements, locale, updater);
