@@ -4,9 +4,9 @@ import {
   convertFilterList,
   groupByCategory,
   summarize,
-  WARNING_REDIRECT_PREFIX,
   type SkipReason,
 } from '../../scripts/build-rules';
+import { WARNING_REDIRECT_PREFIX } from '../../scripts/malware-rules';
 import { PRIORITY } from '../../src/shared/constants';
 
 describe('convertFilterList — block rules', () => {

@@ -12,11 +12,12 @@
  * purpose and surfaced in the report instead of guessed at.
  *
  * This module only turns lines into typed DNR rules; declaring the static
- * rulesets and packaging the JSON is a later task (T012).
+ * rulesets and packaging the JSON is a later task (T012). The malware-category
+ * shapes live in `malware-rules.ts` (T037 split).
  */
 
-import { EXTENSION_ID } from './extension-key.ts';
 import { PRIORITY } from '../src/shared/constants.ts';
+import { malwareRules } from './malware-rules.ts';
 
 export type RuleCategory = 'ads' | 'trackers' | 'malware' | 'privacy';
 
@@ -72,27 +73,6 @@ type ConditionOutcome =
 type LineOutcome =
   | { readonly kind: 'rules'; readonly rules: readonly chrome.declarativeNetRequest.Rule[] }
   | { readonly kind: 'skip'; readonly reason: SkipReason };
-
-/**
- * Redirect target for a blocked top-level navigation to a malware domain
- * (algorithm.md §F). A path relative to the extension root; the matching file
- * is emitted by the build from `src/warning/warning.html`.
- */
-export const MALWARE_WARNING_PAGE = '/src/warning/warning.html';
-
-/**
- * Prefix of the warning-page redirect URL. A DNR `regexSubstitution` has to
- * resolve to an absolute URL, so the extension id — fixed by the manifest
- * `key` (T031) — is baked in here; the captured original URL is appended as the
- * fragment so the warning page knows what it stopped.
- */
-export const WARNING_REDIRECT_PREFIX = `chrome-extension://${EXTENSION_ID}${MALWARE_WARNING_PAGE}#`;
-
-/** Captures the whole navigation URL (minus any fragment) as group 1. */
-const FULL_URL_REGEX = '^(https?://[^#]*)';
-
-/** Matches a bare-domain malware line such as `||host^`. */
-const BARE_DOMAIN = /^\|\|([a-z0-9.-]+)\^$/i;
 
 /** `urlFilter` only accepts printable ASCII (use punycode for other hosts). */
 const PRINTABLE_ASCII = /^[\x21-\x7e]+$/;
@@ -234,57 +214,6 @@ function priorityFor(line: NetworkLine, category: RuleCategory): number {
     return PRIORITY.MALWARE_BLOCK;
   }
   return PRIORITY.BLOCK;
-}
-
-/** A condition with no extra constraints beyond the bare-domain `urlFilter`. */
-function isPlainDomainCondition(condition: chrome.declarativeNetRequest.RuleCondition): boolean {
-  return condition.urlFilter !== undefined && Object.keys(condition).length === 1;
-}
-
-/**
- * Builds the rules for one malware-category line (algorithm.md §F).
- *
- * A bare domain gets two rules at {@link PRIORITY.MALWARE_BLOCK}: the top-level
- * navigation is redirected to the warning page — with the blocked URL in the
- * fragment — so the user sees an explanation and can opt into a temporary pass,
- * and the domain's sub-resource loads are blocked. Blocking sub-resources while
- * redirecting the document is the only way to get both from DNR, since a higher
- * `block` would otherwise win over the `redirect` for the same request.
- *
- * Lines the converter turned into anything but a plain domain pattern (a
- * resource type, a negation, a regex…) are left as a plain block, so a targeted
- * line is never broadened into a whole-document redirect.
- */
-function malwareRules(
-  condition: chrome.declarativeNetRequest.RuleCondition,
-  address: string,
-  id: number,
-): readonly chrome.declarativeNetRequest.Rule[] {
-  const domain = BARE_DOMAIN.exec(address)?.[1];
-  if (domain === undefined || !isPlainDomainCondition(condition)) {
-    return [{ id, priority: PRIORITY.MALWARE_BLOCK, action: { type: 'block' }, condition }];
-  }
-  return [
-    {
-      id,
-      priority: PRIORITY.MALWARE_BLOCK,
-      action: {
-        type: 'redirect',
-        redirect: { regexSubstitution: `${WARNING_REDIRECT_PREFIX}\\1` },
-      },
-      condition: {
-        requestDomains: [domain],
-        regexFilter: FULL_URL_REGEX,
-        resourceTypes: ['main_frame'],
-      },
-    },
-    {
-      id: id + 1,
-      priority: PRIORITY.MALWARE_BLOCK,
-      action: { type: 'block' },
-      condition: { ...condition, excludedResourceTypes: ['main_frame'] },
-    },
-  ];
 }
 
 function convertLine(rawLine: string, id: number, category: RuleCategory): LineOutcome {
