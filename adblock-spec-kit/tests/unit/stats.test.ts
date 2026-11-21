@@ -36,7 +36,10 @@ function createHarness(): Harness {
     storage: new TypedStorage(createFakeArea()),
     getMatchedRules: async (filter) => {
       filters.push(filter);
-      return { rulesMatchedInfo: matches };
+      // Mirror the real API: `minTimeStamp` is inclusive (matches *at or after*
+      // the timestamp are returned).
+      const min = filter?.minTimeStamp ?? 0;
+      return { rulesMatchedInfo: matches.filter((info) => info.timeStamp >= min) };
     },
   };
   return {
@@ -73,6 +76,18 @@ describe('StatsCounter', () => {
     expect(filters).toEqual([{ minTimeStamp: 0 }, { minTimeStamp: 1_000 }]);
   });
 
+  it('does not recount a match that sits exactly on the cursor', async () => {
+    const { counter, setMatches } = createHarness();
+    setMatches([match(7, 1_000), match(7, 1_000)]);
+    await expect(counter.poll()).resolves.toBe(2);
+
+    // The matches are still inside the API's retention window, so the inclusive
+    // `minTimeStamp` filter returns them again — none of them is newer than the
+    // cursor, so a second poll must add nothing.
+    await expect(counter.poll()).resolves.toBe(0);
+    await expect(counter.snapshot()).resolves.toEqual({ total: 2, byTab: { '7': 2 } });
+  });
+
   it('adds only the new matches on a later poll', async () => {
     const { counter, setMatches } = createHarness();
     setMatches([match(7, 1_000)]);
@@ -104,5 +119,16 @@ describe('StatsCounter', () => {
 
     await expect(counter.snapshot()).resolves.toEqual({ total: 0, byTab: {} });
     await expect(counter.forTab(42)).resolves.toBe(0);
+  });
+
+  it('serialises overlapping polls so a match is counted only once', async () => {
+    const { counter, setMatches } = createHarness();
+    setMatches([match(7, 1_000)]);
+
+    // Two polls started before either finishes must not both count the match.
+    const [first, second] = await Promise.all([counter.poll(), counter.poll()]);
+
+    expect(first + second).toBe(1);
+    await expect(counter.snapshot()).resolves.toEqual({ total: 1, byTab: { '7': 1 } });
   });
 });

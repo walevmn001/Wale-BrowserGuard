@@ -11,12 +11,21 @@
  * associated with an active document are returned, and calls are capped at
  * `MAX_GETMATCHEDRULES_CALLS_PER_INTERVAL` (20) per 10 minutes. TODO(verify):
  * revisit cadence once the popup can poll on demand (T016). Nothing ever leaves
- * the machine (Constitution II) and no state is kept in a module variable
- * (Constitution 14); everything lives in `chrome.storage`.
+ * the machine (Constitution II). Counts and cursor live in `chrome.storage`; the
+ * only module variable is the poll queue that serialises overlapping polls
+ * (Constitution 14).
  */
 
 import { logger } from '../shared/logger';
 import { TypedStorage } from '../shared/storage';
+
+/**
+ * Serialises polls within one context. The read-modify-write on `chrome.storage`
+ * is not atomic, so two overlapping polls would both read the same cursor and
+ * count the same matches twice. This is transient coordination only — it holds
+ * no user state and is safe to lose when the worker suspends (Constitution 14).
+ */
+let pollQueue: Promise<unknown> = Promise.resolve();
 
 /** Counts to show in the popup. */
 export interface StatsSnapshot {
@@ -41,18 +50,30 @@ export class StatsCounter {
   /**
    * Counts the rules matched since the stored cursor and adds them to the
    * totals. Returns how many were newly counted. Safe to call repeatedly: the
-   * cursor is the newest counted timestamp, so nothing is counted twice.
+   * cursor is the newest counted timestamp and matches at or before it are
+   * dropped, so nothing is counted twice. Overlapping calls are queued so only
+   * one read-modify-write runs at a time.
    */
-  async poll(): Promise<number> {
+  poll(): Promise<number> {
+    const run = pollQueue.then(() => this.pollOnce());
+    pollQueue = run.catch(() => undefined);
+    return run;
+  }
+
+  private async pollOnce(): Promise<number> {
     const cursor = (await this.deps.storage.get('statsCursor')) ?? 0;
     const { rulesMatchedInfo } = await this.deps.getMatchedRules({ minTimeStamp: cursor });
-    if (rulesMatchedInfo.length === 0) {
+    // `getMatchedRules` returns matches *at or after* `minTimeStamp`, so the
+    // newest match from the previous poll comes back too. Keep only the
+    // strictly newer ones to avoid counting it again.
+    const fresh = rulesMatchedInfo.filter((info) => info.timeStamp > cursor);
+    if (fresh.length === 0) {
       return 0;
     }
 
     const byTab: Record<string, number> = { ...(await this.deps.storage.get('statsByTab')) };
     let newest = cursor;
-    for (const info of rulesMatchedInfo) {
+    for (const info of fresh) {
       const key = String(info.tabId);
       byTab[key] = (byTab[key] ?? 0) + 1;
       if (info.timeStamp > newest) {
@@ -60,12 +81,12 @@ export class StatsCounter {
       }
     }
 
-    const total = ((await this.deps.storage.get('statsTotal')) ?? 0) + rulesMatchedInfo.length;
+    const total = ((await this.deps.storage.get('statsTotal')) ?? 0) + fresh.length;
     await this.deps.storage.set('statsByTab', byTab);
     await this.deps.storage.set('statsTotal', total);
     await this.deps.storage.set('statsCursor', newest);
-    logger.info(`stats: +${rulesMatchedInfo.length} blocked (total ${total})`);
-    return rulesMatchedInfo.length;
+    logger.info(`stats: +${fresh.length} blocked (total ${total})`);
+    return fresh.length;
   }
 
   /** Current totals: overall and per tab. */

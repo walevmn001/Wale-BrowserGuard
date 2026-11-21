@@ -12,6 +12,7 @@ describe('manifest', () => {
     const manifest = createManifest();
 
     expect(manifest.background.service_worker).toBe('service-worker.js');
+    expect(manifest.background.type).toBe('module');
     expect(manifest.action.default_popup).toBe('src/popup/index.html');
   });
 

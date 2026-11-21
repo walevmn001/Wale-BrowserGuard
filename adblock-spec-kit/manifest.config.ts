@@ -22,6 +22,11 @@ export interface ManifestV3 {
   readonly description: string;
   readonly background: {
     readonly service_worker: string;
+    /**
+     * The worker is emitted as an ES module (it shares chunks with the popup),
+     * so the manifest must declare it as one — a classic worker cannot `import`.
+     */
+    readonly type: 'module';
   };
   readonly action: {
     readonly default_title: string;
@@ -46,6 +51,7 @@ export function createManifest(): ManifestV3 {
       'Blocks ads, trackers and malicious sites without breaking pages or collecting user data.',
     background: {
       service_worker: 'service-worker.js',
+      type: 'module',
     },
     action: {
       default_title: EXTENSION_NAME,
