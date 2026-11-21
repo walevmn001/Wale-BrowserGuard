@@ -1,0 +1,38 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MintShield — cài đặt (nguyên mẫu)</title>
+<link rel="stylesheet" href="design-tokens.css"><link rel="stylesheet" href="components.css">
+<style>
+ .app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+ nav{background:var(--surface);border-right:1px solid var(--line);padding:var(--s5) var(--s4);position:sticky;top:0;height:100vh}
+ nav .brand{display:flex;gap:var(--s2);align-items:center;font-weight:700;margin-bottom:var(--s5)} nav img{width:28px}
+ nav a{display:block;padding:9px 12px;border-radius:var(--radius-pill);color:var(--muted);text-decoration:none;font-weight:550}
+ nav a:hover{background:var(--accent-soft)} nav a[aria-current=page]{background:var(--accent-soft);color:var(--accent)}
+ main{padding:var(--s6);max-width:820px;display:grid;gap:var(--s5)}
+ .lv{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3)}
+ .lv .card{cursor:pointer} .lv .card.sel{border:2px solid var(--mint-500);background:var(--mint-50)}
+ .tools{display:flex;gap:var(--s2);flex-wrap:wrap}
+ @media(max-width:720px){.app{grid-template-columns:1fr}nav{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}.lv{grid-template-columns:1fr}}
+</style></head><body>
+<div class="app">
+ <nav aria-label="Điều hướng"><div class="brand"><img src="icon.svg" alt="">MintShield</div>
+  <a href="#" aria-current="page">Tổng quan</a><a href="#">Bộ lọc</a><a href="#">Trang được phép</a><a href="#">Ẩn phần tử</a><a href="#">Bảo mật</a><a href="#">YouTube</a><a href="#">Nâng cao</a><a href="#">Giới thiệu</a></nav>
+ <main>
+  <header><h1>Tổng quan</h1><p class="muted">Chọn mức bảo vệ phù hợp. Mặc định “Chuẩn” cân bằng giữa chặn và không làm vỡ trang.</p></header>
+  <section aria-label="Mức bảo vệ"><div class="lv">
+   <div class="card"><h3>Nhẹ</h3><p class="small muted">Chặn quảng cáo, trang độc hại, đào tiền ảo.</p></div>
+   <div class="card sel"><h3>Chuẩn <span class="chip">Khuyên dùng</span></h3><p class="small muted">Thêm chống theo dõi, ẩn giao diện, nâng cấp HTTPS.</p></div>
+   <div class="card"><h3>Mạnh</h3><p class="small muted">Thêm giảm Referer, WebRTC, chặn popup.</p></div></div></section>
+
+  <section class="card"><h2>Bộ lọc</h2>
+   <div class="row"><div><div class="t">Quảng cáo</div><div class="d">Cập nhật: hôm nay 08:12 · 24.310 quy tắc</div></div><label class="switch"><input type="checkbox" role="switch" checked aria-label="Bộ lọc quảng cáo"><span class="track"></span></label></div>
+   <div class="row"><div><div class="t">Theo dõi</div><div class="d">Cập nhật: hôm nay 08:12 · 9.870 quy tắc</div></div><label class="switch"><input type="checkbox" role="switch" checked aria-label="Bộ lọc theo dõi"><span class="track"></span></label></div>
+   <div class="row"><div><div class="t">Trang độc hại</div><div class="d">Cập nhật: hôm qua · 3.120 tên miền</div></div><label class="switch"><input type="checkbox" role="switch" checked aria-label="Bộ lọc độc hại"><span class="track"></span></label></div>
+   <div style="padding-top:var(--s3)"><button class="btn ghost">Cập nhật ngay</button></div></section>
+
+  <section class="card"><h2>YouTube <span class="chip warn">Thử nghiệm</span></h2>
+   <div class="banner warn" style="margin:var(--s3) 0" role="note">Tính năng không đảm bảo, có thể vi phạm điều khoản của YouTube và có thể ngừng hoạt động bất cứ lúc nào.</div>
+   <div class="row"><div class="t">Bật module YouTube</div><label class="switch"><input type="checkbox" role="switch" aria-label="Bật module YouTube"><span class="track"></span></label></div></section>
+
+  <section class="card"><h2>Nhập / Xuất</h2><p class="small muted">Chỉ gồm cài đặt, danh sách cho phép và phần tử đã ẩn. Không có thống kê hay lịch sử.</p>
+   <div class="tools" style="margin-top:var(--s3)"><button class="btn ghost">Xuất cài đặt</button><button class="btn ghost">Nhập cài đặt</button><button class="btn link">Xuất báo cáo lỗi</button></div></section>
+ </main></div></body></html>

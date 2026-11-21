@@ -1,0 +1,52 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MintShield — popup (nguyên mẫu)</title>
+<link rel="stylesheet" href="design-tokens.css"><link rel="stylesheet" href="components.css">
+<style>
+ body{width:360px;margin:0 auto}
+ .pp{padding:var(--s4);display:grid;gap:var(--s3)}
+ .head{display:flex;align-items:center;justify-content:space-between}
+ .brand{display:flex;align-items:center;gap:var(--s2);font-weight:700;font-size:15px} .brand img{width:26px;height:26px}
+ .hero{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,var(--mint-50),var(--mint-100));border-color:var(--mint-200)}
+ .site{display:flex;align-items:center;gap:var(--s3)} .fav{width:36px;height:36px;border-radius:10px;background:var(--card);display:grid;place-items:center;font-weight:700;color:var(--accent);border:1px solid var(--line)}
+ .stats{display:flex;gap:var(--s3)} .label{font-size:12px;font-weight:600;color:var(--muted);margin:2px 0 6px;text-transform:uppercase;letter-spacing:.04em}
+ .pause{display:grid;gap:var(--s2)} .pause .opts{display:flex;gap:var(--s2)} .pause .opts .btn{flex:1;min-height:34px;font-size:12px}
+ .foot{display:flex;justify-content:space-between;align-items:center;padding-top:var(--s1)}
+</style></head><body>
+<div class="pp">
+ <header class="head">
+  <div class="brand"><img src="icon.svg" alt="">MintShield</div>
+  <button class="icon-btn" aria-label="Mở cài đặt"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg></button>
+ </header>
+
+ <section class="card hero">
+  <div class="site"><div class="fav" aria-hidden="true">E</div>
+   <div><div style="font-weight:650">example.com</div><div class="small" style="color:var(--accent)"><span class="dot"></span> Đang được bảo vệ</div></div></div>
+  <label class="switch big"><input type="checkbox" role="switch" checked aria-label="Bật bảo vệ cho trang này"><span class="track"></span></label>
+ </section>
+
+ <section class="stats" aria-label="Thống kê">
+  <div class="stat"><b>27</b><span>Chặn ở trang này</span></div>
+  <div class="stat"><b>12.480</b><span>Tổng cộng</span></div>
+ </section>
+
+ <section><div class="label">Mức bảo vệ</div>
+  <div class="seg" role="radiogroup" aria-label="Mức bảo vệ">
+   <label><input type="radio" name="lv"><span>Nhẹ</span></label>
+   <label><input type="radio" name="lv" checked><span>Chuẩn</span></label>
+   <label><input type="radio" name="lv"><span>Mạnh</span></label>
+  </div></section>
+
+ <section class="card" style="padding:var(--s1) var(--s4)">
+  <div class="row"><div><div class="t">Ẩn quảng cáo trên trang</div><div class="d">Banner, khung quảng cáo còn sót</div></div><label class="switch"><input type="checkbox" role="switch" checked aria-label="Ẩn quảng cáo trên trang"><span class="track"></span></label></div>
+  <div class="row"><div><div class="t">Chống theo dõi</div><div class="d">Tracker, tham số theo dõi</div></div><label class="switch"><input type="checkbox" role="switch" checked aria-label="Chống theo dõi"><span class="track"></span></label></div>
+  <div class="row"><div><div class="t">YouTube <span class="chip warn">Thử nghiệm</span></div><div class="d">Có thể ngừng hoạt động bất kỳ lúc nào</div></div><label class="switch"><input type="checkbox" role="switch" aria-label="Bật module YouTube"><span class="track"></span></label></div>
+ </section>
+
+ <section class="pause">
+  <button class="btn ghost block">Trang bị lỗi? Tắt tạm cho trang này</button>
+  <div class="opts"><button class="btn ghost">1 giờ</button><button class="btn ghost">Hôm nay</button><button class="btn ghost">Mãi mãi</button></div>
+  <button class="btn ghost block">Ẩn một phần tử quảng cáo</button>
+ </section>
+
+ <footer class="foot"><span class="small muted">v1.0.0 · Không thu thập dữ liệu</span><button class="btn link">Báo lỗi</button></footer>
+</div></body></html>

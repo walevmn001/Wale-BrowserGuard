@@ -1,0 +1,21 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cảnh báo (nguyên mẫu)</title>
+<link rel="stylesheet" href="design-tokens.css"><link rel="stylesheet" href="components.css">
+<style>
+ body{min-height:100vh;display:grid;place-items:center;background:linear-gradient(180deg,var(--mint-50),var(--bg));padding:var(--s4)}
+ .w{max-width:520px;width:100%;text-align:center;padding:var(--s6) var(--s5)}
+ .ic{width:64px;height:64px;margin:0 auto var(--s4);border-radius:50%;display:grid;place-items:center;background:var(--danger-bg);color:var(--danger)}
+ .url{margin:var(--s4) 0;padding:var(--s3);border-radius:var(--radius);background:var(--surface);border:1px solid var(--line);word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+ .act{display:grid;gap:var(--s2);margin-top:var(--s4)}
+</style></head><body>
+<main class="card w" role="alert">
+ <div class="ic" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20z"/><path d="M12 10v5M12 18h.01"/></svg></div>
+ <h1>Trang này có thể gây hại</h1>
+ <p class="muted">Tên miền nằm trong danh sách trang lừa đảo hoặc độc hại. Chúng tôi đã dừng việc tải trang để bảo vệ bạn.</p>
+ <div class="url">faceb00k-login.example</div>
+ <p class="small muted">Lý do: giả mạo thương hiệu</p>
+ <div class="act">
+  <button class="btn block">Quay lại an toàn</button>
+  <button class="btn danger-link block">Tôi hiểu rủi ro, vẫn tiếp tục (10 phút)</button>
+ </div>
+</main></body></html>

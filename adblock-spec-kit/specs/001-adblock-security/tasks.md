@@ -42,3 +42,14 @@
 - **T041** Tài liệu, chính sách riêng tư, mô tả store.
 - **T042** Cân nhắc port Firefox.
 - **T043** Đóng gói release.
+
+## Giai đoạn UI — Giao diện mới (trắng + xanh mint) — chạy được độc lập với P5/P6
+Nguồn: `specs/001-adblock-security/ui-ux.md` §7 + nguyên mẫu trong `ui/`. Làm MỖI LẦN MỘT TASK theo `prompts/12-ui-ux.md` (giữ nguyên hành vi, chỉ đổi trình bày).
+- **T070** Đưa `design-tokens.css`, `components.css`, `icon.svg` vào `src/shared/ui/`; cấu hình build copy; xuất icon PNG 16/32/48/128 (công cụ sinh PNG dev-only phải được duyệt ở plan §6, hoặc xuất thủ công). Xong: manifest có icon, trang nạp được CSS.
+- **T071** Làm lại **popup** theo `ui/popup.html` (giữ nguyên logic đã có; nối công tắc/mức/tắt tạm/ẩn phần tử với module sẵn có). Không inline script. E2E: các thao tác chính vẫn chạy.
+- **T072** Làm lại **options** theo `ui/options.html` (điều hướng, thẻ mức bảo vệ, bộ lọc, whitelist, YouTube, nhập/xuất).
+- **T073** Làm lại **warning page** theo `ui/warning.html`; nút hoạt động đúng thuật toán F.
+- **T074** Giao diện **picker + banner cảnh báo** bằng Shadow DOM. E2E trên trang có CSS xung đột: không bị ảnh hưởng.
+- **T075** i18n đầy đủ vi/en cho mọi chuỗi UI; kiểm tra chuỗi dài không vỡ.
+- **T076** Chế độ tối/sáng + hoàn thiện truy cập (tương phản, bàn phím, giảm chuyển động).
+- **T077** Kiểm thử: e2e mọi trang render không lỗi console; ảnh chụp chuẩn (Playwright `toHaveScreenshot`) cho popup/options/warning ở sáng + tối.
