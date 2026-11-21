@@ -61,7 +61,7 @@ manifest.config.ts
 - Chống fingerprint dễ làm vỡ trang → mặc định tắt, có whitelist.
 
 ## 6. Thư viện được duyệt
-- Dev: typescript, vite, vitest, playwright, eslint, prettier, **@types/chrome** (type-only, đã duyệt để dùng API `chrome.*` với TS strict).
+- Dev: typescript, vite, vitest, playwright, eslint, prettier, **@types/chrome** (type-only, đã duyệt để dùng API `chrome.*` với TS strict), **@types/node** (type-only, đã duyệt để dùng `node:path`/`node:url`/`process` trong `playwright.config.ts` và script build với TS strict).
 - Runtime: (không có, trừ khi duyệt thêm tại đây).
 - Công cụ chuyển đổi filter: **tự viết converter tối giản** trong `scripts/build-rules.ts` (clarify #4). Không thêm dependency runtime hay dev. Hỗ trợ tập con cú pháp ABP cần cho P1 (domain/url/regex cơ bản, `@@` exception, `$` options phổ biến: `third-party`, `script`, `image`, `xmlhttprequest`, `~` negation, `|`/`||`/`^`); phần không hỗ trợ bỏ có kiểm soát và ghi vào báo cáo build.
 - Giấy phép: code MIT; dữ liệu rule theo giấy phép từng nguồn (ghi ở `rules/README.md`).
