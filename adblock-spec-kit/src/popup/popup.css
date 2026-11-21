@@ -1,48 +1,62 @@
 /* WALE GUARD — compact popup layout. Loaded after the shared tokens and
    component primitives, so it only adds popup-specific sizing and pieces. */
-body{width:var(--popup-w)}
+body{width:var(--popup-w);background:var(--bg)}
 .pop{padding:var(--s3);display:grid;gap:var(--s3)}
 
 /* ---- Header ---- */
 .pop-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
-  padding:2px 2px 0}
+  padding:var(--s1) var(--s1) 0}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
-.brand img{width:30px;height:30px;flex:none}
+.brand img{width:30px;height:30px;flex:none;border-radius:var(--radius-sm)}
 .brand .name{font-weight:750;font-size:15px;letter-spacing:-.01em}
 .brand .tag{font-size:10.5px;font-weight:650;color:var(--muted-2);letter-spacing:.02em}
 
 /* ---- Toggle switch (button form so it works with aria-pressed/aria-checked) */
 .toggle{position:relative;width:46px;height:27px;flex:none;padding:0;border-radius:var(--radius-pill);
   border:1px solid var(--line);background:var(--surface-3);cursor:pointer;
-  transition:background var(--t-med),border-color var(--t-med)}
+  transition:background var(--t-med) var(--ease),border-color var(--t-med) var(--ease)}
 .toggle::after{content:"";position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;
-  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.28);transition:transform var(--t-med) var(--ease)}
+  background:#fff;box-shadow:0 1px 3px rgba(15,23,42,.22);
+  transition:transform var(--t-med) var(--ease-out)}
 .toggle[aria-checked="true"],.toggle[aria-pressed="true"]{background:var(--mint-500);border-color:var(--mint-600)}
 .toggle[aria-checked="true"]::after,.toggle[aria-pressed="true"]::after{transform:translateX(19px)}
 .toggle.warn[aria-checked="true"]{background:var(--warning);border-color:var(--warning)}
 .toggle:focus-visible{box-shadow:var(--focus)}
 .toggle:disabled{opacity:.45;cursor:not-allowed}
-.toggle.big{width:52px;height:30px}
-.toggle.big::after{width:24px;height:24px}
-.toggle.big[aria-checked="true"]::after{transform:translateX(21px)}
+.toggle.big{width:54px;height:30px}
+.toggle.big::after{width:24px;height:24px;top:2px;left:2px}
+.toggle.big[aria-checked="true"]::after{transform:translateX(22px)}
 
-/* ---- Guard (main protection) card ---- */
-.guard{display:grid;gap:var(--s3)}
-.guard .ico{width:38px;height:38px;flex:none;border-radius:var(--radius-sm);display:grid;
-  place-items:center;background:var(--accent-soft);color:var(--accent)}
+/* ---- Guard (main protection) hero card ---- */
+.guard{display:grid;gap:var(--s3);background:linear-gradient(135deg,var(--mint-50) 0%,var(--blue-50) 100%);
+  border-color:var(--mint-100);position:relative;overflow:hidden}
+.guard::after{content:"";position:absolute;top:-30%;right:-15%;width:160px;height:160px;
+  background:radial-gradient(circle,rgba(45,212,191,.2) 0%,transparent 70%);pointer-events:none}
+.guard .ico{width:44px;height:44px;flex:none;border-radius:var(--radius-lg);display:grid;
+  place-items:center;background:var(--surface);color:var(--accent);box-shadow:var(--shadow-1)}
+.guard .ico svg{width:24px;height:24px}
 .guard .ico.off{background:var(--surface-2);color:var(--muted-2)}
 .guard .ico.warn{background:var(--warning-bg);color:var(--warning-text)}
-.guard-status{font-weight:700;font-size:15px}
+.guard-status{font-weight:700;font-size:16px;letter-spacing:-.01em}
 .pause-bar{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
-  padding-top:var(--s3);border-top:1px solid var(--line)}
+  padding-top:var(--s3);border-top:1px solid var(--mint-100)}
+
+/* ---- Site card ---- */
+.site-card .site-head{display:flex;align-items:center;gap:var(--s3)}
+.site-card .site-ic{width:36px;height:36px;border-radius:var(--radius);display:grid;place-items:center;
+  background:var(--blue-50);color:var(--blue-600);flex:none}
+.site-card .site-ic svg{width:18px;height:18px}
+.site-card .site-name{font-weight:700;font-size:14px}
+.site-card .site-meta{font-size:11.5px;color:var(--muted)}
 
 /* ---- Modules ---- */
 .modules{display:grid;gap:var(--s2)}
 .mod-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;
-  padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);
-  font:inherit;transition:border-color var(--t-fast),background var(--t-fast)}
-.mod-row:hover{border-color:var(--mint-300);background:var(--mint-50)}
-.mod-row .ic{width:28px;height:28px;flex:none;border-radius:var(--radius-xs);display:grid;
+  padding:10px;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);
+  font:inherit;transition:border-color var(--t-fast) var(--ease),background var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease)}
+.mod-row:hover{border-color:var(--mint-300);background:var(--mint-50);transform:translateX(2px)}
+.mod-row .ic{width:30px;height:30px;flex:none;border-radius:var(--radius-xs);display:grid;
   place-items:center;background:var(--accent-soft);color:var(--accent)}
 .mod-row .ic.off{background:var(--surface-2);color:var(--muted-2)}
 .mod-row .nm{font-weight:600;font-size:13px}
@@ -57,4 +71,4 @@ body{width:var(--popup-w)}
 
 /* ---- Footer ---- */
 .pop-foot{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
-  padding:0 2px 2px}
+  padding:0 var(--s1) var(--s1)}

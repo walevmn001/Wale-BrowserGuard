@@ -88,14 +88,23 @@
       </section>
 
       <!-- Current website: domain, status, per-site switch and live counts -->
-      <section class="card" aria-labelledby="site-heading">
+      <section class="card site-card" aria-labelledby="site-heading">
         <div class="between">
-          <div class="grow">
-            <div id="site-heading" class="section-title" data-i18n="ppSiteLabel">
-              Trang hiện tại
+          <div class="site-head grow">
+            <span class="site-ic" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+            </span>
+            <div class="grow">
+              <div id="site-heading" class="section-title" data-i18n="ppSiteLabel">
+                Trang hiện tại
+              </div>
+              <div id="site-domain" class="site-name truncate">…</div>
+              <div id="site-status" class="site-meta">…</div>
             </div>
-            <div id="site-domain" class="strong truncate">…</div>
-            <div id="site-status" class="tiny muted">…</div>
           </div>
           <button
             id="site-toggle"

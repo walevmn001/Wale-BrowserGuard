@@ -1,21 +1,52 @@
-<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cảnh báo (nguyên mẫu)</title>
-<link rel="stylesheet" href="design-tokens.css"><link rel="stylesheet" href="components.css">
-<style>
- body{min-height:100vh;display:grid;place-items:center;background:linear-gradient(180deg,var(--mint-50),var(--bg));padding:var(--s4)}
- .w{max-width:520px;width:100%;text-align:center;padding:var(--s6) var(--s5)}
- .ic{width:64px;height:64px;margin:0 auto var(--s4);border-radius:50%;display:grid;place-items:center;background:var(--danger-bg);color:var(--danger)}
- .url{margin:var(--s4) 0;padding:var(--s3);border-radius:var(--radius);background:var(--surface);border:1px solid var(--line);word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
- .act{display:grid;gap:var(--s2);margin-top:var(--s4)}
-</style></head><body>
-<main class="card w" role="alert">
- <div class="ic" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20z"/><path d="M12 10v5M12 18h.01"/></svg></div>
- <h1>Trang này có thể gây hại</h1>
- <p class="muted">Tên miền nằm trong danh sách trang lừa đảo hoặc độc hại. Chúng tôi đã dừng việc tải trang để bảo vệ bạn.</p>
- <div class="url">faceb00k-login.example</div>
- <p class="small muted">Lý do: giả mạo thương hiệu</p>
- <div class="act">
-  <button class="btn block">Quay lại an toàn</button>
-  <button class="btn danger-link block">Tôi hiểu rủi ro, vẫn tiếp tục (10 phút)</button>
- </div>
-</main></body></html>
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WALE GUARD — Cảnh báo</title>
+  <link rel="stylesheet" href="design-tokens.css" />
+  <link rel="stylesheet" href="components.css" />
+  <style>
+    body{min-height:100vh;display:grid;place-items:center;
+      background:radial-gradient(ellipse at top,var(--mint-50) 0%,transparent 60%),
+      linear-gradient(180deg,var(--bg) 0%,var(--bg-2) 100%);padding:var(--s4)}
+    .warn-card{max-width:520px;width:100%;text-align:center;padding:var(--s6) var(--s5);
+      box-shadow:var(--shadow-3);border:1px solid var(--line);position:relative;overflow:hidden}
+    .warn-card::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;
+      background:linear-gradient(90deg,var(--danger),var(--warning))}
+    .warn-ic{width:72px;height:72px;margin:0 auto var(--s4);border-radius:50%;
+      display:grid;place-items:center;background:var(--danger-bg);color:var(--danger);
+      box-shadow:0 0 0 8px var(--danger-bg)}
+    #warning-heading{margin-bottom:var(--s2);font-size:22px;font-weight:700}
+    .url{margin:var(--s4) 0;padding:var(--s3);border-radius:var(--radius);
+      background:var(--surface-2);border:1px solid var(--line);word-break:break-all;
+      font-family:var(--mono);font-size:13px;color:var(--ink-2)}
+    .warn-why{text-align:left;padding:var(--s4);border-radius:var(--radius);
+      background:var(--surface-2);border:1px solid var(--line)}
+    .warn-why p+p{margin-top:var(--s2)}
+    .warn-act{display:grid;gap:var(--s2);margin-top:var(--s5)}
+  </style>
+</head>
+<body>
+  <main class="card warn-card" role="alert">
+    <div class="warn-ic" aria-hidden="true">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3 2 20h20z" />
+        <path d="M12 10v5M12 18h.01" />
+      </svg>
+    </div>
+    <h1 id="warning-heading">Trang này có thể gây hại</h1>
+    <p class="muted">Trang này có thể chứa mã độc hoặc lừa đảo. Vì an toàn, WALE GUARD đã ngăn trang tải.</p>
+    <div class="url">faceb00k-login.example.com</div>
+    <div class="warn-why">
+      <p class="strong small">Vì sao bị chặn</p>
+      <p class="small muted">Tên miền này nằm trong danh sách mã độc / lừa đảo mà WALE GUARD dùng để bảo vệ bạn.</p>
+    </div>
+    <div class="warn-act">
+      <button class="btn block" type="button">Quay lại an toàn</button>
+      <button class="btn link danger-link block" type="button">Vẫn tiếp tục (10 phút)</button>
+      <p class="small muted">Vẫn tiếp tục là lựa chọn của bạn — trang có thể gây hại.</p>
+    </div>
+  </main>
+</body>
+</html>

@@ -60,19 +60,19 @@ export function installWarningBanner(options: BannerOptions): void {
   style.textContent = [
     ':host{all:initial}',
     '[data-role="bar"]{box-sizing:border-box;display:flex;align-items:center;gap:10px;',
-    'padding:9px 14px;background:#FFF6E5;color:#A6690A;border-bottom:2px solid #F5B942;',
+    'padding:9px 14px;background:#FFFBEB;color:#B45309;border-bottom:2px solid #F59E0B;',
     'font:500 13px/1.45 "Inter","Geist",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;',
     'flex-wrap:wrap}',
     '[data-role="ic"]{flex:none;display:grid;place-items:center;width:20px;height:20px}',
     '[data-role="text"]{flex:1 1 220px;min-width:0}',
-    '[data-role="text"] b{display:block;font-weight:700;color:#8A5A00}',
+    '[data-role="text"] b{display:block;font-weight:700;color:#92400E}',
     '[data-role="act"]{display:flex;gap:6px;margin-left:auto}',
     '[data-role="bar"] button{font:inherit;font-weight:650;cursor:pointer;border-radius:10px;',
-    'padding:6px 11px;border:1px solid #E8C98A;background:#FFFFFF;color:#8A5A00}',
-    '[data-role="bar"] button[data-act="trust"]{background:#38D9C4;border-color:#20BFA9;color:#06231C}',
+    'padding:6px 11px;border:1px solid #FCD34D;background:#FFFFFF;color:#92400E}',
+    '[data-role="bar"] button[data-act="trust"]{background:#2DD4BF;border-color:#14B8A6;color:#06231C}',
     '[data-role="bar"] button[data-act="close"]{border-color:transparent;background:transparent;',
-    'font-size:16px;line-height:1;padding:4px 8px;color:#A6690A}',
-    '[data-role="bar"] button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(56,217,196,.45)}',
+    'font-size:16px;line-height:1;padding:4px 8px;color:#B45309}',
+    '[data-role="bar"] button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(45,212,191,.35)}',
   ].join('');
 
   const bar = document.createElement('div');

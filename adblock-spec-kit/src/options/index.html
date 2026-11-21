@@ -89,9 +89,9 @@
 
       <div class="main">
         <header class="topbar">
-          <div class="search" style="position: relative">
+          <div class="search">
             <input class="input" id="smart-search" data-i18n-placeholder="gSearch" autocomplete="off" />
-            <span class="chip off" id="search-count" hidden></span>
+            <span class="chip off" id="search-count" hidden style="position:absolute;right:8px;top:50%;transform:translateY(-50%)"></span>
           </div>
           <div class="cluster" style="margin-left: auto">
             <span class="status" id="top-status"><span class="dot" id="top-status-dot"></span><span id="top-status-text"></span></span>
@@ -106,24 +106,31 @@
               <p class="sub" data-i18n="ovSub"></p>
             </div>
 
+            <!-- Hero protection card -->
+            <div class="hero">
+              <div class="hero-inner">
+                <div class="hero-ic" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                </div>
+                <div class="hero-text">
+                  <h1 id="ov-status-text" data-i18n="statusProtected"></h1>
+                  <p data-i18n="ovMasterDesc"></p>
+                </div>
+                <div class="hero-action">
+                  <span class="chip off" id="ov-profile-chip"></span>
+                  <label class="switch big">
+                    <input id="ov-master" type="checkbox" role="switch" />
+                    <span class="track"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pause control -->
             <div class="card">
-              <div class="row">
-                <div>
-                  <div class="t" data-i18n="ovStatus"></div>
-                  <div class="d" id="ov-status-text"></div>
-                </div>
-                <span class="chip off" id="ov-profile-chip"></span>
-              </div>
-              <div class="row">
-                <div>
-                  <div class="t" data-i18n="ovMaster"></div>
-                  <div class="d" data-i18n="ovMasterDesc"></div>
-                </div>
-                <label class="switch big">
-                  <input id="ov-master" type="checkbox" role="switch" />
-                  <span class="track"></span>
-                </label>
-              </div>
               <div class="row">
                 <div>
                   <div class="t" data-i18n="statusPaused"></div>
@@ -141,27 +148,39 @@
               </div>
             </div>
 
+            <!-- Stats -->
             <div class="card">
               <h2 data-i18n="ovStatsTitle"></h2>
               <div class="stats" style="margin-top: var(--s3)">
                 <div class="stat"><b id="ov-stat-ads">0</b><span data-i18n="ovStatAds"></span></div>
                 <div class="stat"><b id="ov-stat-trackers">0</b><span data-i18n="ovStatTrackers"></span></div>
-                <div class="stat"><b id="ov-stat-malware">0</b><span data-i18n="ovStatMalware"></span></div>
+                <div class="stat danger"><b id="ov-stat-malware">0</b><span data-i18n="ovStatMalware"></span></div>
                 <div class="stat accent"><b id="ov-stat-today">0</b><span data-i18n="ovStatToday"></span></div>
               </div>
             </div>
 
+            <!-- Modules -->
             <div class="card">
               <h2 data-i18n="ovModulesTitle"></h2>
               <div class="grid-auto" id="ov-modules" style="margin-top: var(--s3)"></div>
             </div>
 
+            <!-- Quick actions -->
             <div class="card">
               <h2 data-i18n="ovQuick"></h2>
-              <div class="toolbar" style="margin-top: var(--s3)">
-                <button class="btn ghost sm" id="ov-open-activity" data-i18n="navActivity"></button>
-                <button class="btn ghost sm" id="ov-open-filters" data-i18n="navFilters"></button>
-                <button class="btn ghost sm" id="ov-open-settings" data-i18n="navSettings"></button>
+              <div class="quick-grid" style="margin-top: var(--s3)">
+                <button class="quick-tile" id="ov-open-activity" type="button">
+                  <span class="ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg></span>
+                  <span class="lbl" data-i18n="navActivity"></span>
+                </button>
+                <button class="quick-tile" id="ov-open-filters" type="button">
+                  <span class="ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8v7l-4 2v-9z" /></svg></span>
+                  <span class="lbl" data-i18n="navFilters"></span>
+                </button>
+                <button class="quick-tile" id="ov-open-settings" type="button">
+                  <span class="ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M5 5l2 2M17 17l2 2M2 12h3M19 12h3M5 19l2-2M17 7l2-2" /></svg></span>
+                  <span class="lbl" data-i18n="navSettings"></span>
+                </button>
               </div>
             </div>
           </section>
