@@ -27,6 +27,7 @@ test.afterAll(async () => {
 test('the options page toggles list groups and shows the version', async () => {
   const options = await context.newPage();
   await options.goto(optionsUrl);
+  await options.locator('a[data-nav="filters"]').click();
 
   // One checkbox per declared ruleset group, all on by default.
   await expect(options.locator('#group-list input[type="checkbox"]')).toHaveCount(4);
@@ -36,11 +37,13 @@ test('the options page toggles list groups and shows the version', async () => {
   await expect(options.locator('[data-group="privacy"]')).toBeChecked();
 
   // "Version" section: the packaged extension version plus the data summary.
+  await options.locator('a[data-nav="about"]').click();
   const version = await worker.evaluate(() => chrome.runtime.getManifest().version);
   await expect(options.locator('#version-ext')).toContainText(version);
   await expect(options.locator('#version-data')).toContainText('0');
 
   // Switching a group off persists the choice and disables just that ruleset.
+  await options.locator('a[data-nav="filters"]').click();
   await options.locator('[data-group="trackers"]').uncheck();
   await expect
     .poll(() =>
@@ -63,6 +66,7 @@ test('the options page toggles list groups and shows the version', async () => {
 test('anti-fingerprinting is opt-in and off by default (AC-6.5)', async () => {
   const options = await context.newPage();
   await options.goto(optionsUrl);
+  await options.locator('a[data-nav="privacy"]').click();
 
   await expect(options.locator('#anti-fingerprint')).not.toBeChecked();
 
@@ -76,6 +80,7 @@ test('the manual update button runs and reports a result', async () => {
   test.setTimeout(40_000);
   const options = await context.newPage();
   await options.goto(optionsUrl);
+  await options.locator('a[data-nav="filters"]').click();
 
   const button = options.locator('#update-now');
   await expect(button).toBeEnabled();

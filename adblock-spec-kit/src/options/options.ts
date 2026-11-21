@@ -1,185 +1,200 @@
 /**
- * Options page (T024, US-7 / AC-7.1, AC-7.2).
- *
- * A thin view over the modules the worker and popup also use, so there is a
- * single source of truth: `RulesetManager` (per-group on/off) and
- * `FilterUpdater` (manual update + version/status read from `chrome.storage`).
- * Nothing is cached in a module variable.
- *
- * Every user-facing string comes from `shared/i18n.ts`, chosen from the browser
- * UI language, so the page ships in Vietnamese and English.
+ * Dashboard shell (T072): bootstraps language + theme, builds the shared
+ * context, wires the sidebar navigation, the top-bar status pill and the smart
+ * search. Each section module owns its own markup and behaviour; this file only
+ * composes them and caches nothing (Constitution 14).
  */
 
-import { createFilterUpdater, type FilterUpdater } from '../background/filter-updater';
-import { createRulesetManager } from '../background/ruleset-manager';
-import { createFingerprintSettings } from '../background/security/fingerprint-settings';
-import { createPrivacySettings } from '../background/security/privacy-settings';
-import { isMessageKey, resolveLocale, t, type Locale } from '../shared/i18n';
+import { createFilterUpdater } from '../background/filter-updater';
+import { createProtectionPause } from '../background/pause';
+import { t } from '../shared/i18n';
 import { logger } from '../shared/logger';
-import { describeUpdateResult, formatTimestamp, groupLabel, summarizeGroups } from './format';
+import { TypedStorage } from '../shared/storage';
+import { createAbout } from './about';
+import { createActivity } from './activity';
+import { createData } from './data';
+import { createDiagnostics } from './diagnostics';
+import { applyStaticText, applyTheme, optionsLocale, q } from './elements';
+import { createExceptions } from './exceptions';
+import { createFilters } from './filters';
+import { statusKey, statusTone } from './format';
+import { createOverview } from './overview';
+import { createPrivacy } from './privacy';
+import { createProfilesSection } from './profiles';
+import { createRules } from './rules';
+import { createSecurity } from './security';
+import { createSettingsSection } from './settings';
+import { createContext, type Ctx, type Section } from './ui';
 
-/** Options page elements, looked up once at start-up. */
-interface Elements {
-  readonly groupList: HTMLElement;
-  readonly updateStatus: HTMLElement;
-  readonly updateNow: HTMLButtonElement;
-  readonly versionExt: HTMLElement;
-  readonly versionData: HTMLElement;
-  readonly webrtc: HTMLInputElement;
-  readonly fingerprint: HTMLInputElement;
+/** Sidebar pages in display order; the id is also the `<section>` id. */
+const PAGES = [
+  'overview',
+  'activity',
+  'filters',
+  'security',
+  'privacy',
+  'exceptions',
+  'profiles',
+  'rules',
+  'data',
+  'diagnostics',
+  'settings',
+  'about',
+] as const;
+
+type PageId = (typeof PAGES)[number];
+
+const DEFAULT_PAGE: PageId = 'overview';
+
+function isPageId(value: string): value is PageId {
+  return (PAGES as readonly string[]).includes(value);
 }
 
-function elementById(id: string): HTMLElement {
-  const element = document.getElementById(id);
-  if (element === null) {
-    throw new Error(`options: missing #${id}`);
+/** Builds all twelve sections; each factory only attaches its own listeners. */
+function buildSections(ctx: Ctx): ReadonlyMap<PageId, Section> {
+  return new Map<PageId, Section>([
+    ['overview', createOverview(ctx)],
+    ['activity', createActivity(ctx)],
+    ['filters', createFilters(ctx)],
+    ['security', createSecurity(ctx)],
+    ['privacy', createPrivacy(ctx)],
+    ['exceptions', createExceptions(ctx)],
+    ['profiles', createProfilesSection(ctx)],
+    ['rules', createRules(ctx)],
+    ['data', createData(ctx)],
+    ['diagnostics', createDiagnostics(ctx)],
+    ['settings', createSettingsSection(ctx)],
+    ['about', createAbout(ctx)],
+  ]);
+}
+
+/** The page named by the URL hash, or the overview by default. */
+function currentPage(): PageId {
+  const hash = window.location.hash.replace(/^#/, '');
+  return isPageId(hash) ? hash : DEFAULT_PAGE;
+}
+
+/** Shows one page and marks its sidebar link as the current one. */
+function showPage(page: PageId): void {
+  for (const id of PAGES) {
+    q(id).hidden = id !== page;
   }
-  return element;
-}
-
-function buttonById(id: string): HTMLButtonElement {
-  const element = elementById(id);
-  if (!(element instanceof HTMLButtonElement)) {
-    throw new Error(`options: #${id} is not a button`);
-  }
-  return element;
-}
-
-function inputById(id: string): HTMLInputElement {
-  const element = elementById(id);
-  if (!(element instanceof HTMLInputElement)) {
-    throw new Error(`options: #${id} is not an input`);
-  }
-  return element;
-}
-
-function collectElements(): Elements {
-  return {
-    groupList: elementById('group-list'),
-    updateStatus: elementById('update-status'),
-    updateNow: buttonById('update-now'),
-    versionExt: elementById('version-ext'),
-    versionData: elementById('version-data'),
-    webrtc: inputById('webrtc-protection'),
-    fingerprint: inputById('anti-fingerprint'),
-  };
-}
-
-/** Fills the static labels declared with `data-i18n` in `index.html`. */
-function applyStaticText(locale: Locale): void {
-  for (const element of document.querySelectorAll<HTMLElement>('[data-i18n]')) {
-    const key = element.dataset['i18n'];
-    if (key !== undefined && isMessageKey(key)) {
-      element.textContent = t(key, locale);
+  for (const link of document.querySelectorAll<HTMLAnchorElement>('a[data-nav]')) {
+    if (link.dataset['nav'] === page) {
+      link.setAttribute('aria-current', 'page');
+    } else {
+      link.removeAttribute('aria-current');
     }
   }
 }
 
-/** Renders one checkbox per group, checked according to the stored toggles. */
-function renderGroups(
-  list: HTMLElement,
-  ids: readonly string[],
-  enabledById: ReadonlyMap<string, boolean>,
-  locale: Locale,
-  onToggle: (id: string, enabled: boolean) => void,
-): void {
-  list.replaceChildren();
-  for (const id of ids) {
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.dataset['group'] = id;
-    checkbox.checked = enabledById.get(id) ?? false;
-    checkbox.addEventListener('change', () => onToggle(id, checkbox.checked));
+/** Reads the live protection state into the top-bar status pill. */
+async function renderTopStatus(ctx: Ctx, storage: TypedStorage): Promise<void> {
+  const enabled = (await storage.get('enabled')) ?? true;
+  const paused = (await createProtectionPause().state()).paused;
+  const failures = (await createFilterUpdater().status()).failures;
+  const tone = statusTone(enabled, paused, failures);
+  q('top-status').className = `status ${tone}`;
+  q('top-status-dot').className = tone === 'on' ? 'dot' : `dot ${tone}`;
+  q('top-status-text').textContent = t(statusKey(enabled, paused, failures), ctx.locale);
+}
 
-    const label = document.createElement('label');
-    label.append(checkbox, document.createTextNode(` ${groupLabel(id, locale)}`));
+interface SearchEntry {
+  readonly page: PageId;
+  readonly text: string;
+}
 
-    const item = document.createElement('li');
-    item.append(label);
-    list.append(item);
+/** Builds a flat, local-only search index over every list the user owns. */
+async function buildSearchIndex(storage: TypedStorage): Promise<readonly SearchEntry[]> {
+  const entries: SearchEntry[] = [];
+  for (const link of document.querySelectorAll<HTMLAnchorElement>('a[data-nav]')) {
+    const page = link.dataset['nav'];
+    const label = link.textContent?.trim() ?? '';
+    if (page !== undefined && isPageId(page) && label !== '') {
+      entries.push({ page, text: label });
+    }
   }
-}
-
-/** Shows the packaged extension version and the active list's rule totals. */
-async function renderVersion(
-  elements: Elements,
-  locale: Locale,
-  updater: FilterUpdater,
-): Promise<void> {
-  elements.versionExt.textContent = t('optionsVersion', locale, {
-    version: chrome.runtime.getManifest().version,
-  });
-  const { groups } = await updater.status();
-  const totals = summarizeGroups(groups);
-  elements.versionData.textContent = t('optionsDataRules', locale, {
-    rules: totals.rules,
-    groups: totals.groups,
-  });
-}
-
-/** Runs a user-triggered update and reports the outcome (AC-7.1, AC-7.2). */
-async function runManualUpdate(
-  elements: Elements,
-  locale: Locale,
-  updater: FilterUpdater,
-): Promise<void> {
-  elements.updateNow.disabled = true;
-  elements.updateStatus.textContent = t('optionsUpdating', locale);
-  try {
-    const result = await updater.updateNow();
-    elements.updateStatus.textContent = describeUpdateResult(result, locale);
-    await renderVersion(elements, locale, updater);
-  } catch (error) {
-    logger.error('manual filter update failed', error);
-    elements.updateStatus.textContent = t('optionsUpdateFailed', locale);
-  } finally {
-    elements.updateNow.disabled = false;
+  for (const domain of (await storage.get('whitelist')) ?? []) {
+    entries.push({ page: 'exceptions', text: domain });
   }
+  for (const rule of (await storage.get('customRules')) ?? []) {
+    entries.push({ page: 'rules', text: rule.text });
+  }
+  for (const list of (await storage.get('customLists')) ?? []) {
+    entries.push({ page: 'filters', text: `${list.name} ${list.url}` });
+  }
+  for (const item of (await storage.get('activity')) ?? []) {
+    if (item.host !== '') {
+      entries.push({ page: 'activity', text: item.host });
+    }
+  }
+  return entries;
 }
 
-function reportError(error: unknown): void {
-  logger.error('options action failed', error);
+/** Top-bar search: a live match count plus Enter to jump to the first hit. */
+function wireSearch(ctx: Ctx, index: readonly SearchEntry[]): void {
+  const input = q<HTMLInputElement>('smart-search');
+  const count = q('search-count');
+  let matches: readonly SearchEntry[] = [];
+
+  input.addEventListener('input', () => {
+    const query = input.value.trim().toLowerCase();
+    if (query === '') {
+      matches = [];
+      count.hidden = true;
+      return;
+    }
+    matches = index.filter((entry) => entry.text.toLowerCase().includes(query));
+    count.textContent = t('gResults', ctx.locale, { count: matches.length });
+    count.hidden = false;
+  });
+
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && matches[0] !== undefined) {
+      ctx.open(matches[0].page);
+    }
+  });
 }
 
 async function main(): Promise<void> {
-  const locale = resolveLocale(chrome.i18n.getUILanguage());
+  const storage = new TypedStorage();
+  const locale = await optionsLocale(storage);
   document.documentElement.lang = locale;
   applyStaticText(locale);
+  await applyTheme(storage);
 
-  const elements = collectElements();
-  const rulesets = createRulesetManager();
-  const updater = createFilterUpdater();
-  const privacy = createPrivacySettings();
-  const fingerprints = createFingerprintSettings();
+  const ctx = createContext(locale);
+  const sections = buildSections(ctx);
 
-  const ids = rulesets.listGroups();
-  const enabledById = new Map<string, boolean>();
-  for (const id of ids) {
-    enabledById.set(id, await rulesets.isGroupEnabled(id));
-  }
-  renderGroups(elements.groupList, ids, enabledById, locale, (id, enabled) => {
-    void rulesets.setGroupEnabled(id, enabled).catch(reportError);
+  q('side-version').textContent = t('abtVersion', locale, {
+    version: chrome.runtime.getManifest().version,
   });
 
-  // Opt-in WebRTC leak protection (AC-6.4): off unless the user ticks it.
-  elements.webrtc.checked = await privacy.isEnabled();
-  elements.webrtc.addEventListener('change', () => {
-    void privacy.setEnabled(elements.webrtc.checked).catch(reportError);
+  const refreshCurrent = (): void => {
+    const section = sections.get(currentPage());
+    if (section !== undefined) {
+      void section
+        .refresh()
+        .catch((error: unknown) => logger.error('section refresh failed', error));
+    }
+  };
+
+  window.addEventListener('hashchange', () => {
+    showPage(currentPage());
+    refreshCurrent();
   });
 
-  // Opt-in anti-fingerprinting (AC-6.5): off unless the user ticks it, because
-  // spoofing the page's own objects is the easiest way to break a site.
-  elements.fingerprint.checked = await fingerprints.isEnabled();
-  elements.fingerprint.addEventListener('change', () => {
-    void fingerprints.setEnabled(elements.fingerprint.checked).catch(reportError);
+  showPage(currentPage());
+  refreshCurrent();
+  await renderTopStatus(ctx, storage);
+
+  // Keep the status pill honest when a toggle changes in any section or in the
+  // popup — no polling, no cached copy of the state.
+  chrome.storage.onChanged.addListener(() => {
+    void renderTopStatus(ctx, storage).catch(() => undefined);
   });
 
-  await renderVersion(elements, locale, updater);
-  elements.updateStatus.textContent = formatTimestamp((await updater.status()).updatedAt, locale);
-
-  elements.updateNow.addEventListener('click', () => {
-    void runManualUpdate(elements, locale, updater).catch(reportError);
-  });
+  wireSearch(ctx, await buildSearchIndex(storage));
 }
 
-void main().catch(reportError);
+void main().catch((error: unknown) => logger.error('options boot failed', error));

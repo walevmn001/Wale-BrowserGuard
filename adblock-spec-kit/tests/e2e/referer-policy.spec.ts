@@ -3,7 +3,7 @@ import type { AddressInfo } from 'node:net';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { chromium, expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { chromium, expect, test, type BrowserContext, type Page, type Worker } from '@playwright/test';
 
 // `tests/e2e/` -> project root -> `dist/` (the built extension).
 const EXTENSION_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '../../dist');
@@ -59,6 +59,33 @@ function requestTo(pathPrefix: string, host: string): Seen | undefined {
   return seen.find((entry) => entry.path.startsWith(pathPrefix) && entry.host.startsWith(host));
 }
 
+/** The extension's service worker, which owns the dynamic DNR rules. */
+function serviceWorker(): Promise<Worker> {
+  const existing = context.serviceWorkers()[0];
+  return existing ? Promise.resolve(existing) : context.waitForEvent('serviceworker');
+}
+
+/** Fixed dynamic-rule id the referer controller installs (see `src/background/referer.ts`). */
+const REFERER_RULE_ID = 4_000_001;
+
+/** Ids of the dynamic DNR rules currently installed. */
+function dynamicRuleIds(worker: Worker): Promise<number[]> {
+  return worker.evaluate(() =>
+    chrome.declarativeNetRequest.getDynamicRules().then((rules) => rules.map((rule) => rule.id)),
+  );
+}
+
+/** Turns the referer policy into live DNR state and waits until the worker caught up. */
+async function setRefererPolicy(policy: 'default' | 'third-party'): Promise<void> {
+  const worker = await serviceWorker();
+  await worker.evaluate((value) => chrome.storage.local.set({ refererPolicy: value }), policy);
+  if (policy === 'third-party') {
+    await expect.poll(() => dynamicRuleIds(worker)).toContain(REFERER_RULE_ID);
+  } else {
+    await expect.poll(() => dynamicRuleIds(worker)).not.toContain(REFERER_RULE_ID);
+  }
+}
+
 test.beforeAll(async () => {
   server = createServer((request, response) => {
     const url = request.url ?? '/';
@@ -97,6 +124,9 @@ test.afterAll(async () => {
 });
 
 test('drops the Referer header from a third-party sub-resource', async () => {
+  // The rule only exists while the policy is `third-party`; `default` is the
+  // browser-native policy (see `src/background/referer.ts`).
+  await setRefererPolicy('third-party');
   seen = [];
   const page = await context.newPage();
   await page.goto(`${baseUrl}page`, { waitUntil: 'load' });
@@ -131,4 +161,18 @@ test('keeps the Referer header on a top-level navigation', async () => {
   const navigation = requestTo('/landing', THIRD_PARTY_HOST);
   expect(navigation).toBeDefined();
   expect(navigation?.referer).toContain(PAGE_HOST);
+});
+
+test('keeps the Referer header under the default policy', async () => {
+  // Phase 8: `default` is the browser-native policy — no trimming rule, and the
+  // header survives (Chromium sends the origin for a cross-origin image).
+  await setRefererPolicy('default');
+  seen = [];
+  const page = await context.newPage();
+  await page.goto(`${baseUrl}page`, { waitUntil: 'load' });
+  await expect.poll(() => imgWidth(page, '#third')).toBeGreaterThan(0);
+
+  const third = requestTo('/px.png?third', THIRD_PARTY_HOST);
+  expect(third).toBeDefined();
+  expect(third?.referer).toContain(PAGE_HOST);
 });

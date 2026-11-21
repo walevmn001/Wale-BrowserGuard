@@ -37,6 +37,7 @@ test.afterAll(async () => {
 test('WebRTC protection is opt-in: it is off by default (AC-6.4)', async () => {
   const options = await context.newPage();
   await options.goto(optionsUrl);
+  await options.locator('a[data-nav="privacy"]').click();
 
   await expect(options.locator('#webrtc-protection')).not.toBeChecked();
   await expect.poll(() => readPolicy(worker)).toEqual({
@@ -48,6 +49,7 @@ test('WebRTC protection is opt-in: it is off by default (AC-6.4)', async () => {
 test('ticking the box restricts WebRTC and unticking restores the default (AC-6.4)', async () => {
   const options = await context.newPage();
   await options.goto(optionsUrl);
+  await options.locator('a[data-nav="privacy"]').click();
 
   await options.locator('#webrtc-protection').check();
 

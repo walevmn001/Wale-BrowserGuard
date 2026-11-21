@@ -34,6 +34,7 @@ export const EN: Record<keyof typeof VI, string> = {
   gBack: 'Back',
   gCustom: 'Custom',
   gError: 'Something went wrong',
+  gResults: '{count} results',
 
   // ---- Status ----
   statusProtected: 'Protected',

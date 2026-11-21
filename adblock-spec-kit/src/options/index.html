@@ -3,56 +3,582 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AdBlock Security — Options</title>
+    <title>WALE GUARD — Dashboard</title>
+    <link rel="stylesheet" href="../shared/ui/design-tokens.css" />
+    <link rel="stylesheet" href="../shared/ui/components.css" />
+    <link rel="stylesheet" href="../shared/ui/dashboard.css" />
   </head>
   <body>
-    <main id="app">
-      <h1 data-i18n="optionsHeading">Tuỳ chọn</h1>
+    <div class="app">
+      <aside class="side">
+        <div class="brand">
+          <img src="../shared/ui/icon.svg" alt="" />
+          <div>WALE GUARD<div class="sub" data-i18n="abtTagline"></div></div>
+        </div>
+        <nav class="nav">
+          <div class="navlabel" data-i18n="navGroupMonitor"></div>
+          <a href="#overview" data-nav="overview"
+            ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              ><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg
+            ><span data-i18n="navOverview"></span></a
+          >
+          <a href="#activity" data-nav="activity"
+            ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              ><path d="M3 12h4l3-8 4 16 3-8h4" /></svg
+            ><span data-i18n="navActivity"></span></a
+          >
+          <div class="navlabel" data-i18n="navGroupProtect"></div>
+          <a href="#filters" data-nav="filters"
+            ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              ><path d="M3 4h18l-7 8v7l-4 2v-9z" /></svg
+            ><span data-i18n="navFilters"></span></a
+          >
+          <a href="#security" data-nav="security"
+            ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              ><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg
+            ><span data-i18n="navSecurity"></span></a
+          >
+          <a href="#privacy" data-nav="privacy"
+            ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              ><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /><path d="M9 12l2 2 4-4" /></svg
+            ><span data-i18n="navPrivacy"></span></a
+          >
+          <a href="#exceptions" data-nav="exceptions"
+            ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              ><circle cx="12" cy="12" r="9" /><path d="M8 12l3 3 5-6" /></svg
+            ><span data-i18n="navExceptions"></span></a
+          >
+          <div class="navlabel" data-i18n="navGroupConfigure"></div>
+          <a href="#profiles" data-nav="profiles"
+            ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              ><path d="M4 6h16M4 12h16M4 18h16" /></svg
+            ><span data-i18n="navProfiles"></span></a
+          >
+          <a href="#rules" data-nav="rules"
+            ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              ><path d="M8 6l-5 6 5 6M16 6l5 6-5 6" /></svg
+            ><span data-i18n="navRules"></span></a
+          >
+          <div class="navlabel" data-i18n="navGroupSystem"></div>
+          <a href="#data" data-nav="data"
+            ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              ><ellipse cx="12" cy="6" rx="8" ry="3" /><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6" /><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" /></svg
+            ><span data-i18n="navData"></span></a
+          >
+          <a href="#diagnostics" data-nav="diagnostics"
+            ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              ><path d="M12 3v18M5 8l7 5 7-5" /></svg
+            ><span data-i18n="navDiagnostics"></span></a
+          >
+          <a href="#settings" data-nav="settings"
+            ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              ><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M5 5l2 2M17 17l2 2M2 12h3M19 12h3M5 19l2-2M17 7l2-2" /></svg
+            ><span data-i18n="navSettings"></span></a
+          >
+          <a href="#about" data-nav="about"
+            ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              ><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg
+            ><span data-i18n="navAbout"></span></a
+          >
+        </nav>
+        <div class="side-foot">
+          <span id="side-version">WALE GUARD</span>
+          <span data-i18n="ppNoData"></span>
+        </div>
+      </aside>
 
-      <section aria-labelledby="lists-heading">
-        <h2 id="lists-heading" data-i18n="optionsListsHeading">Nhóm danh sách</h2>
-        <ul id="group-list"></ul>
-      </section>
+      <div class="main">
+        <header class="topbar">
+          <div class="search" style="position: relative">
+            <input class="input" id="smart-search" data-i18n-placeholder="gSearch" autocomplete="off" />
+            <span class="chip off" id="search-count" hidden></span>
+          </div>
+          <div class="cluster" style="margin-left: auto">
+            <span class="status" id="top-status"><span class="dot" id="top-status-dot"></span><span id="top-status-text"></span></span>
+          </div>
+        </header>
 
-      <section aria-labelledby="updates-heading">
-        <h2 id="updates-heading" data-i18n="optionsUpdatesHeading">Cập nhật danh sách</h2>
-        <p id="update-status">…</p>
-        <button id="update-now" type="button" data-i18n="optionsUpdateNow">Cập nhật ngay</button>
-      </section>
+        <main class="content">
+          <!-- ===== Overview ===== -->
+          <section class="page" id="overview" aria-labelledby="ov-h">
+            <div class="page-head">
+              <h1 id="ov-h" data-i18n="ovTitle"></h1>
+              <p class="sub" data-i18n="ovSub"></p>
+            </div>
 
-      <section aria-labelledby="version-heading">
-        <h2 id="version-heading" data-i18n="optionsVersionHeading">Phiên bản</h2>
-        <p id="version-ext">…</p>
-        <p id="version-data">…</p>
-      </section>
+            <div class="card">
+              <div class="row">
+                <div>
+                  <div class="t" data-i18n="ovStatus"></div>
+                  <div class="d" id="ov-status-text"></div>
+                </div>
+                <span class="chip off" id="ov-profile-chip"></span>
+              </div>
+              <div class="row">
+                <div>
+                  <div class="t" data-i18n="ovMaster"></div>
+                  <div class="d" data-i18n="ovMasterDesc"></div>
+                </div>
+                <label class="switch big">
+                  <input id="ov-master" type="checkbox" role="switch" />
+                  <span class="track"></span>
+                </label>
+              </div>
+              <div class="row">
+                <div>
+                  <div class="t" data-i18n="statusPaused"></div>
+                  <div class="d" id="ov-pause-state"></div>
+                </div>
+                <div class="cluster">
+                  <select class="input" id="ov-pause-select" style="width: auto; min-height: 34px">
+                    <option value="five" data-i18n="pause5"></option>
+                    <option value="fifteen" data-i18n="pause15"></option>
+                    <option value="thirty" data-i18n="pause30"></option>
+                    <option value="manual" data-i18n="pauseManual"></option>
+                  </select>
+                  <button class="btn ghost sm" id="ov-pause-resume" data-i18n="ppResume"></button>
+                </div>
+              </div>
+            </div>
 
-      <section aria-labelledby="webrtc-heading">
-        <h2 id="webrtc-heading" data-i18n="optionsWebrtcHeading">
-          Chặn rò rỉ IP qua WebRTC
-        </h2>
-        <label>
-          <input id="webrtc-protection" type="checkbox" />
-          <span data-i18n="optionsWebrtcLabel">Bật chặn rò rỉ IP qua WebRTC</span>
-        </label>
-        <p data-i18n="optionsWebrtcHint">
-          Khi bật, WebRTC chỉ dùng giao diện mạng công khai, giảm lộ địa chỉ IP cục bộ.
-        </p>
-      </section>
+            <div class="card">
+              <h2 data-i18n="ovStatsTitle"></h2>
+              <div class="stats" style="margin-top: var(--s3)">
+                <div class="stat"><b id="ov-stat-ads">0</b><span data-i18n="ovStatAds"></span></div>
+                <div class="stat"><b id="ov-stat-trackers">0</b><span data-i18n="ovStatTrackers"></span></div>
+                <div class="stat"><b id="ov-stat-malware">0</b><span data-i18n="ovStatMalware"></span></div>
+                <div class="stat accent"><b id="ov-stat-today">0</b><span data-i18n="ovStatToday"></span></div>
+              </div>
+            </div>
 
-      <section aria-labelledby="fingerprint-heading">
-        <h2 id="fingerprint-heading" data-i18n="optionsFingerprintHeading">
-          Chống dấu vết trình duyệt
-        </h2>
-        <label>
-          <input id="anti-fingerprint" type="checkbox" />
-          <span data-i18n="optionsFingerprintLabel">Bật giảm dấu vết trình duyệt</span>
-        </label>
-        <p data-i18n="optionsFingerprintHint">
-          Mặc định tắt vì có thể làm hỏng một số trang. Khi bật, giảm một số thông tin nhận dạng
-          cơ bản.
-        </p>
-      </section>
-    </main>
+            <div class="card">
+              <h2 data-i18n="ovModulesTitle"></h2>
+              <div class="grid-auto" id="ov-modules" style="margin-top: var(--s3)"></div>
+            </div>
+
+            <div class="card">
+              <h2 data-i18n="ovQuick"></h2>
+              <div class="toolbar" style="margin-top: var(--s3)">
+                <button class="btn ghost sm" id="ov-open-activity" data-i18n="navActivity"></button>
+                <button class="btn ghost sm" id="ov-open-filters" data-i18n="navFilters"></button>
+                <button class="btn ghost sm" id="ov-open-settings" data-i18n="navSettings"></button>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== Activity ===== -->
+          <section class="page" id="activity" aria-labelledby="act-h">
+            <div class="page-head">
+              <h1 id="act-h" data-i18n="actTitle"></h1>
+              <p class="sub" data-i18n="actSub"></p>
+            </div>
+            <div class="stats">
+              <div class="stat"><b id="act-total">0</b><span data-i18n="actTotal"></span></div>
+              <div class="stat"><b id="act-ads">0</b><span data-i18n="actAds"></span></div>
+              <div class="stat"><b id="act-trackers">0</b><span data-i18n="actTrackers"></span></div>
+              <div class="stat"><b id="act-security">0</b><span data-i18n="actSecurity"></span></div>
+            </div>
+            <div class="card">
+              <div class="between">
+                <div class="tabs" id="act-filters"></div>
+                <div class="cluster">
+                  <label class="small muted" data-i18n="actRetention"></label>
+                  <select class="input" id="act-retention" style="width: auto; min-height: 34px"></select>
+                  <button class="btn ghost sm" id="act-export" data-i18n="actExport"></button>
+                  <button class="btn ghost sm" id="act-clear" data-i18n="actClear"></button>
+                </div>
+              </div>
+              <div class="scroll" style="margin-top: var(--s3)">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th data-i18n="actColTime"></th>
+                      <th data-i18n="actColHost"></th>
+                      <th data-i18n="actColType"></th>
+                      <th data-i18n="actColRule"></th>
+                      <th data-i18n="actColList"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="act-rows"></tbody>
+                </table>
+                <div class="empty" id="act-empty" hidden>
+                  <b data-i18n="actEmpty"></b>
+                  <p data-i18n="actEmptyDesc"></p>
+                </div>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="card"><h3 data-i18n="actTopSites"></h3><ul class="list" id="act-top-sites"></ul></div>
+              <div class="card">
+                <h3 data-i18n="actNote"></h3>
+                <p class="small muted" style="margin-top: var(--s2)" data-i18n="scanLocal"></p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== Filters ===== -->
+          <section class="page" id="filters" aria-labelledby="flt-h">
+            <div class="page-head">
+              <h1 id="flt-h" data-i18n="fltTitle"></h1>
+              <p class="sub" data-i18n="fltSub"></p>
+            </div>
+            <div class="card">
+              <div class="between">
+                <h2 data-i18n="fltGroups"></h2>
+                <span class="chip warn" id="flt-fail-chip" hidden></span>
+              </div>
+              <p class="small muted" style="margin-top: var(--s2)" data-i18n="fltAuto"></p>
+              <ul class="list" id="group-list"></ul>
+            </div>
+            <div class="card">
+              <div class="row">
+                <div>
+                  <div class="t" data-i18n="optionsUpdatesHeading"></div>
+                  <div class="d" id="update-status">…</div>
+                </div>
+                <button class="btn" id="update-now" data-i18n="fltUpdateNow"></button>
+              </div>
+              <div class="progress" id="flt-progress" hidden><i></i></div>
+              <p class="small muted" id="flt-last" style="margin-top: var(--s2)"></p>
+              <p class="small muted" id="flt-next"></p>
+              <p class="small" id="flt-failures" style="color: var(--warning-text)" hidden></p>
+              <p class="small muted-2" style="margin-top: var(--s2)" data-i18n="fltNote"></p>
+            </div>
+            <div class="card">
+              <h2 data-i18n="fltCustom"></h2>
+              <p class="small muted" style="margin-top: var(--s2)" data-i18n="fltCustomDesc"></p>
+              <div class="toolbar" style="margin-top: var(--s3)">
+                <input class="input" id="flt-custom-name" style="max-width: 200px" data-i18n-placeholder="fltCustomName" />
+                <input class="input" id="flt-custom-url" placeholder="https://…" data-i18n-placeholder="fltCustomUrl" />
+                <button class="btn" id="flt-add-custom" data-i18n="fltAddCustom"></button>
+              </div>
+              <ul class="list" id="flt-custom-list"></ul>
+              <div class="empty" id="flt-custom-empty"><b data-i18n="fltEmptyCustom"></b></div>
+            </div>
+          </section>
+
+          <!-- ===== Security ===== -->
+          <section class="page" id="security" aria-labelledby="sec-h">
+            <div class="page-head">
+              <h1 id="sec-h" data-i18n="secTitle"></h1>
+              <p class="sub" data-i18n="secSub"></p>
+            </div>
+            <div class="banner info" role="note">
+              <div>
+                <div data-i18n="secSafeBullet1"></div>
+                <div data-i18n="secSafeBullet2"></div>
+                <div data-i18n="secSafeBullet3"></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="row">
+                <div>
+                  <div class="t" data-i18n="secMalware"></div>
+                  <div class="d" data-i18n="modWebDesc"></div>
+                </div>
+                <label class="switch">
+                  <input id="sec-malware" type="checkbox" role="switch" />
+                  <span class="track"></span>
+                </label>
+              </div>
+              <div class="row">
+                <div>
+                  <div class="t" data-i18n="secDb"></div>
+                  <div class="d" id="sec-db"></div>
+                </div>
+                <button class="btn ghost sm" id="sec-db-update" data-i18n="fltUpdateNow"></button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="between">
+                <h2 data-i18n="secTemp"></h2>
+                <button class="btn ghost sm" id="sec-temp-clear" data-i18n="secTempClear"></button>
+              </div>
+              <p class="small muted" style="margin-top: var(--s2)" data-i18n="secTempDesc"></p>
+              <ul class="list" id="sec-temp-list"></ul>
+              <div class="empty" id="sec-temp-empty"><b data-i18n="secTempEmpty"></b></div>
+            </div>
+            <div class="card">
+              <h2 data-i18n="scanTitle"></h2>
+              <p class="small muted" style="margin-top: var(--s2)" data-i18n="scanSub"></p>
+              <div class="toolbar" style="margin-top: var(--s3)">
+                <input class="input" id="scan-input" data-i18n-placeholder="scanPlaceholder" />
+                <button class="btn" id="scan-run" data-i18n="scanButton"></button>
+              </div>
+              <p class="small muted-2" style="margin-top: var(--s2)" data-i18n="scanLocal"></p>
+              <div id="scan-output" hidden></div>
+            </div>
+          </section>
+
+          <!-- ===== Privacy ===== -->
+          <section class="page" id="privacy" aria-labelledby="prv-h">
+            <div class="page-head">
+              <h1 id="prv-h" data-i18n="prvTitle"></h1>
+              <p class="sub" data-i18n="prvSub"></p>
+            </div>
+            <div class="card">
+              <div class="row">
+                <div>
+                  <div class="t" data-i18n="prvGroup"></div>
+                  <div class="d" data-i18n="prvGroupDesc"></div>
+                </div>
+                <label class="switch">
+                  <input id="prv-group" type="checkbox" role="switch" />
+                  <span class="track"></span>
+                </label>
+              </div>
+              <div class="row">
+                <div>
+                  <div class="t" data-i18n="prvReferer"></div>
+                  <div class="d" data-i18n="prvRefererDesc"></div>
+                </div>
+                <select class="input" id="prv-referer" style="width: auto; min-height: 34px">
+                  <option value="default" data-i18n="prvRefererDefault"></option>
+                  <option value="third-party" data-i18n="prvRefererThird"></option>
+                </select>
+              </div>
+              <div class="row">
+                <div>
+                  <div class="t" data-i18n="prvWebrtc"></div>
+                  <div class="d" data-i18n="prvWebrtcHint"></div>
+                </div>
+                <label class="switch">
+                  <input id="webrtc-protection" type="checkbox" role="switch" />
+                  <span class="track"></span>
+                </label>
+              </div>
+              <div class="row">
+                <div>
+                  <div class="t" data-i18n="prvFp"></div>
+                  <div class="d" data-i18n="prvFpWarning"></div>
+                </div>
+                <label class="switch">
+                  <input id="anti-fingerprint" type="checkbox" role="switch" />
+                  <span class="track"></span>
+                </label>
+              </div>
+            </div>
+            <div class="card">
+              <h2 data-i18n="prvFpExceptions"></h2>
+              <ul class="list" id="prv-fp-list"></ul>
+              <div class="empty" id="prv-fp-empty"><b data-i18n="prvFpNoExceptions"></b></div>
+            </div>
+            <div class="card">
+              <h3 data-i18n="prvParams"></h3>
+              <p class="small muted mono" id="prv-params" style="margin-top: var(--s2)"></p>
+            </div>
+          </section>
+
+          <!-- ===== Exceptions ===== -->
+          <section class="page" id="exceptions" aria-labelledby="exc-h">
+            <div class="page-head">
+              <h1 id="exc-h" data-i18n="excTitle"></h1>
+              <p class="sub" data-i18n="excSub"></p>
+            </div>
+            <div class="banner warn" role="note"><span data-i18n="excWarning"></span></div>
+            <div class="card">
+              <div class="toolbar">
+                <input class="input" id="exc-input" style="max-width: 260px" data-i18n-placeholder="excAddPlaceholder" />
+                <button class="btn" id="exc-add" data-i18n="excAdd"></button>
+              </div>
+              <div class="toolbar" style="margin-top: var(--s3)">
+                <input class="input" id="exc-search" style="max-width: 260px" data-i18n-placeholder="excSearch" />
+                <button class="btn ghost sm" id="exc-export" data-i18n="excExport"></button>
+                <button class="btn ghost sm" id="exc-import" data-i18n="excImport"></button>
+                <input type="file" id="exc-import-file" accept="application/json" hidden />
+              </div>
+              <ul class="list" id="exc-list"></ul>
+              <div class="empty" id="exc-empty">
+                <b data-i18n="excEmpty"></b>
+                <p data-i18n="excEmptyDesc"></p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== Profiles ===== -->
+          <section class="page" id="profiles" aria-labelledby="prof-h">
+            <div class="page-head">
+              <h1 id="prof-h" data-i18n="profTitle"></h1>
+              <p class="sub" data-i18n="profSub"></p>
+            </div>
+            <div class="grid-3" id="prof-cards">
+              <button class="plan" data-profile="balanced" aria-pressed="false">
+                <span class="strong" data-i18n="profBalanced"></span>
+                <span class="desc" data-i18n="profBalancedDesc"></span>
+                <span class="chip" data-i18n="profActive" hidden></span>
+              </button>
+              <button class="plan" data-profile="strict" aria-pressed="false">
+                <span class="strong" data-i18n="profStrict"></span>
+                <span class="desc" data-i18n="profStrictDesc"></span>
+                <span class="chip" data-i18n="profActive" hidden></span>
+              </button>
+              <button class="plan" data-profile="custom" aria-pressed="false">
+                <span class="strong" data-i18n="profCustom"></span>
+                <span class="desc" data-i18n="profCustomDesc"></span>
+                <span class="chip" data-i18n="profActive" hidden></span>
+              </button>
+            </div>
+            <div class="banner warn" id="prof-warn" role="note" hidden>
+              <span data-i18n="profStrictWarn"></span>
+            </div>
+          </section>
+
+          <!-- ===== Custom rules ===== -->
+          <section class="page" id="rules" aria-labelledby="rul-h">
+            <div class="page-head">
+              <h1 id="rul-h" data-i18n="rulTitle"></h1>
+              <p class="sub" data-i18n="rulSub"></p>
+            </div>
+            <div class="card">
+              <p class="small muted mono" data-i18n="rulSyntax"></p>
+              <div class="toolbar" style="margin-top: var(--s3)">
+                <input class="input" id="rul-input" style="max-width: 260px" data-i18n-placeholder="rulPlaceholder" />
+                <button class="btn" id="rul-add" data-i18n="rulAdd"></button>
+                <button class="btn ghost sm" id="rul-export" data-i18n="gExport"></button>
+                <button class="btn ghost sm" id="rul-import" data-i18n="gImport"></button>
+                <input type="file" id="rul-import-file" accept="application/json" hidden />
+              </div>
+              <p class="small" id="rul-error" style="color: var(--danger-text); margin-top: var(--s2)" hidden></p>
+              <ul class="list" id="rul-list"></ul>
+              <div class="empty" id="rul-empty">
+                <b data-i18n="rulEmpty"></b>
+                <p data-i18n="rulEmptyDesc"></p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== Data ===== -->
+          <section class="page" id="data" aria-labelledby="data-h">
+            <div class="page-head">
+              <h1 id="data-h" data-i18n="dataTitle"></h1>
+              <p class="sub" data-i18n="dataSub"></p>
+            </div>
+            <div class="card">
+              <div class="row">
+                <div>
+                  <div class="t" data-i18n="dataStorage"></div>
+                  <div class="d" id="data-storage">…</div>
+                </div>
+                <span class="chip off" id="data-storage-chip"></span>
+              </div>
+              <p class="small muted" data-i18n="dataIncludes"></p>
+              <div class="toolbar" style="margin-top: var(--s3)">
+                <button class="btn" id="data-export" data-i18n="dataExport"></button>
+                <button class="btn ghost" id="data-import" data-i18n="dataImport"></button>
+                <input type="file" id="data-import-file" accept="application/json" hidden />
+              </div>
+              <div class="toolbar" style="margin-top: var(--s3)">
+                <button class="btn ghost" id="data-clear-logs" data-i18n="dataClearLogs"></button>
+                <button class="btn ghost" id="data-clear-stats" data-i18n="dataClearStats"></button>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== Diagnostics ===== -->
+          <section class="page" id="diagnostics" aria-labelledby="diag-h">
+            <div class="page-head">
+              <h1 id="diag-h" data-i18n="diagTitle"></h1>
+              <p class="sub" data-i18n="diagSub"></p>
+            </div>
+            <div class="card">
+              <div class="toolbar">
+                <button class="btn ghost sm" id="diag-copy" data-i18n="diagCopy"></button>
+                <button class="btn ghost sm" id="diag-export" data-i18n="diagExport"></button>
+              </div>
+              <pre class="mono scroll" id="diag-report" style="margin-top: var(--s3); white-space: pre-wrap">…</pre>
+              <p class="small muted-2" data-i18n="diagNote"></p>
+            </div>
+          </section>
+
+          <!-- ===== Settings ===== -->
+          <section class="page" id="settings" aria-labelledby="set-h">
+            <div class="page-head">
+              <h1 id="set-h" data-i18n="setTitle"></h1>
+              <p class="sub" data-i18n="setSub"></p>
+            </div>
+            <div class="card">
+              <div class="row">
+                <div class="t" data-i18n="setLanguage"></div>
+                <select class="input" id="set-language" style="width: auto; min-height: 34px">
+                  <option value="auto" data-i18n="setLangAuto"></option>
+                  <option value="vi" data-i18n="setLangVi"></option>
+                  <option value="en" data-i18n="setLangEn"></option>
+                </select>
+              </div>
+              <div class="row">
+                <div class="t" data-i18n="setTheme"></div>
+                <select class="input" id="set-theme" style="width: auto; min-height: 34px">
+                  <option value="system" data-i18n="setThemeSystem"></option>
+                  <option value="light" data-i18n="setThemeLight"></option>
+                  <option value="dark" data-i18n="setThemeDark"></option>
+                </select>
+              </div>
+            </div>
+            <div class="card">
+              <h2 data-i18n="setNotif"></h2>
+              <p class="small muted" style="margin-top: var(--s2)" data-i18n="setNotifDesc"></p>
+              <div class="row">
+                <div class="t" data-i18n="setNotifFilter"></div>
+                <label class="switch"><input id="set-notif-filter" type="checkbox" /><span class="track"></span></label>
+              </div>
+              <div class="row">
+                <div class="t" data-i18n="setNotifSecurity"></div>
+                <label class="switch"><input id="set-notif-security" type="checkbox" /><span class="track"></span></label>
+              </div>
+              <div class="row">
+                <div class="t" data-i18n="setNotifOff"></div>
+                <label class="switch"><input id="set-notif-off" type="checkbox" /><span class="track"></span></label>
+              </div>
+              <div class="row">
+                <div class="t" data-i18n="setNotifErrors"></div>
+                <label class="switch"><input id="set-notif-errors" type="checkbox" /><span class="track"></span></label>
+              </div>
+            </div>
+            <div class="card">
+              <div class="row">
+                <div>
+                  <div class="t" data-i18n="setReset"></div>
+                  <div class="d" data-i18n="setResetDesc"></div>
+                </div>
+                <button class="btn outline-danger" id="set-reset" data-i18n="setReset"></button>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== About ===== -->
+          <section class="page" id="about" aria-labelledby="abt-h">
+            <div class="page-head">
+              <h1 id="abt-h" data-i18n="abtTitle"></h1>
+              <p class="sub" data-i18n="abtTagline"></p>
+            </div>
+            <div class="card">
+              <p class="strong" id="version-ext">…</p>
+              <p class="small muted" id="version-data" style="margin-top: 4px">…</p>
+              <p class="small muted" style="margin-top: var(--s2)" data-i18n="abtDesc"></p>
+            </div>
+            <div class="card">
+              <h3 data-i18n="abtPrivacy"></h3>
+              <p class="small muted" style="margin-top: var(--s2)" data-i18n="abtPrivacyBody"></p>
+              <div class="toolbar" style="margin-top: var(--s3)">
+                <button class="btn link" id="abt-privacy" data-i18n="abtPrivacy"></button>
+                <button class="btn link" id="abt-changelog" data-i18n="abtChangelog"></button>
+                <button class="btn link" id="abt-support" data-i18n="abtSupport"></button>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <dialog class="dlg" id="confirm">
+      <div class="dlg-head" id="confirm-title"></div>
+      <div class="dlg-body" id="confirm-body"></div>
+      <div class="dlg-foot">
+        <button class="btn ghost" id="confirm-cancel" data-i18n="gCancel"></button>
+        <button class="btn" id="confirm-ok"></button>
+      </div>
+    </dialog>
+    <div class="toasts" id="toasts"></div>
     <script type="module" src="./options.ts"></script>
   </body>
 </html>

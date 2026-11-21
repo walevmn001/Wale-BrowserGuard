@@ -36,6 +36,45 @@ export function describeUpdateResult(result: UpdateResult, locale: Locale): stri
   return t(result.ok ? 'optionsUpdateOk' : 'optionsUpdateFailed', locale);
 }
 
+/** Visual tone for a protection state (maps onto `.status` / `.dot` classes). */
+export type ProtectionTone = 'on' | 'warn' | 'danger' | 'off';
+
+/** The overall protection state, shared by the top bar and the overview card. */
+export function statusKey(master: boolean, paused: boolean, failures: number): MessageKey {
+  if (paused) {
+    return 'statusPaused';
+  }
+  if (!master) {
+    return 'statusOff';
+  }
+  if (failures > 0) {
+    return 'statusAttention';
+  }
+  return 'statusProtected';
+}
+
+/** The tone that goes with {@link statusKey}. */
+export function statusTone(master: boolean, paused: boolean, failures: number): ProtectionTone {
+  if (paused) {
+    return 'warn';
+  }
+  if (!master) {
+    return 'off';
+  }
+  return failures > 0 ? 'warn' : 'on';
+}
+
+/** Label key for a protection profile. */
+export function profileKey(profile: string): MessageKey {
+  if (profile === 'strict') {
+    return 'profStrict';
+  }
+  if (profile === 'custom') {
+    return 'profCustom';
+  }
+  return 'profBalanced';
+}
+
 /** Total rules across the active groups, plus how many groups there are. */
 export function summarizeGroups(groups: Readonly<Record<string, FilterGroupInfo>>): {
   rules: number;

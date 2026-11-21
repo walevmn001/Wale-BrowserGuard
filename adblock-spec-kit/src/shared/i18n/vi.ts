@@ -33,6 +33,7 @@ export const VI = {
   gBack: 'Quay lại',
   gCustom: 'Tuỳ chỉnh',
   gError: 'Đã xảy ra lỗi',
+  gResults: '{count} kết quả',
 
   // ---- Status ----
   statusProtected: 'Đang được bảo vệ',
