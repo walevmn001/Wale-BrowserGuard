@@ -173,6 +173,11 @@ export interface StorageSchema {
    * (Phase 9 §4). Injected as element-hiding CSS on top of the shipped lists.
    */
   hiddenSelectors?: Record<string, string[]>;
+  /**
+   * Hosts where the user chose "trust this site" on the in-page security banner
+   * (Phase 7), so it never shows there again; missing means none.
+   */
+  bannerTrusted?: string[];
   /** Referer trimming policy; missing means the browser default (Phase 8). */
   refererPolicy?: RefererPolicy;
   /** Blocked-request counts per category since install (Phase 4). */

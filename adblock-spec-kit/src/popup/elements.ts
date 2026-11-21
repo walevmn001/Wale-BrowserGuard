@@ -30,6 +30,7 @@ export interface Elements {
   readonly modules: HTMLElement;
   readonly fingerprintSite: HTMLInputElement;
   readonly actionScan: HTMLButtonElement;
+  readonly actionPick: HTMLButtonElement;
   readonly scanResult: HTMLElement;
   readonly openActivity: HTMLButtonElement;
   readonly openDashboard: HTMLButtonElement;
@@ -83,6 +84,7 @@ export function collectElements(): Elements {
     modules: q('modules'),
     fingerprintSite: q<HTMLInputElement>('fingerprint-site'),
     actionScan: q<HTMLButtonElement>('action-scan'),
+    actionPick: q<HTMLButtonElement>('action-pick'),
     scanResult: q('scan-result'),
     openActivity: q<HTMLButtonElement>('open-activity'),
     openDashboard: q<HTMLButtonElement>('open-dashboard'),

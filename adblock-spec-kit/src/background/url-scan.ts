@@ -10,6 +10,10 @@
  * suspicious signs found", because absence from a local list proves nothing.
  */
 
+import type { BannerReason } from '../shared/messages';
+
+export type { BannerReason } from '../shared/messages';
+
 export type ScanSeverity = 'info' | 'warning' | 'danger';
 export type ScanVerdict = 'safe' | 'suspicious' | 'dangerous' | 'unknown';
 
@@ -143,4 +147,32 @@ function verdictFor(findings: readonly ScanFinding[]): ScanVerdict {
     return 'suspicious';
   }
   return 'safe';
+}
+
+/**
+ * Decides whether a top-level page warrants the in-page security banner:
+ *  - `'spoofed'`: the host shows impersonation signs (punycode or a brand name
+ *    in the wrong place) — offered on http and https alike.
+ *  - `'insecure'`: a plain `http:` page. The page-side half only shows this one
+ *    when it actually finds a password field, so ordinary http pages stay quiet.
+ * Returns `undefined` for anything else (https, extensions, non-web schemes).
+ */
+export function bannerReason(raw: string | undefined): BannerReason | undefined {
+  if (raw === undefined) {
+    return undefined;
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return undefined;
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return undefined;
+  }
+  const { findings } = scanUrl(raw);
+  if (findings.some((finding) => finding.id === 'punycode' || finding.id === 'brandImpersonation')) {
+    return 'spoofed';
+  }
+  return parsed.protocol === 'http:' ? 'insecure' : undefined;
 }

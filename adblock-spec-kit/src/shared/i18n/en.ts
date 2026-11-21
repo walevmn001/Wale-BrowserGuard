@@ -410,4 +410,29 @@ export const EN: Record<keyof typeof VI, string> = {
   warningBack: 'Back to safety',
   warningContinue: 'Continue anyway (10 minutes)',
   warningContinueHint: 'Continuing is your choice — the page may be harmful.',
+
+  // ---- Element picker (Phase 9 §4) ----
+  ppInspect: 'Hide an element on this page',
+  pickTitle: 'Pick an element to hide',
+  pickHint: 'Move the mouse, then click the element you want to hide.',
+  pickConfirm: 'Hide element',
+  pickUndo: 'Undo',
+  pickCancel: 'Cancel',
+  pickHidden: 'Element hidden on this page.',
+  pickReasonEmpty: 'Could not build a selector for that element.',
+  pickReasonTooLong: 'That selector is too long.',
+  pickReasonInvalid: 'That selector has invalid characters.',
+  pickReasonTooBroad: 'That selector is too broad — it could hide the whole page.',
+  pickReasonNoHost: 'Could not read the page’s domain.',
+  pickReasonFailed: 'Could not save — please try again.',
+
+  // ---- In-page security banner (Phase 7) ----
+  bannerInsecureHeading: 'Insecure connection',
+  bannerInsecureBody:
+    'This page uses plain HTTP, with no encryption. What you type can be read in transit.',
+  bannerSpoofedHeading: 'This page looks like a spoof',
+  bannerSpoofedBody:
+    'The domain shows signs of impersonating another brand. Check carefully before entering any information.',
+  bannerTrust: 'Trust this site',
+  bannerClose: 'Dismiss',
 };

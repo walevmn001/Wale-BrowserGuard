@@ -409,4 +409,29 @@ export const VI = {
   warningBack: 'Quay lại an toàn',
   warningContinue: 'Vẫn tiếp tục (10 phút)',
   warningContinueHint: 'Vẫn tiếp tục là lựa chọn của bạn — trang có thể gây hại.',
+
+  // ---- Element picker (Phase 9 §4) ----
+  ppInspect: 'Ẩn phần tử trên trang',
+  pickTitle: 'Chọn phần tử để ẩn',
+  pickHint: 'Di chuyển chuột rồi bấm vào phần tử bạn muốn ẩn.',
+  pickConfirm: 'Ẩn phần tử',
+  pickUndo: 'Hoàn tác',
+  pickCancel: 'Huỷ',
+  pickHidden: 'Đã ẩn phần tử này trên trang.',
+  pickReasonEmpty: 'Không xác định được bộ chọn cho phần tử.',
+  pickReasonTooLong: 'Bộ chọn quá dài.',
+  pickReasonInvalid: 'Bộ chọn chứa ký tự không hợp lệ.',
+  pickReasonTooBroad: 'Bộ chọn quá rộng — có thể ẩn cả trang.',
+  pickReasonNoHost: 'Không xác định được tên miền của trang.',
+  pickReasonFailed: 'Không lưu được — vui lòng thử lại.',
+
+  // ---- In-page security banner (Phase 7) ----
+  bannerInsecureHeading: 'Kết nối không bảo mật',
+  bannerInsecureBody:
+    'Trang này dùng HTTP, không mã hoá. Thông tin bạn nhập có thể bị đọc trên đường truyền.',
+  bannerSpoofedHeading: 'Trang này có dấu hiệu giả mạo',
+  bannerSpoofedBody:
+    'Tên miền có dấu hiệu mạo danh thương hiệu khác. Hãy kiểm tra kỹ trước khi nhập thông tin.',
+  bannerTrust: 'Tin tưởng trang này',
+  bannerClose: 'Đóng',
 } as const;

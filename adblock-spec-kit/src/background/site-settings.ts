@@ -10,11 +10,11 @@
  */
 
 import { logger } from '../shared/logger';
+import { MAX_SELECTOR_LENGTH } from '../shared/selector';
 import { TypedStorage } from '../shared/storage';
 import type { SiteSetting } from '../shared/types';
 
-/** Longest selector we accept from the element picker, to avoid absurd CSS. */
-export const MAX_SELECTOR_LENGTH = 200;
+export { MAX_SELECTOR_LENGTH };
 
 export interface SitePreferencesDeps {
   readonly storage: TypedStorage;

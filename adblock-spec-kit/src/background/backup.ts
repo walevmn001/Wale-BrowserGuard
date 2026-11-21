@@ -29,6 +29,7 @@ export const BACKUP_KEYS = [
   'customRules',
   'siteSettings',
   'hiddenSelectors',
+  'bannerTrusted',
   'activityRetentionDays',
 ] as const;
 
@@ -90,6 +91,7 @@ function isAllowed(key: BackupKey, value: unknown): boolean {
     case 'disabledRuleSets':
     case 'whitelist':
     case 'antiFingerprintOffSites':
+    case 'bannerTrusted':
       return Array.isArray(value) && value.every((item) => typeof item === 'string');
     case 'activityRetentionDays':
       return typeof value === 'number' && Number.isFinite(value);

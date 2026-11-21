@@ -24,6 +24,7 @@ import { createWhitelist } from '../background/whitelist';
 import { scanUrl } from '../background/url-scan';
 import { isMessageKey, t, type MessageKey } from '../shared/i18n';
 import { logger } from '../shared/logger';
+import { MSG_START_PICKER } from '../shared/messages';
 import { TypedStorage } from '../shared/storage';
 import {
   applyStaticText,
@@ -160,6 +161,18 @@ async function toggleFingerprintSite(elements: Elements, state: LiveState): Prom
   await createFingerprintSettings().setSiteEnabled(state.domain, elements.fingerprintSite.checked);
 }
 
+/**
+ * Phase 9 §4: asks the worker to open the element picker on the current tab,
+ * then closes the popup so the page is visible to pick on.
+ */
+function startPicker(state: LiveState): void {
+  if (state.tabId === undefined) {
+    return;
+  }
+  void chrome.runtime.sendMessage({ type: MSG_START_PICKER, tabId: state.tabId }).catch(reportError);
+  window.close();
+}
+
 function reportError(error: unknown): void {
   logger.error('popup action failed', error);
 }
@@ -184,6 +197,7 @@ function wireActions(elements: Elements, state: LiveState): void {
     void toggleFingerprintSite(elements, state).catch(reportError);
   });
   elements.actionScan.addEventListener('click', () => scanCurrent(elements, state));
+  elements.actionPick.addEventListener('click', () => startPicker(state));
   elements.openActivity.addEventListener('click', () => openSection('activity'));
   elements.openDashboard.addEventListener('click', () => openSection('overview'));
   elements.openSettings.addEventListener('click', () => openSection('settings'));

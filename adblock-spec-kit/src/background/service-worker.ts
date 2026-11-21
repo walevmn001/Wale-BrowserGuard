@@ -23,6 +23,7 @@ import {
 } from '../content/cosmetic';
 import { installCosmeticObserver, OBSERVER_OPTIONS } from '../content/cosmetic-observer';
 import { createActivityLog } from './activity';
+import { injectBanner, registerBridge } from './content-bridge';
 import { createCustomRules } from './custom-rules';
 import { createFilterUpdater, UPDATE_ALARM } from './filter-updater';
 import { createNotifications } from './notifications';
@@ -33,11 +34,11 @@ import { createSitePreferences } from './site-settings';
 import { categoryForRuleset, createStatsCounter } from './stats';
 import { createTempException, TEMP_EXCEPTION_ALARM } from './temp-exception';
 import { createWhitelist } from './whitelist';
+import { workerLocale } from './locale';
 import { createFingerprintSettings } from './security/fingerprint-settings';
 import { createPrivacySettings } from './security/privacy-settings';
-import { resolveLocale, t, type Locale } from '../shared/i18n';
+import { t } from '../shared/i18n';
 import { logger } from '../shared/logger';
-import { TypedStorage } from '../shared/storage';
 
 async function guard(label: string, run: () => Promise<unknown>): Promise<void> {
   try {
@@ -61,14 +62,6 @@ const applyStoredCustomRules = (): Promise<void> =>
   guard('apply the custom rules', () => createCustomRules().applyStored());
 
 /** Locale for worker-originated strings (notifications): stored choice or browser. */
-async function workerLocale(): Promise<Locale> {
-  const choice = await new TypedStorage().get('language');
-  if (choice === 'vi' || choice === 'en') {
-    return choice;
-  }
-  return resolveLocale(chrome.i18n.getUILanguage());
-}
-
 async function notify(
   kind: 'filterUpdate' | 'securityBlock' | 'protectionOff' | 'errors',
   bodyKey: 'notifSecurityBody' | 'notifFilterFailBody' | 'notifProtectionOffBody' | 'notifErrorBody',
@@ -207,6 +200,10 @@ async function injectAntiFingerprint(tabId: number, url: string | undefined): Pr
   });
 }
 
+// Injected page components (element picker, security banner) talk to the
+// worker through this bridge; it validates and persists what they send.
+registerBridge();
+
 /** Keyboard commands (Phase 9 §10); the browser owns the shortcut bindings. */
 chrome.commands.onCommand.addListener((command) => {
   if (command === 'toggle-protection') {
@@ -281,6 +278,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     void pollStats();
     void injectCosmetic(tabId, tab.url);
     void injectAntiFingerprint(tabId, tab.url);
+    void guard('inject the security banner', () => injectBanner(tabId, tab.url));
   }
 });
 
