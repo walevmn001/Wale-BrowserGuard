@@ -70,3 +70,41 @@ test('blocks a known ad script while same-origin scripts still load', async () =
   expect(failure.failure()?.errorText).toContain('ERR_BLOCKED_BY_CLIENT');
   await expect.poll(() => appLoaded(page)).toBe(true);
 });
+
+test('blocks the same ad domain for both fetch() and image requests', async () => {
+  const page = await context.newPage();
+  await page.goto(baseUrl);
+
+  const failedTypes: string[] = [];
+  page.on('requestfailed', (request) => {
+    if (request.url().includes(BLOCKED_HOST)) {
+      failedTypes.push(request.resourceType());
+    }
+  });
+
+  const fetchOutcome = await page.evaluate(
+    (host) =>
+      fetch(`http://${host}/beacon`).then(
+        () => 'ok',
+        () => 'blocked',
+      ),
+    BLOCKED_HOST,
+  );
+
+  const imageOutcome = await page.evaluate(
+    (host) =>
+      new Promise<string>((resolve) => {
+        const image = new Image();
+        image.onload = () => resolve('ok');
+        image.onerror = () => resolve('blocked');
+        image.src = `http://${host}/pixel.png`;
+      }),
+    BLOCKED_HOST,
+  );
+
+  expect(fetchOutcome).toBe('blocked');
+  expect(imageOutcome).toBe('blocked');
+  // A bare `||domain^` rule sets no resourceTypes, so it must block the
+  // xmlhttprequest/fetch and the image sub-resource alike.
+  expect(failedTypes).toEqual(expect.arrayContaining(['fetch', 'image']));
+});

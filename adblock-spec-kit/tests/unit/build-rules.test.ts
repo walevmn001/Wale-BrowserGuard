@@ -179,3 +179,53 @@ describe('groupByCategory', () => {
     expect(grouped.ads[0]?.condition.urlFilter).toBe('||ads.example^');
   });
 });
+
+describe('convertFilterList — path and wildcard patterns (B1)', () => {
+  it('keeps a leading-slash path pattern as urlFilter, not a regex', () => {
+    const result = convertFilterList(['/path/*.js'], 'ads');
+
+    expect(result.skipped).toHaveLength(0);
+    expect(result.rules).toHaveLength(1);
+    expect(result.rules[0]?.rule.condition.urlFilter).toBe('/path/*.js');
+    expect(result.rules[0]?.rule.condition.regexFilter).toBeUndefined();
+  });
+
+  it('supports a path pattern with a resource-type option', () => {
+    const [rule] = convertFilterList(['/ads.js$script'], 'ads').rules;
+
+    expect(rule?.rule.condition.urlFilter).toBe('/ads.js');
+    expect(rule?.rule.condition.resourceTypes).toEqual(['script']);
+  });
+
+  it('copies | anchor, ||, ^ and * through verbatim', () => {
+    const filters = convertFilterList(
+      ['|http://example.com/ads.js', '||ads.example.com^', '||example.com/ads/*.js'],
+      'ads',
+    ).rules.map(({ rule }) => rule.condition.urlFilter);
+
+    expect(filters).toEqual([
+      '|http://example.com/ads.js',
+      '||ads.example.com^',
+      '||example.com/ads/*.js',
+    ]);
+  });
+
+  it('still treats /regex/ (with and without options) as regexFilter', () => {
+    const result = convertFilterList(['/banner\\d+/', '/ads\\d+/$script'], 'ads');
+
+    expect(result.skipped).toHaveLength(0);
+    expect(result.rules[0]?.rule.condition.regexFilter).toBe('banner\\d+');
+    expect(result.rules[1]?.rule.condition.regexFilter).toBe('ads\\d+');
+    expect(result.rules[1]?.rule.condition.resourceTypes).toEqual(['script']);
+  });
+});
+
+describe('convertFilterList — domain rules apply to every resource type (B1)', () => {
+  it('leaves a bare domain rule without any resource-type restriction', () => {
+    const [rule] = convertFilterList(['||ads.example.com^'], 'ads').rules;
+
+    expect(rule?.rule.condition.urlFilter).toBe('||ads.example.com^');
+    expect(rule?.rule.condition.resourceTypes).toBeUndefined();
+    expect(rule?.rule.condition.excludedResourceTypes).toBeUndefined();
+  });
+});

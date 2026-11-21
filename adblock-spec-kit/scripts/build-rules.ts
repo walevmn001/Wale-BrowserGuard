@@ -100,12 +100,18 @@ function splitAddressAndOptions(body: string): {
   readonly address: string;
   readonly options: readonly string[];
 } {
-  const regexClose = body.startsWith('/') ? body.indexOf('/', 1) : -1;
-  if (regexClose > 0) {
-    return {
-      address: body.slice(0, regexClose + 1),
-      options: parseOptions(body.slice(regexClose + 1)),
-    };
+  // A `/.../` regular expression (ABP) starts and ends with a slash, optionally
+  // followed by `$options`. A path pattern such as `/path/*.js` also starts with
+  // a slash but must stay a plain urlFilter, so only treat the body as a regex
+  // when its final slash is at the end or is followed by `$`.
+  if (body.startsWith('/')) {
+    const regexClose = body.lastIndexOf('/');
+    if (regexClose > 0 && (regexClose === body.length - 1 || body[regexClose + 1] === '$')) {
+      return {
+        address: body.slice(0, regexClose + 1),
+        options: parseOptions(body.slice(regexClose + 1)),
+      };
+    }
   }
   const dollar = body.indexOf('$');
   if (dollar < 0) {
