@@ -1,6 +1,6 @@
 {
   "date": "2026-11-21",
-  "generatedAt": "2026-11-21T15:56:50.999Z",
+  "generatedAt": "2026-11-21T16:14:08.756Z",
   "pages": 40,
   "blockRate": {
     "total": 173,
@@ -17,9 +17,9 @@
     "pass": true
   },
   "navigationLatency": {
-    "withExtensionMs": 31.2,
+    "withExtensionMs": 31.65,
     "withoutExtensionMs": 27.05,
-    "deltaMs": 4.35,
+    "deltaMs": 4.95,
     "thresholdMs": 5,
     "pass": true
   },
@@ -28,7 +28,7 @@
     "pass": true
   },
   "memory": {
-    "serviceWorkerHeapMb": 0.98,
+    "serviceWorkerHeapMb": 2.136,
     "thresholdMb": 100,
     "pass": true
   }
