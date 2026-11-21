@@ -2,10 +2,19 @@
  * Manifest V3 definition for the AdBlock Security extension.
  *
  * Kept as a typed module so the build can emit `dist/manifest.json` and so the
- * shape can be unit-tested. Only the minimum for T002 (load unpacked, empty
- * worker, empty popup) is declared here; permissions are added by the tasks
- * that actually need them (see plan.md §3).
+ * shape can be unit-tested. T012 adds the P1 network-blocking surface: the
+ * `declarativeNetRequest` permission, `<all_urls>` host permission (so rules
+ * apply on every site) and the static rulesets produced by the build
+ * (see `STATIC_RULESETS`). All of these are justified in plan.md §3.
  */
+import { STATIC_RULESETS } from './scripts/static-rulesets.ts';
+
+export interface RuleResource {
+  readonly id: string;
+  readonly enabled: boolean;
+  readonly path: string;
+}
+
 export interface ManifestV3 {
   readonly manifest_version: 3;
   readonly name: string;
@@ -17,6 +26,11 @@ export interface ManifestV3 {
   readonly action: {
     readonly default_title: string;
     readonly default_popup: string;
+  };
+  readonly permissions: readonly string[];
+  readonly host_permissions: readonly string[];
+  readonly declarative_net_request: {
+    readonly rule_resources: readonly RuleResource[];
   };
 }
 
@@ -36,6 +50,15 @@ export function createManifest(): ManifestV3 {
     action: {
       default_title: EXTENSION_NAME,
       default_popup: 'src/popup/index.html',
+    },
+    permissions: ['declarativeNetRequest'],
+    host_permissions: ['<all_urls>'],
+    declarative_net_request: {
+      rule_resources: STATIC_RULESETS.map(({ id, enabled, output }) => ({
+        id,
+        enabled,
+        path: output,
+      })),
     },
   };
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createManifest } from '../../manifest.config';
+import { STATIC_RULESETS } from '../../scripts/static-rulesets';
 
 describe('manifest', () => {
   it('is a Manifest V3 manifest', () => {
@@ -14,8 +15,19 @@ describe('manifest', () => {
     expect(manifest.action.default_popup).toBe('src/popup/index.html');
   });
 
-  it('declares no permissions until a task needs them', () => {
-    expect('permissions' in createManifest()).toBe(false);
-    expect('host_permissions' in createManifest()).toBe(false);
+  it('declares the network-blocking permissions from plan.md §3', () => {
+    const manifest = createManifest();
+
+    expect(manifest.permissions).toContain('declarativeNetRequest');
+    expect(manifest.host_permissions).toContain('<all_urls>');
+  });
+
+  it('declares every static ruleset with a matching path', () => {
+    const manifest = createManifest();
+
+    expect(manifest.declarative_net_request.rule_resources).toEqual(
+      STATIC_RULESETS.map(({ id, enabled, output }) => ({ id, enabled, path: output })),
+    );
+    expect(manifest.declarative_net_request.rule_resources.length).toBeGreaterThan(0);
   });
 });

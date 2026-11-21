@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
 
+import { buildStaticRuleSets } from './scripts/build-rulesets.ts';
 import { createManifest } from './manifest.config.ts';
 
 /**
@@ -16,6 +17,27 @@ function manifestPlugin(): Plugin {
         fileName: 'manifest.json',
         source: JSON.stringify(createManifest(), null, 2),
       });
+    },
+  };
+}
+
+/**
+ * Converts the bundled ABP source lists into DNR JSON and emits them next to
+ * the manifest. `buildStaticRuleSets` validates the result, so an over-limit or
+ * malformed ruleset fails the build here instead of shipping.
+ */
+function rulesPlugin(): Plugin {
+  return {
+    name: 'adblock-emit-rules',
+    apply: 'build',
+    generateBundle() {
+      const report = buildStaticRuleSets(process.cwd());
+      for (const { descriptor, json } of report.ruleSets) {
+        this.emitFile({ type: 'asset', fileName: descriptor.output, source: json });
+      }
+      console.info(
+        `[adblock] rulesets: ${report.totalRules} rules emitted, ${report.totalSkipped} lines skipped`,
+      );
     },
   };
 }
@@ -39,5 +61,5 @@ export default defineConfig({
       },
     },
   },
-  plugins: [manifestPlugin()],
+  plugins: [manifestPlugin(), rulesPlugin()],
 });

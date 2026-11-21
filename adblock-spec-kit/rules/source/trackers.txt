@@ -1,0 +1,47 @@
+! Analytics and tracking domains — starter set for P1 (see plan.md §6).
+!
+! Same conservative policy as ads.txt: domain-anchored rules only, so a page is
+! never broken by a broad pattern. Real EasyPrivacy encoding lands in P2.
+
+||google-analytics.com^
+||analytics.google.com^
+||googletagmanager.com^
+||scorecardresearch.com^
+||quantserve.com^
+||quantcast.com^
+||hotjar.com^
+||mixpanel.com^
+||segment.io^
+||segment.com^
+||amplitude.com^
+||mouseflow.com^
+||crazyegg.com^
+||fullstory.com^
+||heapanalytics.com^
+||branch.io^
+||adjust.com^
+||appsflyer.com^
+||kochava.com^
+||chartbeat.com^
+||parsely.com^
+||cxense.com^
+||bluekai.com^
+||demdex.net^
+||omtrdc.net^
+||everesttech.net^
+||krxd.net^
+||tapad.com^
+||matomo.cloud^
+||piwik.pro^
+||statcounter.com^
+||clicky.com^
+||trak.io^
+||kissmetrics.com^
+||optimizely.com^
+||vwo.com^
+||newrelic.com/insights^
+||bugsnag.com^
+||raygun.io^
+||siftscience.com^
+||adobe-analytics.com^
+||agkn.com^

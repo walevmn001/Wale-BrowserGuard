@@ -1,0 +1,74 @@
+! Ad-server and ad-network domains — starter set for P1 (see plan.md §6).
+!
+! Only the Adblock Plus subset in plan.md §6 is converted by scripts/build-rules.ts;
+! anything else is skipped and reported at build time, never guessed at.
+!
+! Rules are kept narrow (domain-anchored `||host^`) on purpose: "chặn thiếu"
+! beats "chặn nhầm". Real EasyList encoding is layered in a later task.
+
+! --- E2E fixture: tests/e2e/block-ad-script.spec.ts depends on this line ---
+||ads.example.test^
+
+! --- Major ad servers / ad networks ---
+||doubleclick.net^
+||googlesyndication.com^
+||googleadservices.com^
+||adservice.google.com^
+||2mdn.net^
+||ads.yahoo.com^
+||adnxs.com^
+||advertising.com^
+||criteo.com^
+||criteo.net^
+||outbrain.com^
+||taboola.com^
+||adform.net^
+||rubiconproject.com^
+||pubmatic.com^
+||openx.net^
+||casalemedia.com^
+||33across.com^
+||sharethrough.com^
+||smartadserver.com^
+||media.net^
+||amazon-adsystem.com^
+||moatads.com^
+||serving-sys.com^
+||adcolony.com^
+||applovin.com^
+||unityads.unity3d.com^
+||inmobi.com^
+||mopub.com^
+||adtech.de^
+||adsafeprotected.com^
+||teads.tv^
+||spotxchange.com^
+||yieldmo.com^
+||indexexchange.com^
+||districtm.io^
+||smaato.net^
+||flashtalking.com^
+||adroll.com^
+||bidswitch.net^
+||triplelift.com^
+||zemanta.com^
+||adition.com^
+||lijit.com^
+||sovrn.com^
+||gumgum.com^
+||adsrvr.org^
+||tremorhub.com^
+||innovid.com^
+||yieldlab.net^
+||360yield.com^
+||adkernel.com^
+||adotmob.com^
+||brightcom.com^
+||conversantmedia.com^
+
+! --- Common ad-script paths (rarely overlap with site code) ---
+||googlesyndication.com/pagead/js/adsbygoogle.js$script
+||securepubads.g.doubleclick.net^$script
+
+! --- Example exception (keeps the converter's @@ path exercised) ---
+@@||example.org/ads/partner.js
