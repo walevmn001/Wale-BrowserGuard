@@ -1,0 +1,30 @@
+{
+  "date": "2026-11-21",
+  "generatedAt": "2026-11-21T07:34:09.859Z",
+  "pages": 40,
+  "blockRate": {
+    "total": 173,
+    "hits": 173,
+    "rate": 1,
+    "threshold": 0.95,
+    "pass": true
+  },
+  "breakRate": {
+    "total": 40,
+    "hits": 0,
+    "rate": 0,
+    "threshold": 0.02,
+    "pass": true
+  },
+  "navigationLatency": {
+    "withExtensionMs": 35.4,
+    "withoutExtensionMs": 32.8,
+    "deltaMs": 2.35,
+    "thresholdMs": 5,
+    "pass": true
+  },
+  "restart": {
+    "blockedAfterRestart": true,
+    "pass": true
+  }
+}
