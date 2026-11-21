@@ -15,7 +15,8 @@ export interface StaticRuleSetDescriptor {
   readonly id: string;
   readonly category: RuleCategory;
   readonly enabled: boolean;
-  readonly source: string;
+  /** ABP source list, or `null` for a ruleset generated in code (see privacy). */
+  readonly source: string | null;
   readonly output: string;
 }
 
@@ -40,5 +41,14 @@ export const STATIC_RULESETS: readonly StaticRuleSetDescriptor[] = [
     enabled: true,
     source: 'rules/source/malware.txt',
     output: 'rules/static/malware.json',
+  },
+  {
+    // Not filter-list derived: `build-rulesets.ts` generates it from
+    // `scripts/privacy-rules.ts` (today: the https-scheme upgrade).
+    id: 'privacy',
+    category: 'privacy',
+    enabled: true,
+    source: null,
+    output: 'rules/static/privacy.json',
   },
 ];

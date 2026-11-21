@@ -34,6 +34,12 @@ describe('buildStaticRuleSets', () => {
     expect(filters).toContain('||ads.example.test^');
   });
 
+  it('includes the code-generated privacy ruleset (https upgrade)', () => {
+    const privacy = report.ruleSets.find(({ descriptor }) => descriptor.id === 'privacy');
+
+    expect(privacy?.rules.some((rule) => rule.action.type === 'upgradeScheme')).toBe(true);
+  });
+
   it('emits JSON that round-trips to the same rules', () => {
     for (const ruleSet of report.ruleSets) {
       expect(JSON.parse(ruleSet.json)).toEqual(ruleSet.rules);

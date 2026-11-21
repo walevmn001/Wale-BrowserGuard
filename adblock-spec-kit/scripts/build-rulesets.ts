@@ -20,6 +20,7 @@ import {
   COSMETIC_SOURCE,
 } from './build-cosmetic.ts';
 import { convertFilterList } from './build-rules.ts';
+import { buildPrivacyRules } from './privacy-rules.ts';
 import { STATIC_RULESETS, type StaticRuleSetDescriptor } from './static-rulesets.ts';
 import { assertValidRules, type RuleSetInput } from './validate-rules.ts';
 
@@ -40,6 +41,37 @@ function readSourceLines(repoRoot: string, relativePath: string): readonly strin
   return readFileSync(resolve(repoRoot, relativePath), 'utf8').split(/\r?\n/);
 }
 
+/**
+ * Rules for a ruleset that is generated in code rather than converted from an
+ * ABP source list. `privacy` is the only such category today.
+ */
+function buildGeneratedRules(
+  category: StaticRuleSetDescriptor['category'],
+  startId: number,
+): readonly chrome.declarativeNetRequest.Rule[] {
+  if (category === 'privacy') {
+    return buildPrivacyRules(startId);
+  }
+  throw new Error(`no code generator for category "${category}"`);
+}
+
+/** Converts one descriptor into its packaged rules (filter list or generated). */
+function buildRuleSetRules(
+  repoRoot: string,
+  descriptor: StaticRuleSetDescriptor,
+  startId: number,
+): { readonly rules: readonly chrome.declarativeNetRequest.Rule[]; readonly skipped: number } {
+  if (descriptor.source === null) {
+    return { rules: buildGeneratedRules(descriptor.category, startId), skipped: 0 };
+  }
+  const { rules, skipped } = convertFilterList(
+    readSourceLines(repoRoot, descriptor.source),
+    descriptor.category,
+    startId,
+  );
+  return { rules: rules.map(({ rule }) => rule), skipped: skipped.length };
+}
+
 /** Converts every static source list and validates the result before packaging. */
 export function buildStaticRuleSets(repoRoot: string): BuildRulesetsReport {
   const ruleSets: BuiltRuleSet[] = [];
@@ -48,18 +80,16 @@ export function buildStaticRuleSets(repoRoot: string): BuildRulesetsReport {
   let totalSkipped = 0;
 
   for (const descriptor of STATIC_RULESETS) {
-    const lines = readSourceLines(repoRoot, descriptor.source);
-    const { rules, skipped } = convertFilterList(lines, descriptor.category, nextId);
-    const plainRules = rules.map(({ rule }) => rule);
+    const { rules: plainRules, skipped } = buildRuleSetRules(repoRoot, descriptor, nextId);
 
     nextId += plainRules.length;
-    totalSkipped += skipped.length;
+    totalSkipped += skipped;
 
     ruleSets.push({
       descriptor,
       rules: plainRules,
       json: `${JSON.stringify(plainRules, null, 2)}\n`,
-      skipped: skipped.length,
+      skipped,
     });
     forValidation.push({ id: descriptor.id, enabled: descriptor.enabled, rules: plainRules });
   }

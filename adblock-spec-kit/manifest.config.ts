@@ -12,6 +12,9 @@
  * entry for the malware warning page (the malware ruleset's redirect target).
  * T031 adds `key`, which fixes the extension id so the malware rule can embed a
  * `chrome-extension://` redirect URL that carries the blocked host.
+ * T032 adds the `privacy` static ruleset (generated in code, see
+ * `scripts/privacy-rules.ts`) — no new permission is needed, `upgradeScheme`
+ * rides on `declarativeNetRequest`.
  * All of these are justified in plan.md §3.
  */
 import { EXTENSION_KEY } from './scripts/extension-key.ts';
