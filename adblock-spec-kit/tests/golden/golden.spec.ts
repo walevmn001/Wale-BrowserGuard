@@ -20,13 +20,14 @@ import { join } from 'node:path';
 
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
-import { launchContext } from './browser';
+import { launchContext, readServiceWorkerHeapMb } from './browser';
 import { goldenPages, pagePath, type GoldenPage } from './fixtures';
 import { isBroken, measurePage, type PageMeasurement } from './measure';
 import {
   BLOCK_RATE_THRESHOLD,
   BREAK_RATE_THRESHOLD,
   LATENCY_THRESHOLD_MS,
+  MEMORY_THRESHOLD_MB,
   median,
   summarize,
   writeResults,
@@ -42,6 +43,7 @@ const latencyWith: number[] = [];
 const latencyWithout: number[] = [];
 const latencyDeltas: number[] = [];
 let restartPassed = false;
+let memoryMb: number | null = null;
 
 function requireSetup(): { server: FixtureServer; withExtension: BrowserContext } {
   if (server === undefined || withExtension === undefined) {
@@ -96,6 +98,7 @@ test.afterAll(async () => {
       measured,
       { withExtensionMs: latencyWith, withoutExtensionMs: latencyWithout, deltas: latencyDeltas },
       restartPassed,
+      memoryMb,
     ),
   );
   console.log(`golden baseline written to ${file}`);
@@ -154,6 +157,24 @@ test('AC-1.3: navigation latency stays within the budget', async () => {
 
   expect(latencyDeltas).toHaveLength(fixtures.length);
   expect(median(latencyDeltas)).toBeLessThan(LATENCY_THRESHOLD_MS);
+});
+
+test('memory: the extension worker stays under the budget', async () => {
+  const { server: fixtureServer, withExtension: context } = requireSetup();
+  const fixture = goldenPages()[0];
+  if (fixture === undefined) {
+    throw new Error('fixtures are empty');
+  }
+
+  // Navigate once so Chromium keeps the (lazily started) extension worker alive
+  // for the measurement, then read its live JS heap.
+  const page = await context.newPage();
+  await page.goto(`${fixtureServer.baseUrl}${pagePath(fixture)}`, { waitUntil: 'load' });
+  await page.close();
+  memoryMb = await readServiceWorkerHeapMb(context);
+
+  expect(memoryMb).not.toBeNull();
+  expect(memoryMb ?? Number.POSITIVE_INFINITY).toBeLessThan(MEMORY_THRESHOLD_MB);
 });
 
 test('AC-1.4: keeps blocking after a browser restart', async () => {

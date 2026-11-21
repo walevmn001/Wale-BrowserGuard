@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   applyCosmetic,
   buildCosmeticCss,
+  createCosmeticDataCache,
   isCosmeticData,
   matchingDomains,
   pageHost,
@@ -101,6 +102,50 @@ describe('isCosmeticData', () => {
     );
     expect(isCosmeticData({ generic: { selectors: [] }, domains: {} })).toBe(false);
     expect(isCosmeticData({ domains: {} })).toBe(false);
+  });
+});
+
+describe('createCosmeticDataCache', () => {
+  it('loads the packaged data at most once (T040)', async () => {
+    const load = vi.fn(() => Promise.resolve(DATA));
+    const cached = createCosmeticDataCache(load);
+
+    const first = await cached();
+    const second = await cached();
+
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(first).toBe(DATA);
+    expect(second).toBe(DATA);
+    expect(first).toBe(second);
+  });
+
+  it('shares one in-flight load between concurrent callers', async () => {
+    let resolveLoad: (data: CosmeticData) => void = () => undefined;
+    const load = vi.fn(
+      () =>
+        new Promise<CosmeticData>((resolve) => {
+          resolveLoad = resolve;
+        }),
+    );
+    const cached = createCosmeticDataCache(load);
+
+    const pending = Promise.all([cached(), cached()]);
+    resolveLoad(DATA);
+
+    await expect(pending).resolves.toEqual([DATA, DATA]);
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not cache a failed load, so the next call retries', async () => {
+    const load = vi
+      .fn<() => Promise<CosmeticData>>()
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce(DATA);
+    const cached = createCosmeticDataCache(load);
+
+    await expect(cached()).rejects.toThrow('boom');
+    await expect(cached()).resolves.toBe(DATA);
+    expect(load).toHaveBeenCalledTimes(2);
   });
 });
 

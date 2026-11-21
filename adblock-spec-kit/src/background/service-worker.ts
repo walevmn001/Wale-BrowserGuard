@@ -44,10 +44,10 @@
 import { installAntiFingerprint } from '../content/anti-fingerprint';
 import {
   applyCosmetic,
+  createCosmeticDataCache,
   isCosmeticData,
   pageHost,
   COSMETIC_PATHS,
-  type CosmeticData,
 } from '../content/cosmetic';
 import { installCosmeticObserver, OBSERVER_OPTIONS } from '../content/cosmetic-observer';
 import { createFilterUpdater, UPDATE_ALARM } from './filter-updater';
@@ -135,9 +135,10 @@ async function fetchJson(path: string): Promise<unknown> {
 
 /**
  * Loads the packaged cosmetic data (T020) and validates its shape before use.
- * Read fresh on each call so the worker keeps no state across restarts.
+ * T040: wrapped in a single-flight cache so the immutable JSON is fetched and
+ * parsed at most once per worker lifetime instead of on every navigation.
  */
-async function loadCosmeticData(): Promise<CosmeticData> {
+const loadCosmeticData = createCosmeticDataCache(async () => {
   const [generic, domains] = await Promise.all([
     fetchJson(COSMETIC_PATHS.generic),
     fetchJson(COSMETIC_PATHS.domainSpecific),
@@ -147,7 +148,7 @@ async function loadCosmeticData(): Promise<CosmeticData> {
     throw new Error('cosmetic data has an unexpected shape');
   }
   return candidate;
-}
+});
 
 async function injectCosmetic(tabId: number, url: string | undefined): Promise<void> {
   try {

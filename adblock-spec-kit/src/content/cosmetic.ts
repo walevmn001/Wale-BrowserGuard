@@ -10,8 +10,10 @@
  *   generic.selectors ∪ domain[h].selectors − generic.exceptions − domain[h].exceptions
  * where `domain[h]` matches `h` itself and any parent suffix.
  *
- * No DOM observer here (dynamic ads are T022) and no module-level state: the
- * worker can be stopped at any time (Constitution 14).
+ * No DOM observer here (dynamic ads are T022). The only module-level state is
+ * the optional single-flight cache `createCosmeticDataCache` (T040); it holds
+ * derived, regenerable build output — never user state — so losing it when the
+ * worker suspends is harmless (Constitution 14).
  */
 
 /** Selectors to hide plus the `#@#` exceptions that cancel them. */
@@ -117,6 +119,29 @@ export function buildCosmeticCss(selectors: readonly string[]): string[] {
     chunks.push(`${batch.join(',\n')} { display: none !important; }\n`);
   }
   return chunks;
+}
+
+/**
+ * Single-flight cache around a `CosmeticData` loader (T040).
+ *
+ * The JSON the build emits (T020) is immutable build output, yet the worker was
+ * re-fetching and re-parsing both files on every navigation. Memoising the
+ * loader keeps that work to at most once per worker lifetime; concurrent calls
+ * share the same in-flight load. This is derived, regenerable data — not user
+ * state — so dropping it when the worker suspends is harmless (Constitution 14).
+ * A failed load is not cached, so the next navigation retries.
+ */
+export function createCosmeticDataCache(
+  load: () => Promise<CosmeticData>,
+): () => Promise<CosmeticData> {
+  let cached: Promise<CosmeticData> | undefined;
+  return () => {
+    cached ??= load().catch((error: unknown) => {
+      cached = undefined;
+      throw error;
+    });
+    return cached;
+  };
 }
 
 export interface CosmeticInjector {

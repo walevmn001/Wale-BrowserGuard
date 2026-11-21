@@ -16,6 +16,8 @@ export const BLOCK_RATE_THRESHOLD = 0.95;
 export const BREAK_RATE_THRESHOLD = 0.02;
 /** AC-1.3 — maximum median navigation-time increase, in milliseconds. */
 export const LATENCY_THRESHOLD_MS = 5;
+/** Constitution 15 / test-golden §2 — maximum extension memory, in megabytes. */
+export const MEMORY_THRESHOLD_MB = 100;
 
 const RESULTS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), 'results');
 
@@ -40,6 +42,13 @@ interface RestartResult {
   readonly pass: boolean;
 }
 
+interface MemoryResult {
+  /** Service-worker JS heap in MB, or `null` when it could not be read. */
+  readonly serviceWorkerHeapMb: number | null;
+  readonly thresholdMb: number;
+  readonly pass: boolean;
+}
+
 export interface GoldenResults {
   readonly date: string;
   readonly generatedAt: string;
@@ -48,6 +57,7 @@ export interface GoldenResults {
   readonly breakRate: RateResult;
   readonly navigationLatency: LatencyResult;
   readonly restart: RestartResult;
+  readonly memory: MemoryResult;
 }
 
 /** Paired navigation samples: each page measured with and without the extension. */
@@ -78,6 +88,7 @@ export function summarize(
   measured: readonly PageMeasurement[],
   latency: LatencySamples,
   restartPassed: boolean,
+  memoryMb: number | null = null,
 ): GoldenResults {
   const total = measured.reduce((sum, page) => sum + page.knownRequests, 0);
   const blocked = measured.reduce((sum, page) => sum + page.blockedRequests, 0);
@@ -116,6 +127,11 @@ export function summarize(
     restart: {
       blockedAfterRestart: restartPassed,
       pass: restartPassed,
+    },
+    memory: {
+      serviceWorkerHeapMb: memoryMb === null ? null : round(memoryMb),
+      thresholdMb: MEMORY_THRESHOLD_MB,
+      pass: memoryMb !== null && memoryMb < MEMORY_THRESHOLD_MB,
     },
   };
 }
