@@ -19,6 +19,7 @@ describe('manifest', () => {
     const manifest = createManifest();
 
     expect(manifest.permissions).toContain('declarativeNetRequest');
+    expect(manifest.permissions).toContain('storage');
     expect(manifest.host_permissions).toContain('<all_urls>');
   });
 
