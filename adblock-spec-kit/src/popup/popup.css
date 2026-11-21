@@ -28,7 +28,7 @@ body{width:var(--popup-w);background:var(--bg)}
 .toggle.big[aria-checked="true"]::after{transform:translateX(22px)}
 
 /* ---- Guard (main protection) hero card ---- */
-.guard{display:grid;gap:var(--s3);background:linear-gradient(135deg,var(--mint-50) 0%,var(--blue-50) 100%);
+.guard{display:grid;gap:var(--s3);background:linear-gradient(135deg,var(--mint-50) 0%,var(--surface) 82%);
   border-color:var(--mint-100);position:relative;overflow:hidden}
 .guard::after{content:"";position:absolute;top:-30%;right:-15%;width:160px;height:160px;
   background:radial-gradient(circle,rgba(45,212,191,.2) 0%,transparent 70%);pointer-events:none}

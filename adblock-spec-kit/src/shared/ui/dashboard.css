@@ -46,7 +46,7 @@
 
 /* ---- Overview hero ---- */
 .hero{position:relative;overflow:hidden;border-radius:var(--radius-xl);
-  background:linear-gradient(135deg,var(--mint-50) 0%,var(--blue-50) 100%);
+  background:linear-gradient(135deg,var(--mint-50) 0%,var(--surface) 82%);
   border:1px solid var(--mint-100);padding:var(--s6);
   box-shadow:var(--shadow-2)}
 .hero::after{content:"";position:absolute;top:-40%;right:-10%;width:340px;height:340px;

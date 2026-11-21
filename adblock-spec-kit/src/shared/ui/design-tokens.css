@@ -15,10 +15,10 @@
   --blue-300:#93C5FD; --blue-400:#60A5FA;
   --blue-500:#3B82F6; --blue-600:#2563EB; --blue-700:#1D4ED8;
   /* Surfaces & text */
-  --bg:#F6F8FB; --bg-2:#EEF3F8;
-  --surface:#FFFFFF; --card:#FFFFFF; --surface-2:#F1F5F9; --surface-3:#E8EEF4;
+  --bg:#F8FBFA; --bg-2:#F1F8F6;
+  --surface:#FFFFFF; --card:#FFFFFF; --surface-2:#F4F9F7; --surface-3:#E8F2EF;
   --ink:#0F172A; --ink-2:#1E293B; --muted:#64748B; --muted-2:#94A3B8;
-  --line:#E2E8F0; --line-strong:#CBD5E1; --border:#E2E8F0;
+  --line:#E2ECE8; --line-strong:#C9DCD5; --border:#E2ECE8;
   /* Semantic */
   --success:#10B981; --success-bg:#ECFDF5; --success-text:#047857;
   --warning:#F59E0B; --warning-bg:#FFFBEB; --warning-text:#B45309;
@@ -47,30 +47,6 @@
   --popup-w:384px;
   --sidebar-w:256px;
   color-scheme:light;
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --bg:#0B1120; --bg-2:#0E1526;
-    --surface:#111A2E; --card:#141E33; --surface-2:#1A2540; --surface-3:#22304F;
-    --ink:#F1F5F9; --ink-2:#E2E8F0; --muted:#94A3B8; --muted-2:#64748B;
-    --line:#1E2B45; --line-strong:#2A3A5C;
-    --mint-50:#0C201C; --mint-100:#0F2A24; --mint-200:#15382F; --mint-300:#1C4C40;
-    --mint-700:#5EEAD4; --mint-800:#99F6E4;
-    --blue-50:#0E1A33; --blue-100:#142547; --blue-200:#1B3364; --blue-300:#2563EB;
-    --blue-700:#93C5FD;
-    --accent:var(--mint-700); --accent-strong:#99F6E4; --accent-soft:#0F2A24;
-    --btn-bg:#2DD4BF; --btn-ink:#06231C; --btn-hover:#5EEAD4;
-    --success-bg:#06281C; --success-text:#6EE7B7;
-    --warning-bg:#2E2408; --warning-text:#FCD34D;
-    --danger-bg:#2E1414; --danger-text:#FCA5A5;
-    --info-bg:#0E1A33; --info-text:#93C5FD;
-    --warn:var(--warning-text); --warn-bg:var(--warning-bg);
-    --shadow-1:0 1px 2px rgba(0,0,0,.4),0 2px 6px rgba(0,0,0,.3);
-    --shadow-2:0 6px 18px rgba(0,0,0,.45),0 2px 4px rgba(0,0,0,.3);
-    --shadow-3:0 16px 36px rgba(0,0,0,.55),0 4px 8px rgba(0,0,0,.3);
-    --shadow-pop:0 28px 60px rgba(0,0,0,.65),0 8px 16px rgba(0,0,0,.4);
-    color-scheme:dark;
-  }
 }
 :root[data-theme="dark"]{
   --bg:#0B1120; --bg-2:#0E1526;
