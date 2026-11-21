@@ -9,6 +9,7 @@
  */
 
 import { scanExtensions, type ExtensionRisk, type ManagementApi, type RiskReason } from '../background/ext-scan';
+import { createSettingsSync } from '../background/settings-sync';
 import { t, type Locale } from '../shared/i18n';
 import { logger } from '../shared/logger';
 import { q } from './elements';
@@ -78,6 +79,8 @@ function renderScan(out: HTMLElement, risks: readonly ExtensionRisk[], locale: L
 export function createAdvanced(ctx: Ctx): Section {
   const button = q<HTMLButtonElement>('ext-scan-btn');
   const output = q('ext-scan-out');
+  const syncToggle = q<HTMLInputElement>('sync-toggle');
+  const syncNotice = q('sync-notice');
 
   async function scan(): Promise<void> {
     // Requested first (still inside the click gesture) — a stale `contains`
@@ -103,9 +106,30 @@ export function createAdvanced(ctx: Ctx): Section {
       });
   });
 
-  /** The panel is filled on demand, so a re-paint has nothing to refresh. */
-  function refresh(): Promise<void> {
-    return Promise.resolve();
+  /** Paints the sync switch and shows the "leaves your account" notice. */
+  function paintSync(enabled: boolean): void {
+    syncToggle.checked = enabled;
+    syncNotice.hidden = !enabled;
+  }
+
+  syncToggle.addEventListener('change', () => {
+    const enabled = syncToggle.checked;
+    paintSync(enabled);
+    void createSettingsSync()
+      .setEnabled(enabled)
+      .then(() => {
+        ctx.toast(t(enabled ? 'syncToastOn' : 'syncToastOff', ctx.locale));
+      })
+      .catch((error: unknown) => {
+        logger.error('settings sync toggle failed', error);
+        ctx.toast(t('gError', ctx.locale), 'err');
+        void refresh();
+      });
+  });
+
+  /** Re-paints from storage; the scan output is on demand, so it is left alone. */
+  async function refresh(): Promise<void> {
+    paintSync(await createSettingsSync().isEnabled());
   }
 
   return { refresh };

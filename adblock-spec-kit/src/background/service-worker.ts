@@ -30,6 +30,7 @@ import { createNotifications } from './notifications';
 import { createProtectionPause, PAUSE_ALARM } from './pause';
 import { createRefererSettings } from './referer';
 import { createRulesetManager } from './ruleset-manager';
+import { createSettingsSync, isSyncedKey } from './settings-sync';
 import { createSitePreferences } from './site-settings';
 import { categoryForRuleset, createStatsCounter } from './stats';
 import { createTempException, TEMP_EXCEPTION_ALARM } from './temp-exception';
@@ -98,7 +99,8 @@ async function notify(
     | 'notifProtectionOffBody'
     | 'notifErrorBody'
     | 'notifYoutubeQ2OffBody'
-    | 'notifYoutubeOffBody',
+    | 'notifYoutubeOffBody'
+    | 'notifSyncTooLargeBody',
 ): Promise<void> {
   const locale = await workerLocale();
   await createNotifications().notify({
@@ -172,6 +174,20 @@ async function runFilterUpdate(): Promise<void> {
 async function runYouTubeConfigUpdate(): Promise<void> {
   await guard('update the YouTube config', async () => {
     await createYouTubeConfigUpdater().updateNow();
+  });
+}
+
+/**
+ * Publishes local configuration to `chrome.storage.sync` (AC-16.2). A no-op
+ * while sync is off; if the payload overflows the sync quota the push is
+ * refused and the user is told rather than fed a silent partial write.
+ */
+async function publishSettingsToSync(now: number): Promise<void> {
+  await guard('publish settings to sync', async () => {
+    const result = await createSettingsSync().push(now);
+    if (!result.ok && result.reason === 'too-large') {
+      await notify('errors', 'notifSyncTooLargeBody');
+    }
   });
 }
 
@@ -337,6 +353,12 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
+  // Settings sync (AC-16.2): a remote change applies the newer groups locally;
+  // a local change to any synced key publishes them. Both no-op when sync is off.
+  if (areaName === 'sync') {
+    void guard('apply synced settings', () => createSettingsSync().pull());
+    return;
+  }
   if (areaName !== 'local') {
     return;
   }
@@ -366,6 +388,9 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
   if (changes['youtubeModule'] !== undefined) {
     void applyYouTubeModuleRuleSet();
+  }
+  if (Object.keys(changes).some(isSyncedKey)) {
+    void publishSettingsToSync(Date.now());
   }
 });
 

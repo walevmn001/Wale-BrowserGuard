@@ -332,6 +332,12 @@ export const EN: Record<keyof typeof VI, string> = {
   extReasonBroadHosts: 'Access to all sites',
   extReasonUnpacked: 'Installed outside the store (unpacked)',
   extReasonNoUpdate: 'Cannot auto-update',
+  syncTitle: 'Sync settings',
+  syncDesc: 'Syncs settings, the allow-list and hidden selectors across your devices.',
+  syncNotice: 'Settings will sync through your browser account.',
+  syncToastOn: 'Settings sync enabled.',
+  syncToastOff: 'Settings sync disabled.',
+  notifSyncTooLargeBody: 'Could not sync: your settings exceed the browser’s quota.',
 
   // ---- Settings ----
   setTitle: 'Settings',

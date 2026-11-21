@@ -26,6 +26,14 @@ export class TypedStorage {
     await this.area.set({ [key]: value });
   }
 
+  /**
+   * Writes several keys at once — used by settings sync to apply a whole remote
+   * group atomically (T081). The keys stay type-checked by `Partial`.
+   */
+  async apply(items: Partial<StorageSchema>): Promise<void> {
+    await this.area.set(items);
+  }
+
   async remove(key: StorageKey): Promise<void> {
     await this.area.remove(key);
   }

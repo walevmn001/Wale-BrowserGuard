@@ -331,6 +331,12 @@ export const VI = {
   extReasonBroadHosts: 'Truy cập mọi trang',
   extReasonUnpacked: 'Cài ngoài cửa hàng (unpacked)',
   extReasonNoUpdate: 'Không tự cập nhật',
+  syncTitle: 'Đồng bộ cài đặt',
+  syncDesc: 'Đồng bộ cài đặt, danh sách cho phép và bộ chọn ẩn giữa các thiết bị.',
+  syncNotice: 'Cài đặt sẽ đồng bộ qua tài khoản trình duyệt của bạn.',
+  syncToastOn: 'Đã bật đồng bộ cài đặt.',
+  syncToastOff: 'Đã tắt đồng bộ cài đặt.',
+  notifSyncTooLargeBody: 'Không đồng bộ được: cài đặt vượt hạn mức của trình duyệt.',
 
   // ---- Settings ----
   setTitle: 'Cài đặt',

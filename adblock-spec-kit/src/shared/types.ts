@@ -60,6 +60,20 @@ export interface CustomRule {
 export type RefererPolicy = 'default' | 'third-party';
 
 /**
+ * The settings groups that may sync between devices (US-16 / AC-16.2, T081).
+ * Statistics, the activity log and history are deliberately not in here — only
+ * configuration ever leaves the machine.
+ */
+export type SettingsSyncGroup = 'settings' | 'whitelist' | 'customSelectors';
+
+/** Per-group "last changed" timestamps used for conflict resolution (T081). */
+export interface SettingsSyncMeta {
+  readonly settings: number;
+  readonly whitelist: number;
+  readonly customSelectors: number;
+}
+
+/**
  * Session-scoped YouTube health degrade state (US-15 / AC-15.4, T066).
  *
  * Kept in `chrome.storage.session`, so a degrade lasts only for the browser
@@ -222,4 +236,16 @@ export interface StorageSchema {
    * kill-switch reaches every user. Missing means "use the packaged config".
    */
   youtubeConfigActive?: YouTubeConfig;
+  /**
+   * Opt-in settings sync (US-16 / AC-16.2, T081). `false` (the default) means
+   * nothing is ever written to `chrome.storage.sync` and no remote change is
+   * applied. Only configuration groups sync ({@link SettingsSyncGroup}) —
+   * statistics, activity and history never leave the machine.
+   */
+  settingsSync?: boolean;
+  /**
+   * Per-group "last changed" timestamps for sync conflict resolution (T081).
+   * Local metadata; never itself synced. Missing means every group is at 0.
+   */
+  settingsSyncMeta?: SettingsSyncMeta;
 }
