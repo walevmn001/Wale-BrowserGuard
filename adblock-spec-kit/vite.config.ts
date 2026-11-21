@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from 'vite';
 
 import { buildCosmeticAssets, buildStaticRuleSets } from './scripts/build-rulesets.ts';
 import { createManifest } from './manifest.config.ts';
+import { packageRelease } from './scripts/package-release.ts';
 
 /**
  * Emits `dist/manifest.json` from `manifest.config.ts` so the manifest is
@@ -52,7 +53,21 @@ function rulesPlugin(): Plugin {
   };
 }
 
-export default defineConfig({
+/**
+ * Writes the release ZIP from the freshly written `dist/` (T043). Gated on
+ * `--mode release` (see `npm run package`) so ordinary builds stay shell-only.
+ */
+function releasePlugin(): Plugin {
+  return {
+    name: 'adblock-emit-release',
+    apply: 'build',
+    closeBundle() {
+      console.info(`[adblock] release -> ${packageRelease()}`);
+    },
+  };
+}
+
+export default defineConfig(({ mode }) => ({
   // Relative asset URLs are required for pages loaded from chrome-extension://.
   base: './',
   build: {
@@ -73,5 +88,5 @@ export default defineConfig({
       },
     },
   },
-  plugins: [manifestPlugin(), rulesPlugin()],
-});
+  plugins: [manifestPlugin(), rulesPlugin(), ...(mode === 'release' ? [releasePlugin()] : [])],
+}));
