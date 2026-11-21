@@ -45,7 +45,10 @@ manifest.config.ts
 | alarms | Lịch cập nhật list | P2 |
 | scripting | Chèn CSS cosmetic động | P2 |
 | privacy | Chính sách WebRTC | P3 (optional) |
+| notifications | Thông báo cục bộ cho sự kiện cập nhật list / việc chặn bảo mật / tự hạ cấp YouTube. Mặc định TẮT, bật theo từng loại | P4/P5 |
 | host_permissions `<all_urls>` | Cần để rule áp dụng mọi trang; nêu rõ trong mô tả store | P1 |
+
+**Rà soát quyền (T082).** Manifest cuối (`dist/manifest.json`) khớp bảng trên: `permissions` = `declarativeNetRequest`, `declarativeNetRequestFeedback`, `storage`, `scripting`, `alarms`, `privacy`, `notifications`; `host_permissions` = `<all_urls>`; `optional_permissions` = `management` (chỉ xin khi người dùng bấm quét extension, AC-16.1). Các quyền rộng khác (`tabs`, `webRequest`, `webNavigation`, `history`, `debugger`, `proxy`, `nativeMessaging`, `cookies`, `downloads`) **không** được khai báo — `chrome.tabs.*` chạy được nhờ `<all_urls>`. `chrome.storage.sync` dùng chung quyền `storage` (không thêm quyền).
 
 ## 4. Luồng dữ liệu
 - **Build time**: filter list → `build-rules.ts` → DNR JSON (chia nhóm) + cosmetic JSON → đóng gói.

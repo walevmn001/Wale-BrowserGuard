@@ -75,7 +75,14 @@ thập dữ liệu.
 | `scripting` | Inject the cosmetic CSS that hides leftover ad placeholders. |
 | `alarms` | Refresh the filter lists on a schedule. |
 | `privacy` | Apply the opt-in WebRTC IP-handling policy when the user enables it. |
+| `notifications` | Show local desktop notifications (filter-list updates, security blocks, YouTube auto-degrade). Every kind is off by default until the user enables it. |
 | `host_permissions: <all_urls>` | Blocking rules must apply on every site to be effective. Rules run in the network layer; no page content is read or transmitted. |
+
+Optional permissions (requested only when the matching feature is turned on):
+
+| Permission | Justification |
+|------------|---------------|
+| `management` (optional) | List the user's installed extensions with a risk score when they open the "Advanced" page and press Scan. The extension never disables or removes anything (AC-16.1). |
 
 ## Data usage disclosures (review form)
 
