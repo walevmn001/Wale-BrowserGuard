@@ -1,6 +1,6 @@
 {
   "date": "2026-11-21",
-  "generatedAt": "2026-11-21T07:34:09.859Z",
+  "generatedAt": "2026-11-21T08:11:17.299Z",
   "pages": 40,
   "blockRate": {
     "total": 173,
@@ -17,9 +17,9 @@
     "pass": true
   },
   "navigationLatency": {
-    "withExtensionMs": 35.4,
-    "withoutExtensionMs": 32.8,
-    "deltaMs": 2.35,
+    "withExtensionMs": 34.65,
+    "withoutExtensionMs": 34.2,
+    "deltaMs": -0.15,
     "thresholdMs": 5,
     "pass": true
   },

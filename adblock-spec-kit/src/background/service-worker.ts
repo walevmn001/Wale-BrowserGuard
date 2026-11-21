@@ -172,16 +172,14 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 
 // A page load is when new requests get blocked; count them once it settles.
+// T021/T022: inject the cosmetic CSS and the page-side observer once the
+// document is complete. Injecting during the `loading` phase also worked, but
+// it woke the worker mid-navigation and pushed the AC-1.3 latency delta past
+// its 5ms budget, so the injection is deferred to `complete`.
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete') {
     void pollStats();
-    // Re-run so the observer lands in the finished document even if the early
-    // `loading` injection hit the previous one; the page-side guard de-dupes.
     void injectCosmetic(tabId, tab.url);
-  }
-  // Hide leftover banners as early as the navigation gives us a URL.
-  if (changeInfo.status === 'loading') {
-    void injectCosmetic(tabId, changeInfo.url ?? tab.url);
   }
 });
 
