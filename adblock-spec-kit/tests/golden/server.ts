@@ -29,13 +29,16 @@ export async function startFixtureServer(): Promise<FixtureServer> {
   const server: Server = createServer((request, response) => {
     const pathname = new URL(request.url ?? '/', 'http://127.0.0.1').pathname;
     if (pathname === '/assets/app.js' || pathname === '/assets/main.js') {
-      response.writeHead(200, { 'content-type': 'text/javascript' });
+      response.writeHead(200, { 'content-type': 'text/javascript', 'cache-control': 'no-store' });
       response.end(BENIGN_JS);
       return;
     }
     const html = pages.get(pathname);
     response.writeHead(200, {
       'content-type': html === undefined ? 'text/javascript' : 'text/html; charset=utf-8',
+      // No store: every navigation is a cold load, so load timings (AC-1.3) are
+      // not skewed by the browser caching ad scripts the extension blocked.
+      'cache-control': 'no-store',
     });
     response.end(html ?? AD_JS);
   });

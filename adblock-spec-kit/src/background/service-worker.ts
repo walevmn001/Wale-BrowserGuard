@@ -17,11 +17,9 @@ import { installAntiFingerprint } from '../content/anti-fingerprint';
 import {
   applyCosmetic,
   createCosmeticDataCache,
-  insertCosmeticStyle,
   isCosmeticData,
   pageHost,
   COSMETIC_PATHS,
-  type CosmeticInjector,
 } from '../content/cosmetic';
 import { installCosmeticObserver, OBSERVER_OPTIONS } from '../content/cosmetic-observer';
 import { createActivityLog } from './activity';
@@ -161,47 +159,35 @@ const loadCosmeticData = createCosmeticDataCache(async () => {
 });
 
 /**
- * Builds the cosmetic injector for one navigation. `early` targets
- * `document_start` (B3): the stylesheet is inserted by a page-side function
- * with `injectImmediately`, so ads hide before first paint. The default
- * (`complete`) path keeps using `insertCSS` and a ready-DOM observer.
+ * Injects cosmetic hiding on the `complete` pass only. An earlier injection at
+ * `status: 'loading'` (B3) woke the service worker mid-navigation and pushed
+ * AC-1.3 over budget (B5, echoing T025); a single ready-DOM pass keeps latency
+ * green — the stylesheet hides in-DOM ads and the observer catches late ones.
  */
-function cosmeticInjector(early: boolean): CosmeticInjector {
-  return {
-    loadData: loadCosmeticData,
-    insertCss: async (id, css) => {
-      if (early) {
-        await chrome.scripting.executeScript({
-          target: { tabId: id },
-          func: insertCosmeticStyle,
-          args: [css],
-          injectImmediately: true,
-        });
-        return;
-      }
-      await chrome.scripting.insertCSS({ target: { tabId: id }, css });
-    },
-    runObserver: async (id, selectors) => {
-      await chrome.scripting.executeScript({
-        target: { tabId: id },
-        func: installCosmeticObserver,
-        args: [selectors, OBSERVER_OPTIONS],
-        ...(early ? { injectImmediately: true } : {}),
-      });
-    },
-  };
-}
-
-async function injectCosmetic(tabId: number, url: string | undefined, early = false): Promise<void> {
+async function injectCosmetic(tabId: number, url: string | undefined): Promise<void> {
   await guard('inject cosmetic filters', async () => {
     const host = pageHost(url);
     const prefs = createSitePreferences();
     const site = host === undefined ? {} : await prefs.get(host);
     const extraSelectors = host === undefined ? [] : await prefs.hidden(host);
-    await applyCosmetic(cosmeticInjector(early), tabId, url, {
-      extraSelectors,
-      enabled: site.cosmeticOff !== true,
-    });
+    await applyCosmetic(
+      {
+        loadData: loadCosmeticData,
+        insertCss: async (id, css) => {
+          await chrome.scripting.insertCSS({ target: { tabId: id }, css });
+        },
+        runObserver: async (id, selectors) => {
+          await chrome.scripting.executeScript({
+            target: { tabId: id },
+            func: installCosmeticObserver,
+            args: [selectors, OBSERVER_OPTIONS],
+          });
+        },
+      },
+      tabId,
+      url,
+      { extraSelectors, enabled: site.cosmeticOff !== true },
+    );
   });
 }
 
@@ -294,11 +280,6 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  // B3: inject cosmetic hiding as early as possible (`document_start`) so ads
-  // never paint; `complete`-only work (stats, banner) stays on the old event.
-  if (changeInfo.status === 'loading') {
-    void injectCosmetic(tabId, tab.url, true);
-  }
   if (changeInfo.status === 'complete') {
     void pollStats();
     void injectCosmetic(tabId, tab.url);

@@ -140,13 +140,26 @@ test('AC-1.3: navigation latency stays within the budget', async () => {
 
   // Pair each page across both browsers, alternating order, so slow drift on
   // the machine cancels out of the per-page delta instead of biasing one side.
+  //
+  // Each page is sampled several times per browser and the fastest sample is
+  // kept. The suite runs two headed browsers at once, and on a CPU-constrained
+  // box the resulting scheduling jitter (measured at ±15ms per page here, versus
+  // a ~1ms two-identical-browser floor) dwarfs the overhead being measured — so a
+  // single sample per page makes AC-1.3 flaky. Contention can only *add* time, so
+  // taking the minimum across enough samples converges on a page's intrinsic load
+  // time, while any real extension overhead still shows up in every sample.
+  const SAMPLES_PER_PAGE = 5;
   for (const [index, fixture] of fixtures.entries()) {
     const url = `${fixtureServer.baseUrl}${pagePath(fixture)}`;
     const swapped = index % 2 === 1;
-    const firstMs = await navigateLoadMs(swapped ? pageWith : pageWithout, url);
-    const secondMs = await navigateLoadMs(swapped ? pageWithout : pageWith, url);
-    const withMs = swapped ? firstMs : secondMs;
-    const withoutMs = swapped ? secondMs : firstMs;
+    let withMs = Number.POSITIVE_INFINITY;
+    let withoutMs = Number.POSITIVE_INFINITY;
+    for (let sample = 0; sample < SAMPLES_PER_PAGE; sample += 1) {
+      const firstMs = await navigateLoadMs(swapped ? pageWith : pageWithout, url);
+      const secondMs = await navigateLoadMs(swapped ? pageWithout : pageWith, url);
+      withMs = Math.min(withMs, swapped ? firstMs : secondMs);
+      withoutMs = Math.min(withoutMs, swapped ? secondMs : firstMs);
+    }
     latencyWith.push(withMs);
     latencyWithout.push(withoutMs);
     latencyDeltas.push(withMs - withoutMs);

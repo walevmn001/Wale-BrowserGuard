@@ -195,30 +195,3 @@ export async function applyCosmetic(
   }
   return chunks.length;
 }
-
-/**
- * Content-side stylesheet insert used for the early `document_start` hiding
- * (B3).
- *
- * Runs in the page via `chrome.scripting.executeScript`, which serialises the
- * function with `Function.prototype.toString()` — so it must be
- * *self-contained*: only its parameters and page globals, no imports and no
- * closure over module scope (mirrors `installCosmeticObserver`). The worker
- * computes the CSS with `buildCosmeticCss` and passes it in, so the injected
- * stylesheet hides matching ads before the page paints.
- */
-export function insertCosmeticStyle(css: string): void {
-  const scope = window as unknown as Record<string, unknown>;
-  if (scope['__adblockCosmeticStyle'] === true) {
-    return;
-  }
-  scope['__adblockCosmeticStyle'] = true;
-  const parent = document.head ?? document.documentElement;
-  if (parent === null) {
-    return;
-  }
-  const style = document.createElement('style');
-  style.id = 'adblock-cosmetic-hiding';
-  style.textContent = css;
-  parent.append(style);
-}
