@@ -1,3 +1,16 @@
+/** One validated group inside the active filter set (US-7 / T023). */
+export interface FilterGroupInfo {
+  readonly bytes: number;
+  readonly rules: number;
+  readonly checksum: string;
+}
+
+/** The newest fully-validated filter set; swapped in atomically (US-7). */
+export interface FilterActiveSnapshot {
+  readonly updatedAt: number;
+  readonly groups: Record<string, FilterGroupInfo>;
+}
+
 /**
  * Shared domain types.
  *
@@ -27,4 +40,13 @@ export interface StorageSchema {
    * cursor so a match is never counted twice (US-3 / AC-3.2 keeps it local).
    */
   statsCursor: number;
+  /**
+   * Descriptor of the active filter set, absent until the first successful
+   * update. A failed update never overwrites it (US-7 / AC-7.2).
+   */
+  filterActive?: FilterActiveSnapshot;
+  /** Consecutive failed updates; drives the retry backoff (US-7 / AC-7.2). */
+  filterFailures: number;
+  /** When the next update attempt is due, ms since epoch (US-7 / AC-7.1). */
+  filterNextAttemptAt: number;
 }

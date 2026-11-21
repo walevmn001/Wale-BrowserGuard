@@ -15,6 +15,13 @@
  * T021: injects the cosmetic element-hiding CSS (`content/cosmetic.ts`) into
  * each navigation using the packaged selector data (AC-4.1).
  *
+ * T022: attaches the page-side observer (`content/cosmetic-observer.ts`) so ads
+ * injected after load are pinned too (AC-4.2, AC-4.3).
+ *
+ * T023: arms and reacts to the daily `update-filters` alarm (`filter-updater.ts`)
+ * so the filter lists refresh on schedule without ever losing the previous set
+ * on failure (AC-7.1, AC-7.2).
+ *
  * No module-level mutable state: the worker can be stopped at any time
  * (Constitution 14); state lives in `chrome.storage`.
  */
@@ -26,6 +33,7 @@ import {
   type CosmeticData,
 } from '../content/cosmetic';
 import { installCosmeticObserver, OBSERVER_OPTIONS } from '../content/cosmetic-observer';
+import { createFilterUpdater, UPDATE_ALARM } from './filter-updater';
 import { createRulesetManager } from './ruleset-manager';
 import { createStatsCounter } from './stats';
 import { createWhitelist } from './whitelist';
@@ -55,10 +63,29 @@ async function pollStats(): Promise<void> {
   }
 }
 
+/** Arms the daily filter-update alarm if it is not already scheduled (AC-7.1). */
+async function scheduleFilterUpdates(): Promise<void> {
+  try {
+    await createFilterUpdater().scheduleInitial();
+  } catch (error) {
+    logger.error('failed to schedule filter updates', error);
+  }
+}
+
+/** Runs one filter update; failures keep the previous set (AC-7.2). */
+async function runFilterUpdate(): Promise<void> {
+  try {
+    await createFilterUpdater().updateNow();
+  } catch (error) {
+    logger.error('filter update threw unexpectedly', error);
+  }
+}
+
 function applyStoredState(): void {
   void applyStoredRulesets();
   void applyStoredWhitelist();
   void pollStats();
+  void scheduleFilterUpdates();
 }
 
 async function fetchJson(path: string): Promise<unknown> {
@@ -126,6 +153,14 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
   if (changes['whitelist'] !== undefined) {
     void applyStoredWhitelist();
+  }
+});
+
+// T023: the daily alarm drives filter updates; a failure re-arms it with
+// backoff (AC-7.1, AC-7.2).
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === UPDATE_ALARM) {
+    void runFilterUpdate();
   }
 });
 
