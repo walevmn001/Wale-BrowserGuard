@@ -25,6 +25,7 @@ import { createRules } from './rules';
 import { createSecurity } from './security';
 import { createSettingsSection } from './settings';
 import { createContext, type Ctx, type Section } from './ui';
+import { createYouTubeSection } from './youtube';
 
 /** Sidebar pages in display order; the id is also the `<section>` id. */
 const PAGES = [
@@ -33,6 +34,7 @@ const PAGES = [
   'filters',
   'security',
   'privacy',
+  'youtube',
   'exceptions',
   'profiles',
   'rules',
@@ -58,6 +60,7 @@ function buildSections(ctx: Ctx): ReadonlyMap<PageId, Section> {
     ['filters', createFilters(ctx)],
     ['security', createSecurity(ctx)],
     ['privacy', createPrivacy(ctx)],
+    ['youtube', createYouTubeSection(ctx)],
     ['exceptions', createExceptions(ctx)],
     ['profiles', createProfilesSection(ctx)],
     ['rules', createRules(ctx)],

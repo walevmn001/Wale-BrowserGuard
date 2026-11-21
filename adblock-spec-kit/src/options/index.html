@@ -43,6 +43,11 @@
               ><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /><path d="M9 12l2 2 4-4" /></svg
             ><span data-i18n="navPrivacy"></span></a
           >
+          <a href="#youtube" data-nav="youtube"
+            ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              ><rect x="2" y="5" width="20" height="14" rx="4" /><path d="m10 9 5 3-5 3z" /></svg
+            ><span data-i18n="navYoutube"></span></a
+          >
           <a href="#exceptions" data-nav="exceptions"
             ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               ><circle cx="12" cy="12" r="9" /><path d="M8 12l3 3 5-6" /></svg
@@ -385,6 +390,35 @@
             <div class="card">
               <h3 data-i18n="prvParams"></h3>
               <p class="small muted mono" id="prv-params" style="margin-top: var(--s2)"></p>
+            </div>
+          </section>
+
+          <!-- ===== YouTube (opt-in, best-effort) ===== -->
+          <section class="page" id="youtube" aria-labelledby="yt-h">
+            <div class="page-head">
+              <h1 id="yt-h" data-i18n="ytTitle"></h1>
+              <p class="sub" data-i18n="ytSub"></p>
+            </div>
+            <div class="banner warn" role="note">
+              <div>
+                <div class="strong" data-i18n="ytWarnTitle"></div>
+                <div data-i18n="ytRiskBest"></div>
+                <div data-i18n="ytRiskTos"></div>
+                <div data-i18n="ytRiskStop"></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="row">
+                <div>
+                  <div class="t" data-i18n="ytEnableTitle"></div>
+                  <div class="d" data-i18n="ytEnableDesc"></div>
+                </div>
+                <label class="switch">
+                  <input id="yt-module" type="checkbox" role="switch" />
+                  <span class="track"></span>
+                </label>
+              </div>
+              <p class="small muted" style="margin-top: var(--s2)" data-i18n="ytAutoDegrade"></p>
             </div>
           </section>
 

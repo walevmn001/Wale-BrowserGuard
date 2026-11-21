@@ -92,6 +92,7 @@ export const EN: Record<keyof typeof VI, string> = {
   navFilters: 'Filters',
   navSecurity: 'Security',
   navPrivacy: 'Privacy',
+  navYoutube: 'YouTube',
   navExceptions: 'Allowed sites',
   navProfiles: 'Protection level',
   navRules: 'Custom rules',
@@ -347,6 +348,19 @@ export const EN: Record<keyof typeof VI, string> = {
   notifErrorBody: 'The extension hit an error. Open Diagnostics for details.',
   notifYoutubeQ2OffBody: 'Advanced YouTube filtering was turned off for this session.',
   notifYoutubeOffBody: 'The YouTube feature was turned off for this session.',
+
+  // ---- YouTube module (opt-in, best-effort — AC-15.x) ----
+  ytTitle: 'YouTube',
+  ytSub: 'Block YouTube ads with advanced in-page layers (experimental).',
+  ytEnableTitle: 'Enable the YouTube module',
+  ytEnableDesc: 'Skip YouTube ads using the network, CSS and auto-skip layers.',
+  ytWarnTitle: 'Please read before enabling',
+  ytRiskBest: 'This feature is best-effort: it cannot guarantee every ad is blocked.',
+  ytRiskTos: 'Blocking ads may violate YouTube’s Terms of Service.',
+  ytRiskStop: 'The feature may stop working at any time when YouTube changes.',
+  ytAutoDegrade: 'On a playback fault or stall, the module degrades itself and turns off for the session.',
+  ytToastOn: 'YouTube module enabled.',
+  ytToastOff: 'YouTube module disabled.',
 
   // ---- About ----
   abtTitle: 'About',

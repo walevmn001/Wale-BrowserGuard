@@ -91,6 +91,7 @@ export const VI = {
   navFilters: 'Bộ lọc',
   navSecurity: 'Bảo mật',
   navPrivacy: 'Riêng tư',
+  navYoutube: 'YouTube',
   navExceptions: 'Trang được phép',
   navProfiles: 'Mức bảo vệ',
   navRules: 'Quy tắc riêng',
@@ -346,6 +347,19 @@ export const VI = {
   notifErrorBody: 'Extension gặp lỗi. Mở Chẩn đoán để xem chi tiết.',
   notifYoutubeQ2OffBody: 'Đã tắt lớp lọc nâng cao cho YouTube trong phiên này.',
   notifYoutubeOffBody: 'Đã tắt toàn bộ tính năng YouTube trong phiên này.',
+
+  // ---- YouTube module (opt-in, best-effort — AC-15.x) ----
+  ytTitle: 'YouTube',
+  ytSub: 'Chặn quảng cáo YouTube bằng các lớp can thiệp nâng cao (thử nghiệm).',
+  ytEnableTitle: 'Bật module YouTube',
+  ytEnableDesc: 'Bỏ qua quảng cáo trên YouTube bằng lớp mạng, CSS và tự động bỏ qua.',
+  ytWarnTitle: 'Xin lưu ý trước khi bật',
+  ytRiskBest: 'Tính năng này hoạt động theo kiểu "cố gắng tối đa", không đảm bảo chặn hết quảng cáo.',
+  ytRiskTos: 'Việc chặn quảng cáo có thể vi phạm Điều khoản dịch vụ của YouTube.',
+  ytRiskStop: 'Tính năng có thể ngừng hoạt động bất cứ lúc nào khi YouTube thay đổi.',
+  ytAutoDegrade: 'Khi phát hiện video lỗi hoặc đứng hình, module tự hạ cấp và tắt trong phiên hiện tại.',
+  ytToastOn: 'Đã bật module YouTube.',
+  ytToastOff: 'Đã tắt module YouTube.',
 
   // ---- About ----
   abtTitle: 'Giới thiệu',

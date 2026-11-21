@@ -35,12 +35,19 @@ import { categoryForRuleset, createStatsCounter } from './stats';
 import { createTempException, TEMP_EXCEPTION_ALARM } from './temp-exception';
 import { createWhitelist } from './whitelist';
 import { createYouTubeConfigUpdater } from './youtube-config-updater';
-import { createYouTubeModule, isYouTubeHost, type YouTubePhase } from './youtube-module';
+import {
+  createYouTubeModule,
+  isYouTubeHost,
+  loadEffectiveYouTubeConfig,
+  type YouTubePhase,
+} from './youtube-module';
 import { createHealthStorage, recordHealthFault } from './youtube-health';
+import { createYouTubeModuleSettings } from './youtube-settings';
 import { workerLocale } from './locale';
 import { createFingerprintSettings } from './security/fingerprint-settings';
 import { createPrivacySettings } from './security/privacy-settings';
 import { t } from '../shared/i18n';
+import { YOUTUBE_RULESET_ID } from '../shared/constants';
 import { isYouTubeFaultMessage } from '../shared/messages';
 import { logger } from '../shared/logger';
 
@@ -64,6 +71,23 @@ const applyStoredReferer = (): Promise<void> =>
   guard('apply the referer policy', () => createRefererSettings().applyStored());
 const applyStoredCustomRules = (): Promise<void> =>
   guard('apply the custom rules', () => createCustomRules().applyStored());
+
+/**
+ * Keeps the module-owned `youtube` ruleset (Q1) in step with the module switch.
+ * It is enabled only when the user opted in *and* the effective config still
+ * allows the module — so the Q6 kill-switch (`enabled:false`), and a stored
+ * config that fails to validate, keep Q1 off. The master switch never touches
+ * this ruleset (AC-15.1), so this is the only place that turns Q1 on.
+ */
+const applyYouTubeModuleRuleSet = (): Promise<void> =>
+  guard('apply the YouTube module ruleset', async () => {
+    const on =
+      (await createYouTubeModuleSettings().isEnabled()) &&
+      (await loadEffectiveYouTubeConfig())?.enabled === true;
+    await chrome.declarativeNetRequest.updateEnabledRulesets(
+      on ? { enableRulesetIds: [YOUTUBE_RULESET_ID] } : { disableRulesetIds: [YOUTUBE_RULESET_ID] },
+    );
+  });
 
 /** Locale for worker-originated strings (notifications): stored choice or browser. */
 async function notify(
@@ -158,6 +182,7 @@ function applyStoredState(): void {
   void applyStoredCustomRules();
   void applyStoredReferer();
   void applyStoredPrivacy();
+  void applyYouTubeModuleRuleSet();
   void pollStats();
   void scheduleFilterUpdates();
 }
@@ -338,6 +363,9 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
   if (changes['customRules'] !== undefined) {
     void applyStoredCustomRules();
+  }
+  if (changes['youtubeModule'] !== undefined) {
+    void applyYouTubeModuleRuleSet();
   }
 });
 
