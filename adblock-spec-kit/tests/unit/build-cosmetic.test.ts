@@ -134,6 +134,20 @@ describe('buildCosmeticAssets — bundled cosmetic source list', () => {
     expect(generic.selectors).toContain('.ad-banner');
   });
 
+  it('covers common ad containers so static cosmetic hiding is broad enough (B3)', () => {
+    for (const selector of [
+      '.adsbygoogle',
+      '.ad-slot',
+      '.advertisement',
+      '.ad-container',
+      '.google-ad',
+      '.sponsored',
+      '[data-google-query-id]',
+    ]) {
+      expect(generic.selectors).toContain(selector);
+    }
+  });
+
   it('carries the example.org domain override and its #@# exception', () => {
     expect(report.domains).toBeGreaterThan(0);
     expect(domains['example.org']?.selectors).toEqual(['.promo-box']);

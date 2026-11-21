@@ -20,8 +20,33 @@
 ##iframe[src*="doubleclick.net"]
 ##iframe[src*="googlesyndication.com"]
 
-! --- Generic placeholders ---
+! --- Common ad containers (curated, class/id/attribute anchored) ---
+! Bare `.ad`/`.ads` are deliberately omitted: too prone to hitting real content.
+##.advert
+##.adbox
 ##.ad-container
+##.ads-container
+##.ad-wrapper
+##.ads-wrapper
+##.ad-unit
+##.ad-block
+##.ad-holder
+##.ad-leaderboard
+##.ad-sidebar
+##.banner-ad
+##.google-ad
+##.google-ads
+##.sponsored
+##.sponsored-ad
+##.taboola
+##.trc_related_container
+##.outbrain
+##[data-ad]
+##[data-google-query-id]
+##[id^="aswift_"]
+
+! --- Generic placeholders ---
+##.ad-placeholder
 ##[class*="ad-placeholder"]
 
 ! --- Domain-specific overrides ---

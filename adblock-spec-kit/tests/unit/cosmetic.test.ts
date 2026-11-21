@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   applyCosmetic,
   buildCosmeticCss,
   createCosmeticDataCache,
+  insertCosmeticStyle,
   isCosmeticData,
   matchingDomains,
   pageHost,
@@ -176,5 +177,68 @@ describe('applyCosmetic', () => {
     expect(count).toBe(0);
     expect(loadData).not.toHaveBeenCalled();
     expect(insertCss).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * `insertCosmeticStyle` runs in the page (B3), so it only touches `window`,
+ * `document` and the element API. This suite stubs exactly those to drive it
+ * without a browser; the real document_start wiring is covered by
+ * `tests/e2e/cosmetic.spec.ts`.
+ */
+interface FakeStyle {
+  id: string;
+  textContent: string;
+}
+
+interface FakeParent {
+  readonly children: FakeStyle[];
+  append(node: FakeStyle): void;
+}
+
+function makeParent(): FakeParent {
+  const children: FakeStyle[] = [];
+  return { children, append: (node) => void children.push(node) };
+}
+
+function makeDocument(head: FakeParent | null): {
+  head: FakeParent | null;
+  documentElement: FakeParent;
+  createElement: () => FakeStyle;
+} {
+  return { head, documentElement: makeParent(), createElement: () => ({ id: '', textContent: '' }) };
+}
+
+const globals = globalThis as unknown as Record<string, unknown>;
+
+describe('insertCosmeticStyle', () => {
+  afterEach(() => {
+    delete globals['window'];
+    delete globals['document'];
+    delete globals['__adblockCosmeticStyle'];
+  });
+
+  it('appends the hiding stylesheet only once even if run again', () => {
+    const head = makeParent();
+    globals['window'] = globalThis;
+    globals['document'] = makeDocument(head);
+
+    insertCosmeticStyle('.ad { display: none !important; }');
+    insertCosmeticStyle('.ad { display: none !important; }');
+
+    expect(head.children).toHaveLength(1);
+    expect(head.children[0]?.id).toBe('adblock-cosmetic-hiding');
+    expect(head.children[0]?.textContent).toBe('.ad { display: none !important; }');
+  });
+
+  it('falls back to documentElement when there is no head', () => {
+    globals['window'] = globalThis;
+    const doc = makeDocument(null);
+    globals['document'] = doc;
+
+    insertCosmeticStyle('.x { display: none; }');
+
+    expect(doc.documentElement.children).toHaveLength(1);
+    expect(doc.documentElement.children[0]?.textContent).toBe('.x { display: none; }');
   });
 });
