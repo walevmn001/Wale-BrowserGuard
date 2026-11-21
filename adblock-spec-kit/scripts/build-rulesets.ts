@@ -13,6 +13,12 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import {
+  buildCosmetic,
+  serializeCosmetic,
+  COSMETIC_OUTPUT,
+  COSMETIC_SOURCE,
+} from './build-cosmetic.ts';
 import { convertFilterList } from './build-rules.ts';
 import { STATIC_RULESETS, type StaticRuleSetDescriptor } from './static-rulesets.ts';
 import { assertValidRules, type RuleSetInput } from './validate-rules.ts';
@@ -61,4 +67,43 @@ export function buildStaticRuleSets(repoRoot: string): BuildRulesetsReport {
   assertValidRules({ ruleSets: forValidation });
 
   return { ruleSets, totalRules: nextId - 1, totalSkipped };
+}
+
+export interface BuiltCosmeticAsset {
+  readonly path: string;
+  readonly json: string;
+}
+
+export interface BuildCosmeticReport {
+  readonly assets: readonly BuiltCosmeticAsset[];
+  readonly genericSelectors: number;
+  readonly domainSelectors: number;
+  readonly domains: number;
+  readonly skipped: number;
+}
+
+/**
+ * Converts the bundled cosmetic source list into the two JSON assets the
+ * content script loads at runtime (`rules/cosmetic/*.json`, plan.md §2).
+ */
+export function buildCosmeticAssets(repoRoot: string): BuildCosmeticReport {
+  const lines = readSourceLines(repoRoot, COSMETIC_SOURCE);
+  const { bundle, skipped } = buildCosmetic(lines);
+  const json = serializeCosmetic(bundle);
+
+  const domainSelectors = Object.values(bundle.domains).reduce(
+    (total, entry) => total + entry.selectors.length,
+    0,
+  );
+
+  return {
+    assets: [
+      { path: COSMETIC_OUTPUT.generic, json: json.generic },
+      { path: COSMETIC_OUTPUT.domainSpecific, json: json.domainSpecific },
+    ],
+    genericSelectors: bundle.generic.selectors.length,
+    domainSelectors,
+    domains: Object.keys(bundle.domains).length,
+    skipped: skipped.length,
+  };
 }

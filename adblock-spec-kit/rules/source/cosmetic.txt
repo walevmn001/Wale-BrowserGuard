@@ -1,0 +1,35 @@
+! Cosmetic (element-hiding) filters — starter set for P2 (plan.md §3, algorithm.md §D).
+!
+! Only the subset in scripts/build-cosmetic.ts is converted:
+!   ##selector · domain##selector · #@#selector · domain#@#selector
+! Procedural rules (#?#, #$#, #%#) and `~`-exclusion domains are skipped and
+! reported at build time, never guessed at.
+!
+! Selectors stay narrow (class / id / attribute anchored). Bare tags and `*`
+! are rejected as too broad, so the build can never hide a whole page.
+
+! --- Generic ad slots (class or id anchored) ---
+##.ad-banner
+##.ad-slot
+##.adsbygoogle
+##.advertisement
+##.sponsored-content
+##[id^="google_ads_"]
+##[id^="div-gpt-ad"]
+##[data-ad-slot]
+##iframe[src*="doubleclick.net"]
+##iframe[src*="googlesyndication.com"]
+
+! --- Generic placeholders ---
+##.ad-container
+##[class*="ad-placeholder"]
+
+! --- Domain-specific overrides ---
+example.org##.promo-box
+news.example##.inline-ad
+blog.example##[data-sponsored]
+shop.example##.affiliate-banner
+
+! --- Exception sample (keeps the #@# path exercised) ---
+! `.ad-banner` stays visible on example.org even though it is hidden globally.
+example.org#@#.ad-banner

@@ -1,6 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
 
-import { buildStaticRuleSets } from './scripts/build-rulesets.ts';
+import { buildCosmeticAssets, buildStaticRuleSets } from './scripts/build-rulesets.ts';
 import { createManifest } from './manifest.config.ts';
 
 /**
@@ -23,8 +23,10 @@ function manifestPlugin(): Plugin {
 
 /**
  * Converts the bundled ABP source lists into DNR JSON and emits them next to
- * the manifest. `buildStaticRuleSets` validates the result, so an over-limit or
- * malformed ruleset fails the build here instead of shipping.
+ * the manifest. Also emits the cosmetic element-hiding JSON (T020) that the
+ * content script loads at runtime. `buildStaticRuleSets` validates the result,
+ * so an over-limit or malformed ruleset fails the build here instead of
+ * shipping.
  */
 function rulesPlugin(): Plugin {
   return {
@@ -35,8 +37,16 @@ function rulesPlugin(): Plugin {
       for (const { descriptor, json } of report.ruleSets) {
         this.emitFile({ type: 'asset', fileName: descriptor.output, source: json });
       }
+      const cosmetic = buildCosmeticAssets(process.cwd());
+      for (const { path, json } of cosmetic.assets) {
+        this.emitFile({ type: 'asset', fileName: path, source: json });
+      }
       console.info(
         `[adblock] rulesets: ${report.totalRules} rules emitted, ${report.totalSkipped} lines skipped`,
+      );
+      console.info(
+        `[adblock] cosmetic: ${cosmetic.genericSelectors} generic + ${cosmetic.domainSelectors} ` +
+          `domain selectors (${cosmetic.domains} domains), ${cosmetic.skipped} lines skipped`,
       );
     },
   };
