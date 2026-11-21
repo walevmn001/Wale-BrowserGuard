@@ -80,10 +80,12 @@ test('the popup shows local stats and toggles the site and the master switch', a
   await page.bringToFront();
   await popup.reload();
 
-  // AC-3.1: blocked count for the current page and overall.
+  // AC-3.1: blocked count for the current page and overall. The wording depends
+  // on the UI language, so assert on the numbers (the exact strings are covered
+  // by tests/unit/i18n.test.ts).
   await expect(popup.locator('#site-domain')).toHaveText(SITE_DOMAIN);
-  await expect(popup.locator('#stats-site')).toHaveText(`Trang này: ${AD_SCRIPTS} request đã chặn`);
-  await expect(popup.locator('#stats-total')).toHaveText(`Tổng cộng: ${AD_SCRIPTS}`);
+  await expect(popup.locator('#stats-site')).toContainText(String(AD_SCRIPTS));
+  await expect(popup.locator('#stats-total')).toContainText(String(AD_SCRIPTS));
 
   // AC-2.1: toggling the site off whitelists its host.
   await expect(popup.locator('#site-toggle')).toHaveAttribute('aria-pressed', 'true');
@@ -121,20 +123,18 @@ test('the popup shows local stats and toggles the site and the master switch', a
     })
     .not.toContain('ERR_BLOCKED_BY_CLIENT');
 
-  // AC-3.2: the clear button resets the counters.
+  // AC-3.2: the clear button resets the counters (again, assert on the numbers).
   await popup.locator('#stats-clear').click();
-  await expect(popup.locator('#stats-total')).toHaveText('Tổng cộng: 0');
-  await expect(popup.locator('#stats-site')).toHaveText('Trang này: 0 request đã chặn');
+  await expect(popup.locator('#stats-total')).toContainText('0');
+  await expect(popup.locator('#stats-site')).toContainText('0');
 
-  // AC-2.3: one action turns the whole extension off.
-  await expect(popup.locator('#master-status')).toHaveText('Extension đang bật');
+  // AC-2.3: one action turns the whole extension off. Assert on the stored flag
+  // rather than the localised status text.
+  const readEnabled = (): Promise<unknown> =>
+    worker.evaluate(() =>
+      chrome.storage.local.get('enabled').then((stored) => stored['enabled'] ?? true),
+    );
+  await expect.poll(readEnabled).toBe(true);
   await popup.locator('#master-toggle').click();
-  await expect(popup.locator('#master-status')).toHaveText('Extension đang tắt');
-  await expect
-    .poll(() =>
-      worker.evaluate(() =>
-        chrome.storage.local.get('enabled').then((stored) => stored['enabled']),
-      ),
-    )
-    .toBe(false);
+  await expect.poll(readEnabled).toBe(false);
 });

@@ -1,5 +1,5 @@
 /**
- * Popup UI (T016, US-2 / US-3).
+ * Popup UI (T016, US-2 / US-3; localisation added in T017).
  *
  * The popup is a thin view over the modules the worker also uses, so there is a
  * single source of truth: `Whitelist` (per-site on/off), `StatsCounter` (blocked
@@ -11,12 +11,14 @@
  * the block counts the worker has already gathered: the worker is the single
  * writer of the counters, so a match is never counted twice by two contexts.
  *
- * Strings are hard-coded in Vietnamese for now; T017 adds vi/en localisation.
+ * Every user-facing string comes from `shared/i18n.ts`, chosen from the browser
+ * UI language, so the popup ships in Vietnamese and English.
  */
 
 import { createRulesetManager } from '../background/ruleset-manager';
 import { createStatsCounter } from '../background/stats';
 import { createWhitelist } from '../background/whitelist';
+import { isMessageKey, resolveLocale, t, type Locale } from '../shared/i18n';
 import { logger } from '../shared/logger';
 import { domainFromUrl } from './url';
 
@@ -67,36 +69,49 @@ function collectElements(): Elements {
   };
 }
 
+/** Fills the static labels declared with `data-i18n` in `index.html`. */
+function applyStaticText(locale: Locale): void {
+  for (const element of document.querySelectorAll<HTMLElement>('[data-i18n]')) {
+    const key = element.dataset['i18n'];
+    if (key !== undefined && isMessageKey(key)) {
+      element.textContent = t(key, locale);
+    }
+  }
+}
+
 /** The active tab of the window that opened the popup. */
 async function resolveTargetTab(): Promise<TargetTab> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return { id: tab?.id, domain: domainFromUrl(tab?.url) };
 }
 
-function renderSite(elements: Elements, domain: string | undefined, blocking: boolean): void {
+function renderSite(
+  elements: Elements,
+  locale: Locale,
+  domain: string | undefined,
+  blocking: boolean,
+): void {
   if (domain === undefined) {
-    elements.siteDomain.textContent = 'Không áp dụng cho trang này';
+    elements.siteDomain.textContent = t('siteNotApplicable', locale);
     elements.siteStatus.textContent = '';
     elements.siteToggle.disabled = true;
     elements.siteToggle.setAttribute('aria-pressed', 'false');
     return;
   }
   elements.siteDomain.textContent = domain;
-  elements.siteStatus.textContent = blocking
-    ? 'Đang chặn trên trang này'
-    : 'Đã tắt chặn trên trang này';
+  elements.siteStatus.textContent = t(blocking ? 'siteBlockingOn' : 'siteBlockingOff', locale);
   elements.siteToggle.disabled = false;
   elements.siteToggle.setAttribute('aria-pressed', String(blocking));
 }
 
-function renderStats(elements: Elements, siteCount: number, total: number): void {
-  elements.statsSite.textContent = `Trang này: ${siteCount} request đã chặn`;
-  elements.statsTotal.textContent = `Tổng cộng: ${total}`;
+function renderStats(elements: Elements, locale: Locale, siteCount: number, total: number): void {
+  elements.statsSite.textContent = t('statsSite', locale, { count: siteCount });
+  elements.statsTotal.textContent = t('statsTotal', locale, { count: total });
 }
 
-function renderMaster(elements: Elements, enabled: boolean): void {
-  elements.masterStatus.textContent = enabled ? 'Extension đang bật' : 'Extension đang tắt';
-  elements.masterToggle.textContent = enabled ? 'Tắt toàn bộ' : 'Bật lại';
+function renderMaster(elements: Elements, locale: Locale, enabled: boolean): void {
+  elements.masterStatus.textContent = t(enabled ? 'masterOn' : 'masterOff', locale);
+  elements.masterToggle.textContent = t(enabled ? 'masterToggleOff' : 'masterToggleOn', locale);
 }
 
 async function readStats(tabId: number | undefined): Promise<{ site: number; total: number }> {
@@ -111,35 +126,47 @@ async function readStats(tabId: number | undefined): Promise<{ site: number; tot
  * itself: only the worker writes the counters (stats.ts serialises its polls),
  * so a match can never be counted by two contexts at once.
  */
-async function loadStats(elements: Elements, tabId: number | undefined): Promise<void> {
+async function loadStats(
+  elements: Elements,
+  locale: Locale,
+  tabId: number | undefined,
+): Promise<void> {
   const { site, total } = await readStats(tabId);
-  renderStats(elements, site, total);
+  renderStats(elements, locale, site, total);
 }
 
 /** AC-3.2: clears the counters (the cursor is kept, so nothing is recounted). */
-async function clearStats(elements: Elements, tabId: number | undefined): Promise<void> {
+async function clearStats(
+  elements: Elements,
+  locale: Locale,
+  tabId: number | undefined,
+): Promise<void> {
   await createStatsCounter().reset();
   const { site, total } = await readStats(tabId);
-  renderStats(elements, site, total);
+  renderStats(elements, locale, site, total);
 }
 
 /** AC-2.1: toggles blocking on the current site by (un)whitelisting its host. */
-async function toggleSite(elements: Elements, domain: string | undefined): Promise<void> {
+async function toggleSite(
+  elements: Elements,
+  locale: Locale,
+  domain: string | undefined,
+): Promise<void> {
   if (domain === undefined) {
     return;
   }
   const whitelist = createWhitelist();
   const allowed = await whitelist.isAllowed(domain);
   await whitelist.setEnabled(domain, !allowed);
-  renderSite(elements, domain, !(await whitelist.isAllowed(domain)));
+  renderSite(elements, locale, domain, !(await whitelist.isAllowed(domain)));
 }
 
 /** AC-2.3: turns the whole extension off (or back on) in one action. */
-async function toggleMaster(elements: Elements): Promise<void> {
+async function toggleMaster(elements: Elements, locale: Locale): Promise<void> {
   const rulesets = createRulesetManager();
   const enabled = await rulesets.isEnabled();
   await rulesets.setEnabled(!enabled);
-  renderMaster(elements, !enabled);
+  renderMaster(elements, locale, !enabled);
 }
 
 function reportError(error: unknown): void {
@@ -147,6 +174,10 @@ function reportError(error: unknown): void {
 }
 
 async function main(): Promise<void> {
+  const locale = resolveLocale(chrome.i18n.getUILanguage());
+  document.documentElement.lang = locale;
+  applyStaticText(locale);
+
   const elements = collectElements();
   const target = await resolveTargetTab();
 
@@ -154,18 +185,18 @@ async function main(): Promise<void> {
   const blocking =
     target.domain === undefined ? false : !(await whitelist.isAllowed(target.domain));
 
-  renderSite(elements, target.domain, blocking);
-  renderMaster(elements, await createRulesetManager().isEnabled());
-  await loadStats(elements, target.id);
+  renderSite(elements, locale, target.domain, blocking);
+  renderMaster(elements, locale, await createRulesetManager().isEnabled());
+  await loadStats(elements, locale, target.id);
 
   elements.siteToggle.addEventListener('click', () => {
-    void toggleSite(elements, target.domain).catch(reportError);
+    void toggleSite(elements, locale, target.domain).catch(reportError);
   });
   elements.statsClear.addEventListener('click', () => {
-    void clearStats(elements, target.id).catch(reportError);
+    void clearStats(elements, locale, target.id).catch(reportError);
   });
   elements.masterToggle.addEventListener('click', () => {
-    void toggleMaster(elements).catch(reportError);
+    void toggleMaster(elements, locale).catch(reportError);
   });
 }
 

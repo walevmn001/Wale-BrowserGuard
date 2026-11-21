@@ -4,12 +4,13 @@
 
 ## Trạng thái
 - Giai đoạn hiện tại: P1 (MVP chặn mạng)
-- Task đã xong: T001–T004 (P0), T010–T016 (P1)
-- Task kế tiếp: T017 (i18n vi/en cho popup)
-- Commit/tag mới nhất: (T016 — đang commit)
+- Task đã xong: T001–T004 (P0), T010–T017 (P1)
+- Task kế tiếp: T018 (chạy test vàng lần đầu, lưu số liệu cơ sở)
+- Commit/tag mới nhất: (T017 — đang commit)
 - Test vàng gần nhất: (chưa chạy — dự kiến T018)
 
 ## Dở dang / ghi chú cho phiên sau
+- **T017 xong (i18n vi/en)**: thêm `src/shared/i18n.ts` — từ điển thuần, **không dùng `chrome.i18n`/`_locales`** (giữ message được type-check: `EN: Record<MessageKey,string>` bắt 2 ngôn ngữ phải cùng bộ key; tra cứu thuần nên test được không cần browser). API: `Locale` ('vi'|'en'), `DEFAULT_LOCALE='vi'`, `MessageKey`, `t(key, locale, params?)` (thay `{name}`), `resolveLocale(uiLanguage)` (map `vi`/`vi-VN`/`en-US` → locale, còn lại → mặc định), `isLocale`, `isMessageKey`. `popup.ts`: lấy locale từ `chrome.i18n.getUILanguage()`, đặt `document.documentElement.lang`, điền nhãn tĩnh qua thuộc tính `data-i18n` trong `index.html` (3 heading + nút site/stats), mọi chuỗi động qua `t(...)`. Test: 5 unit (`tests/unit/i18n.test.ts`). **E2E `popup.spec.ts` đổi sang assert theo SỐ + `aria-pressed`/storage thay vì chuỗi** (Popup chạy ngôn ngữ theo trình duyệt; Chromium của Playwright mặc định en-US nên popup hiển thị tiếng Anh) — chuỗi chính xác do unit test i18n lo.
 - T016 xong: popup (`src/popup/`: `index.html` + `popup.ts` + helper thuần `url.ts`). Popup là view mỏng trên `Whitelist`/`StatsCounter`/`RulesetManager` (không cache state). Chức năng: hiện domain + trạng thái chặn của tab hiện tại (AC-2.1), tổng + theo tab (AC-3.1), nút "Xoá thống kê" (AC-3.2), nút tắt/bật toàn bộ (AC-2.3). Nhắm **tab active lúc mở** (`chrome.tabs.query({active,currentWindow})`, resolve 1 lần) — **không cần quyền `tabs`** (đọc `tab.url` nhờ host `<all_urls>`); `domainFromUrl` chỉ nhận http/https. Chuỗi tiếng Việt hard-code, **T017** lo i18n. Test: 2 unit (`tests/unit/url.test.ts`) + 1 e2e (`tests/e2e/popup.spec.ts`) phủ AC-2.1/2.3/3.1/3.2.
 - **T016 đã sửa 2 bug concurrency do chính nó phơi ra** (đã stress e2e full-suite **20 lần liên tiếp xanh**):
   1. **Whitelist** — popup (`Whitelist.setEnabled` → `updateDynamicRules`) và service worker (`storage.onChanged` → `applyStored`) cùng `addRules` một id → Chrome báo `Rule with id … does not have a unique ID`. Sửa: **worker là nơi DUY NHẤT ghi dynamic rule**; `setEnabled` chỉ ghi `chrome.storage` (desired state); `applyStored` reconcile (xoá id thừa trong dải whitelist + upsert id mong muốn, 1 lệnh `updateDynamicRules`) → deps thêm `getDynamicRules`.
@@ -50,4 +51,6 @@
 | 2026-11-21 | T012 | Khai báo static rulesets (ads/trackers) trong manifest + `rules/source/*.txt` (~100 rule) → `build-rulesets.ts` convert+validate → Vite emit `dist/rules/static/*.json`; e2e script quảng cáo giả bị chặn xanh | 93a4e6c |
 | 2026-11-21 | T013 | `ruleset-manager.ts` công tắc tổng (`updateEnabledRulesets`), nối service worker qua `storage.onChanged`; thêm quyền `storage`; 7 unit + e2e tắt→không chặn xanh | 14443ef |
 | 2026-11-21 | T014 | `whitelist.ts` (thuật toán C: dynamic `allowAllRequests` priority 1000, id hash ổn định, idempotent, 1 lệnh `updateDynamicRules`); thêm key `whitelist` vào `StorageSchema`; nối service worker; 10 unit + e2e (chặn→whitelist→qua; còn sau restart) xanh | 241c6e8 |
-| 2026-11-21 | T015 | `stats.ts` đếm chặn theo tab + tổng qua `getMatchedRules` (quyền `declarativeNetRequestFeedback`) + con trỏ `statsCursor`; thêm key stats vào `StorageSchema`; nối service worker (`tabs.onUpdated`); 5 unit + e2e (3 script → total=3) xanh | (đang commit) |
+| 2026-11-21 | T015 | `stats.ts` đếm chặn theo tab + tổng qua `getMatchedRules` (quyền `declarativeNetRequestFeedback`) + con trỏ `statsCursor`; thêm key stats vào `StorageSchema`; nối service worker (`tabs.onUpdated`); 5 unit + e2e (3 script → total=3) xanh | 146548d |
+| 2026-11-21 | T016 | Popup (`index.html`+`popup.ts`+`url.ts`): domain/trạng thái theo tab (AC-2.1), thống kê theo tab+tổng (AC-3.1), nút xoá (AC-3.2), tắt toàn bộ (AC-2.3); sửa 2 bug concurrency (whitelist single-writer, stats serialize poll); thêm `background.type: module`; 2 unit + 1 e2e; stress full-suite 20/20 xanh | 45af48c |
+| 2026-11-21 | T017 | i18n vi/en cho popup: `src/shared/i18n.ts` thuần (từ điển type-check, `t`/`resolveLocale`), nhãn tĩnh qua `data-i18n`, e2e popup assert theo số/storage; 5 unit + 7 e2e xanh | (đang commit) |
