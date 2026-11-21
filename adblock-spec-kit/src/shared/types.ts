@@ -12,4 +12,10 @@ export interface StorageSchema {
    * `true` means blocking is active.
    */
   enabled: boolean;
+  /**
+   * Domains the user has whitelisted (US-2 / AC-2.2). Stored even though the
+   * matching dynamic rules also persist in the browser, so the list survives a
+   * restart and can be shown/edited by the popup.
+   */
+  whitelist: string[];
 }

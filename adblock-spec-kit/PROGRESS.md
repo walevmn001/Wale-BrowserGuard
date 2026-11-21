@@ -4,19 +4,20 @@
 
 ## Trạng thái
 - Giai đoạn hiện tại: P1 (MVP chặn mạng)
-- Task đã xong: T001–T004 (P0), T010–T013 (P1)
-- Task kế tiếp: T014 (`whitelist.ts`, thuật toán C; unit idempotent + e2e; còn sau restart)
-- Commit/tag mới nhất: (T013 — đang commit)
+- Task đã xong: T001–T004 (P0), T010–T014 (P1)
+- Task kế tiếp: T015 (`stats.ts` đếm chặn theo tab + tổng; unit + e2e số đúng)
+- Commit/tag mới nhất: (T014 — đang commit)
 - Test vàng gần nhất: (chưa chạy — dự kiến T018)
 
 ## Dở dang / ghi chú cho phiên sau
+- T014 xong: `src/background/whitelist.ts` = whitelist theo domain (thuật toán C). `Whitelist` (inject `storage`/`updateDynamicRules`), `whitelistRuleId(domain)` (hash FNV-1a ổn định → id trong dải riêng `WHITELIST_RULE_ID_BASE=1_000_000`, tránh đụng id ruleset tĩnh), `buildAllowAllRule(domain)` (`{priority: PRIORITY.WHITELIST_ALLOW_ALL=1000, action:{type:'allowAllRequests'}, condition:{requestDomains:[domain], resourceTypes:['main_frame','sub_frame']}}`), `createWhitelist()` (nối `chrome.*`). API: `list/isAllowed/setEnabled(domain, enabled)/applyStored`. **Idempotent**: thêm cùng domain nhiều lần → 1 entry + 1 rule; cập nhật bằng **1 lệnh `updateDynamicRules`** (remove+add cùng lúc). Danh sách domain ở `chrome.storage` key `whitelist` (đã thêm vào `StorageSchema`). `service-worker.ts` gọi `applyStored()` khi cài/khởi động + `chrome.storage.onChanged` key `whitelist`. Test: 10 unit (`tests/unit/whitelist.test.ts`, idempotent) + e2e (`tests/e2e/whitelist.spec.ts`: baseline chặn → set whitelist `localhost` → request qua; relaunch cùng userDataDir → list + dynamic rule còn). Lưu ý: `requestDomains` dùng domain ascii; e2e whitelist domain `localhost` (server bind mọi interface).
 - T013 xong: `src/background/ruleset-manager.ts` = công tắc tổng. `RulesetManager` (inject `storage`/`ruleSetIds`/`updateEnabledRulesets`), `ruleSetIdsFromManifest()` (đọc id ruleset từ manifest), `createRulesetManager()` (nối `chrome.*`). Trạng thái ở `chrome.storage` key `enabled` (mặc định ON). `service-worker.ts` gọi `applyStored()` khi cài/khởi động + `chrome.storage.onChanged` → tắt/bật bằng `updateEnabledRulesets`. **Đã thêm quyền `storage` vào manifest** (plan §3, P1) — thiếu nó thì `chrome.storage` undefined trong SW. E2E `tests/e2e/master-switch.spec.ts`: set `enabled=false` qua SW → `getEnabledRulesets()` rỗng → request quảng cáo không còn `ERR_BLOCKED_BY_CLIENT`.
 - T012 xong: static rulesets được khai báo trong `manifest.config.ts` (`declarative_net_request.rule_resources`, permissions `declarativeNetRequest` + `storage`, host `<all_urls>`) + `scripts/static-rulesets.ts` (descriptor: id/category/source/output) + `scripts/build-rulesets.ts` (đọc `rules/source/*.txt` → converter T010 → validate T011 → JSON). Vite plugin `adblock-emit-rules` emit `dist/rules/static/*.json`. E2E `tests/e2e/block-ad-script.spec.ts`: script từ `ads.example.test` bị chặn `ERR_BLOCKED_BY_CLIENT`, script cùng origin vẫn chạy. Chạy e2e bằng `xvfb-run -a npm run test:e2e` (cần `npm run build` trước).
 - **Lệch nhỏ so với task**: task ghi "bộ rule nhỏ ~1k" nhưng hiện chỉ có ~100 rule (ads 58 + trackers 42) — bộ curated viết tay, không bịa số. Pipeline đã sẵn sàng nhận list lớn (EasyList/EasyPrivacy/URLhaus) ở task `filter-updater` (P2): chỉ cần thêm file `rules/source/*.txt` + descriptor. Ghi license theo từng nguồn ở `rules/README.md`.
 - T011 xong: `scripts/validate-rules.ts` (giới hạn + orchestration + report) và `scripts/lib/dnr-schema.ts` (kiểm tra schema mỗi rule). API: `validateRules(input, limits?)`, `assertValidRules` (throw `RulesValidationError` khi có lỗi), hằng `RULE_LIMITS` (MAX_RULESETS=100, MAX_ENABLED_RULESETS=50, MAX_REGEX_RULES=1000, STATIC_RULE_BUDGET=30000). Đã tách file vì bản gộp vượt trần 300 dòng (constitution §12).
 - T010 xong: `scripts/build-rules.ts` = converter ABP→DNR tối giản (thuần, không CLI). API: `convertFilterList(lines, category, startId)`, `groupByCategory`, `summarize`. Cú pháp hỗ trợ theo plan §6: pattern `|`/`||`/`^`/`*`, `/regex/`, `@@`, options `third-party`/`~third-party`/`script`/`image`/`xmlhttprequest`/`~<type>`. Ngoài tập đó → bỏ có kiểm soát + ghi báo cáo (`SkipReason`). Priority lấy từ `PRIORITY` (block=500, exception=800, malware=900). File 294 dòng (sát trần 300): nếu cần thêm code, TÁCH module con.
 - T004: Playwright nạp extension `dist/`. Chạy headless-CI bằng `xvfb-run -a npm run test:e2e` (bắt buộc `npm run build` trước để có `dist/`).
-- T003: `StorageSchema` hiện chỉ có `enabled`; task sau mở rộng. `TypedStorage` inject area để test.
+- T003: `StorageSchema` có `enabled` + `whitelist` (mở rộng ở T014); task sau (T015) thêm key thống kê. `TypedStorage` inject area để test.
 - T002/T012/T013: manifest MV3 có `permissions: ["declarativeNetRequest", "storage"]` + `host_permissions: ["<all_urls>"]` + `declarative_net_request.rule_resources` (ads, trackers). Popup build ra `dist/src/popup/index.html`; chưa có icon.
 - Lệnh build/test: `npm run typecheck && npm run lint && npm run test && npm run build` + `xvfb-run -a npm run test:e2e` (e2e luôn cần build trước).
 
@@ -40,4 +41,5 @@
 | 2026-11-21 | T010 | `scripts/build-rules.ts` converter ABP→DNR (pattern/`@@`/options/`~`); skip có kiểm soát + báo cáo; 11 unit test (20 dòng mẫu) xanh | 12fefd4 |
 | 2026-11-21 | T011 | `scripts/validate-rules.ts` + `scripts/lib/dnr-schema.ts`: kiểm tra schema DNR + giới hạn (regex/ruleset/budget), `assertValidRules` throw khi lỗi; 18 unit test xanh | 1666546 |
 | 2026-11-21 | T012 | Khai báo static rulesets (ads/trackers) trong manifest + `rules/source/*.txt` (~100 rule) → `build-rulesets.ts` convert+validate → Vite emit `dist/rules/static/*.json`; e2e script quảng cáo giả bị chặn xanh | 93a4e6c |
-| 2026-11-21 | T013 | `ruleset-manager.ts` công tắc tổng (`updateEnabledRulesets`), nối service worker qua `storage.onChanged`; thêm quyền `storage`; 7 unit + e2e tắt→không chặn xanh | (đang commit) |
+| 2026-11-21 | T013 | `ruleset-manager.ts` công tắc tổng (`updateEnabledRulesets`), nối service worker qua `storage.onChanged`; thêm quyền `storage`; 7 unit + e2e tắt→không chặn xanh | 14443ef |
+| 2026-11-21 | T014 | `whitelist.ts` (thuật toán C: dynamic `allowAllRequests` priority 1000, id hash ổn định, idempotent, 1 lệnh `updateDynamicRules`); thêm key `whitelist` vào `StorageSchema`; nối service worker; 10 unit + e2e (chặn→whitelist→qua; còn sau restart) xanh | (đang commit) |
