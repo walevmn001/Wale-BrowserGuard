@@ -61,6 +61,7 @@ export const EN: Record<keyof typeof VI, string> = {
   ppSettings: 'Settings',
   ppOpenDashboard: 'Open dashboard',
   ppResume: 'Resume now',
+  ppPauseLabel: 'Pause protection',
   ppPausedUntil: 'Paused until {time}',
   ppVersion: 'Version {version}',
   ppNoData: 'No data collected',

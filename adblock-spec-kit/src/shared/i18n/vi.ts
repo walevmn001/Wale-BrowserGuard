@@ -60,6 +60,7 @@ export const VI = {
   ppSettings: 'Cài đặt',
   ppOpenDashboard: 'Mở bảng điều khiển',
   ppResume: 'Bật lại ngay',
+  ppPauseLabel: 'Tạm dừng bảo vệ',
   ppPausedUntil: 'Tạm dừng đến {time}',
   ppVersion: 'Phiên bản {version}',
   ppNoData: 'Không thu thập dữ liệu',

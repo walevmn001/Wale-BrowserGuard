@@ -19,7 +19,7 @@ export function q<T extends HTMLElement = HTMLElement>(id: string): T {
   return element as T;
 }
 
-/** Fills `data-i18n` (text) and `data-i18n-placeholder` in the page. */
+/** Fills `data-i18n` (text), `data-i18n-placeholder` and `data-i18n-aria-label`. */
 export function applyStaticText(locale: Locale): void {
   for (const element of document.querySelectorAll<HTMLElement>('[data-i18n]')) {
     const key = element.dataset['i18n'];
@@ -31,6 +31,12 @@ export function applyStaticText(locale: Locale): void {
     const key = element.dataset['i18nPlaceholder'];
     if (key !== undefined && isMessageKey(key)) {
       element.placeholder = t(key, locale);
+    }
+  }
+  for (const element of document.querySelectorAll<HTMLElement>('[data-i18n-aria-label]')) {
+    const key = element.dataset['i18nAriaLabel'];
+    if (key !== undefined && isMessageKey(key)) {
+      element.setAttribute('aria-label', t(key, locale));
     }
   }
 }
