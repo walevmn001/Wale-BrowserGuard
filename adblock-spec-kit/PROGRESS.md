@@ -6,6 +6,7 @@
 ## Trạng thái
 - Giai đoạn hiện tại: **P4 ĐÃ XONG (T040–T043)** — tag `phase-P4-done`; **v1.0 ĐÃ PHÁT HÀNH** (tag + GitHub release `v1.0`), asset đã cập nhật lên **v1.0.2**.
 - Task đã xong: T001–T004 (P0), T010–T018 (P1), T020–T025 (P2), T030–T037 (P3), T040–T043 (P4 — **nay đổi số thành T090–T093/P7**); Prompt 14 (B0–B5); Prompt 15 (B2 + G1 + D1 → `v1.0`).
+- **Giai đoạn hiện tại: P5 (module YouTube) — ĐANG LÀM.** T060 ĐÃ XONG (2026-11-22): `data/youtube-config.json` + validator `src/shared/youtube-config.ts` + cờ `youtubeModule` trong settings; tổng unit 319/319, lint/typecheck/build xanh.
 - **Hợp nhất tài liệu (MERGE, không đổi code)**: đồng bộ khung Spec Kit mở rộng P1–P7 từ thư mục tạm — constitution mục VI (luật YouTube/MAIN world) + dòng giai đoạn P1–P7; spec.md thêm US-8…US-17 (+US-14); plan.md thêm Phụ lục (thư mục/quyền/rủi ro); algorithm.md thêm mục H–T (Q = module YouTube 6 lớp); tasks.md thêm T005, T038–T042 (P3), P4 (T050–T058), P5 (T060–T069), P6 (T080–T082), P7 (T090–T093 — đổi số từ P4 cũ T040–T043); thêm `templates/ci.yml`, `prompts/11-youtube-module.md`, `specs/001-adblock-security/test-golden.md`; cập nhật README + `.trae/rules/project_rules.md` (mục 4b).
 - Task kế tiếp: **Prompt 16 — nâng độ phủ chặn** (KHÔNG đổi giấy phép MIT, KHÔNG dùng list copyleft, KHÔNG vá theo từng domain của bài test; rule chặn chỉ tầng sub-resource):
   - **T0 ĐÃ XONG** — dọn `PROGRESS.md` (≤ ~80 dòng), chuyển chi tiết sang `docs/history.md`.
@@ -31,6 +32,7 @@
 - `filter-updater` (T023) mới validate/lưu mô tả list tải về, **chưa** biến thành rule chặn — việc giai đoạn sau.
 
 ## Dở dang / việc kế tiếp
+- **P5 (module YouTube) — T060 ĐÃ XONG (2026-11-22)**: `data/youtube-config.json` (schema `{version, enabled, layers{network,prune,cosmetic,skip,health}, adFields, endpoints, selectors, skipSelectors}` — mọi giá trị TODO(verify) với trang thật), validator `src/shared/youtube-config.ts` (`isYouTubeConfig`, có giới hạn kích thước theo Constitution 9), cờ `youtubeModule` trong `StorageSchema` + `src/background/youtube-settings.ts` (mặc định TẮT). Test `tests/unit/youtube-config.test.ts` 23 test; tổng unit **319/319**, lint/typecheck/build xanh. **Task kế tiếp: T061 — trang mock YouTube cho e2e.** Lưu ý: `data/youtube-config.json` CHƯA được emit vào `dist/` (việc phát hành/đóng gói thuộc T062/T067).
 - **Phát hành `1.0.2`**: ĐÃ XONG — bump `1.0.1` → `1.0.2` (`package.json` + `EXTENSION_VERSION`), zip `release/adblock-security-1.0.2.zip` (32 file, md5 `81c00bc2010ccd704de2fcc215a521d4`, sha256 `ad4e75380819e2710def77e121f65c29ceaaedbf49c69c684a7cd5f757535bf2`), cập nhật asset cho release `v1.0` (giữ nguyên tag `v1.0`). (Trước đó: `1.0.1` = B2b-1, `1.0.0` = v1.0.)
 - **Sau B2b**: nếu vẫn chưa đạt mục tiêu Toolz → người dùng quyết định (mở rộng thủ công hoặc đổi giấy phép); Trae KHÔNG tự quyết.
 - **G1 bằng URL thật do người dùng điền** vẫn phải làm trước khi gắn `v1.0` (hiện có khung 40 trang offline).

@@ -188,4 +188,10 @@ export interface StorageSchema {
   statsToday?: number;
   /** User-added filter-list URLs (Phase 5). */
   customLists?: CustomList[];
+  /**
+   * YouTube module master switch (US-15 / AC-15.1, T060). `false` (the default)
+   * means the isolated, best-effort module never runs: no network rules, no
+   * MAIN-world script, no cosmetic CSS on YouTube.
+   */
+  youtubeModule?: boolean;
 }
