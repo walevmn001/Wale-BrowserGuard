@@ -70,5 +70,9 @@
 ||googlesyndication.com/pagead/js/adsbygoogle.js$script
 ||securepubads.g.doubleclick.net^$script
 
+! --- Common ad-script file names, whatever the host (path-anchored; B4) ---
+/ads.js$script
+/pagead.js$script
+
 ! --- Example exception (keeps the converter's @@ path exercised) ---
 @@||example.org/ads/partner.js

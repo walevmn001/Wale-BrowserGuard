@@ -113,3 +113,23 @@ describe('trackers ruleset — B2 social / pixel / error hosts', () => {
     }
   });
 });
+
+describe('ads ruleset — B4 ad-script path rules', () => {
+  const ads = report.ruleSets.find(({ descriptor }) => descriptor.id === 'ads');
+  const byFilter = new Map(
+    (ads?.rules ?? [])
+      .filter((rule) => rule.condition.urlFilter !== undefined)
+      .map((rule) => [rule.condition.urlFilter, rule]),
+  );
+
+  // Path-anchored patterns (no `||host`), so the same `ads.js`/`pagead.js` is
+  // blocked no matter which host serves it. B1 taught the converter to keep a
+  // `/path` body a urlFilter instead of mistaking it for a `/regex/`.
+  it.each(['/ads.js', '/pagead.js'])('blocks any path %s as a script', (filter) => {
+    const rule = byFilter.get(filter);
+
+    expect(rule?.action.type).toBe('block');
+    expect(rule?.condition.resourceTypes).toEqual(['script']);
+  });
+});
+

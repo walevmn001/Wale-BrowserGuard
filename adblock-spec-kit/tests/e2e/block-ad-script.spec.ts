@@ -24,19 +24,38 @@ const PAGE_HTML = `<!doctype html>
   </body>
 </html>`;
 
+/** Loads ad scripts by file name only, served from the page's own host (B4). */
+const PATH_PAGE_HTML = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>block path e2e</title>
+    <script src="/app.js"></script>
+    <script src="/ads.js"></script>
+    <script src="/pagead.js"></script>
+  </head>
+  <body>
+    ok
+  </body>
+</html>`;
+
+/** Same-origin scripts the local server answers with JS (ad paths included). */
+const JS_PATHS = new Set(['/app.js', '/ads.js', '/pagead.js']);
+
 let context!: BrowserContext;
 let server!: Server;
 let baseUrl!: string;
 
 test.beforeAll(async () => {
   server = createServer((request, response) => {
-    if (request.url === '/app.js') {
+    const path = (request.url ?? '/').split('?')[0] ?? '/';
+    if (JS_PATHS.has(path)) {
       response.writeHead(200, { 'content-type': 'text/javascript' });
       response.end('window.__appLoaded = true;');
       return;
     }
     response.writeHead(200, { 'content-type': 'text/html' });
-    response.end(PAGE_HTML);
+    response.end(path === '/adsjs' ? PATH_PAGE_HTML : PAGE_HTML);
   });
   await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
   const { port } = server.address() as AddressInfo;
@@ -107,4 +126,25 @@ test('blocks the same ad domain for both fetch() and image requests', async () =
   // A bare `||domain^` rule sets no resourceTypes, so it must block the
   // xmlhttprequest/fetch and the image sub-resource alike.
   expect(failedTypes).toEqual(expect.arrayContaining(['fetch', 'image']));
+});
+
+test('blocks ads.js and pagead.js by file name whatever host serves them (B4)', async () => {
+  const page = await context.newPage();
+  const failures = new Map<string, string>();
+  page.on('requestfailed', (request) => {
+    const { pathname } = new URL(request.url());
+    if (pathname === '/ads.js' || pathname === '/pagead.js') {
+      failures.set(pathname, request.failure()?.errorText ?? '');
+    }
+  });
+
+  await page.goto(`${baseUrl}adsjs`);
+
+  await expect.poll(() => failures.size, { timeout: 1000 }).toBe(2);
+  expect([...failures.keys()].sort()).toEqual(['/ads.js', '/pagead.js']);
+  expect([...failures.values()].every((text) => text.includes('ERR_BLOCKED_BY_CLIENT'))).toBe(
+    true,
+  );
+  // The same-origin `/app.js` still runs, so the page is not broken.
+  await expect.poll(() => appLoaded(page)).toBe(true);
 });
