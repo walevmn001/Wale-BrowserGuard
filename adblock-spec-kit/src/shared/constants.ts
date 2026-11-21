@@ -25,10 +25,17 @@ export type PriorityName = keyof typeof PRIORITY;
 export type Priority = (typeof PRIORITY)[PriorityName];
 
 /**
+ * The opt-in YouTube module's static ruleset id (Q1). The module toggles it for
+ * its own switch, and the Q6 kill-switch disables it via
+ * `updateEnabledRulesets`.
+ */
+export const YOUTUBE_RULESET_ID = 'youtube';
+
+/**
  * Static ruleset ids whose enabled state is owned by an isolated, opt-in module
  * instead of the master switch (AC-15.1). The YouTube module (`youtube`) is off
  * until the user turns it on, so the master switch must never enable it for
  * someone who never opted in — the module publishes its own switch and the
  * service worker toggles the ruleset from that.
  */
-export const MODULE_OWNED_RULESETS: readonly string[] = ['youtube'];
+export const MODULE_OWNED_RULESETS: readonly string[] = [YOUTUBE_RULESET_ID];

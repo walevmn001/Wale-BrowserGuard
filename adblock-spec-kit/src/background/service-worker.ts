@@ -34,6 +34,7 @@ import { createSitePreferences } from './site-settings';
 import { categoryForRuleset, createStatsCounter } from './stats';
 import { createTempException, TEMP_EXCEPTION_ALARM } from './temp-exception';
 import { createWhitelist } from './whitelist';
+import { createYouTubeConfigUpdater } from './youtube-config-updater';
 import { createYouTubeModule, isYouTubeHost, type YouTubePhase } from './youtube-module';
 import { createHealthStorage, recordHealthFault } from './youtube-health';
 import { workerLocale } from './locale';
@@ -136,6 +137,17 @@ async function runFilterUpdate(): Promise<void> {
     if (!result.ok) {
       await notify('filterUpdate', 'notifFilterFailBody');
     }
+  });
+  // Q6 rides the same cadence: a newer, valid config replaces the active one
+  // atomically (and a remote `enabled:false` is the kill-switch). Kept in its
+  // own guard so a YouTube fault can never affect the core filter update.
+  await runYouTubeConfigUpdate();
+}
+
+/** Runs one YouTube config refresh (Q6); a stale or corrupt download is a no-op. */
+async function runYouTubeConfigUpdate(): Promise<void> {
+  await guard('update the YouTube config', async () => {
+    await createYouTubeConfigUpdater().updateNow();
   });
 }
 

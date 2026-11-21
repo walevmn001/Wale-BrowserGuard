@@ -26,6 +26,7 @@ import { installYouTubeAdSkip, YOUTUBE_AD_SKIP_OPTIONS } from '../content/youtub
 import { installYouTubeHealth, YOUTUBE_HEALTH_OPTIONS } from '../content/youtube/health';
 import { installYouTubePrune, YOUTUBE_PRUNE_LIMITS } from '../content/youtube/prune-main';
 import { logger } from '../shared/logger';
+import { TypedStorage } from '../shared/storage';
 import {
   isYouTubeConfig,
   YOUTUBE_CONFIG_PATH,
@@ -134,6 +135,22 @@ export async function loadPackagedYouTubeConfig(): Promise<YouTubeConfig | undef
 }
 
 /**
+ * The config the module actually runs on (Q6). A newer, schema-valid config the
+ * updater stored wins over the packaged file — that is how a remote
+ * `enabled:false` kill-switch reaches the user. A stored value that no longer
+ * validates is ignored (fail-safe) and the packaged file is used instead.
+ */
+export async function loadEffectiveYouTubeConfig(
+  storage: TypedStorage = new TypedStorage(),
+): Promise<YouTubeConfig | undefined> {
+  const active = await storage.get('youtubeConfigActive');
+  if (active !== undefined && isYouTubeConfig(active)) {
+    return active;
+  }
+  return loadPackagedYouTubeConfig();
+}
+
+/**
  * Reads the module's element-hiding data (`rules/cosmetic/youtube.json`, T064)
  * and validates it; cached for the worker lifetime because it is immutable build
  * output (like the core cosmetic data), never user state.
@@ -151,7 +168,7 @@ const loadYouTubeCosmeticData = createCosmeticDataCache(async (): Promise<Cosmet
 export function createYouTubeModule(): YouTubeModule {
   return new YouTubeModule({
     settings: createYouTubeModuleSettings(),
-    loadConfig: loadPackagedYouTubeConfig,
+    loadConfig: loadEffectiveYouTubeConfig,
     injectPrune: async (tabId, config) => {
       await chrome.scripting.executeScript({
         target: { tabId },

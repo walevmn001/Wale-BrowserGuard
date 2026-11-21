@@ -2,10 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   isYouTubeHost,
+  loadEffectiveYouTubeConfig,
   loadPackagedYouTubeConfig,
   YouTubeModule,
   type YouTubeModuleDeps,
 } from '../../src/background/youtube-module';
+import { TypedStorage } from '../../src/shared/storage';
 import type { YouTubeConfig } from '../../src/shared/youtube-config';
 
 function makeConfig(overrides: Partial<YouTubeConfig> = {}): YouTubeConfig {
@@ -267,5 +269,65 @@ describe('loadPackagedYouTubeConfig', () => {
     });
 
     await expect(loadPackagedYouTubeConfig()).resolves.toBeUndefined();
+  });
+});
+
+describe('loadEffectiveYouTubeConfig', () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+
+  afterEach(() => {
+    delete globals['chrome'];
+    delete globals['fetch'];
+  });
+
+  /** Storage holding a single `youtubeConfigActive` value (or nothing). */
+  function stubStorage(active?: unknown): TypedStorage {
+    const store = new Map<string, unknown>();
+    if (active !== undefined) {
+      store.set('youtubeConfigActive', active);
+    }
+    const area = {
+      get: async (key: string): Promise<Record<string, unknown>> =>
+        store.has(key) ? { [key]: store.get(key) } : {},
+      set: async (items: Record<string, unknown>): Promise<void> => {
+        for (const [key, value] of Object.entries(items)) {
+          store.set(key, value);
+        }
+      },
+      remove: async (key: string): Promise<void> => {
+        store.delete(key);
+      },
+    } as unknown as chrome.storage.StorageArea;
+    return new TypedStorage(area);
+  }
+
+  /** Makes the packaged-file fallback available (a valid shipped config). */
+  function stubPackaged(payload: unknown): void {
+    globals['chrome'] = { runtime: { getURL: (path: string) => `chrome-extension://id/${path}` } };
+    globals['fetch'] = vi.fn(async () => ({ json: async () => payload, ok: true }));
+  }
+
+  it('prefers a stored update over the packaged file (Q6)', async () => {
+    const active = makeConfig({ version: 7 });
+    const packaged = makeConfig({ version: 1 });
+    stubPackaged(packaged);
+
+    await expect(loadEffectiveYouTubeConfig(stubStorage(active))).resolves.toEqual(active);
+  });
+
+  it('falls back to the packaged file when nothing was stored', async () => {
+    const packaged = makeConfig({ version: 2 });
+    stubPackaged(packaged);
+
+    await expect(loadEffectiveYouTubeConfig(stubStorage())).resolves.toEqual(packaged);
+  });
+
+  it('ignores a stored value that no longer validates (fail-safe)', async () => {
+    const packaged = makeConfig({ version: 2 });
+    stubPackaged(packaged);
+
+    await expect(loadEffectiveYouTubeConfig(stubStorage({ version: 'nope' }))).resolves.toEqual(
+      packaged,
+    );
   });
 });

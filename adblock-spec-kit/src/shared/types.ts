@@ -1,3 +1,5 @@
+import type { YouTubeConfig } from './youtube-config';
+
 /** One validated group inside the active filter set (US-7 / T023). */
 export interface FilterGroupInfo {
   readonly bytes: number;
@@ -213,4 +215,11 @@ export interface StorageSchema {
    * `chrome.storage.session`; missing means the module is healthy this session.
    */
   youtubeHealthSession?: YouTubeHealthSessionState;
+  /**
+   * The updated YouTube module config (US-15 / AC-15.6, Q6 / T067). When a
+   * newer, schema-valid config was downloaded it is stored here and the module
+   * prefers it over the packaged file — this is also how a remote `enabled:false`
+   * kill-switch reaches every user. Missing means "use the packaged config".
+   */
+  youtubeConfigActive?: YouTubeConfig;
 }
