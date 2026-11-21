@@ -1,242 +1,216 @@
 /**
- * Popup UI (T016, US-2 / US-3; localisation added in T017).
+ * Popup controller (Phase 2 / 3 / 9 — the compact WALE GUARD panel).
  *
- * The popup is a thin view over the modules the worker also uses, so there is a
- * single source of truth: `Whitelist` (per-site on/off), `StatsCounter` (blocked
- * counts) and `RulesetManager` (master switch) all read and write
- * `chrome.storage`. Nothing is cached in a module variable.
+ * Wires the DOM (see `elements.ts` / `render.ts`) to the very modules the
+ * worker uses, so there is a single source of truth: `Whitelist` (per-site
+ * on/off), `StatsCounter` (blocked counts), `RulesetManager` (master switch +
+ * groups), `ProtectionPause` (temporary pause), `SitePreferences` (per-site
+ * cosmetic), `FilterUpdater` (failures) and the local `scanUrl` heuristic.
+ * Nothing is cached in a module variable.
  *
- * It acts on the tab that was active when it opened, resolved once: a later
- * focus change (such as clicking a button) must not retarget it. It only reads
- * the block counts the worker has already gathered: the worker is the single
- * writer of the counters, so a match is never counted twice by two contexts.
+ * It acts on the tab that was active when it opened, resolved once. Counts are
+ * read, never written: the worker is the only writer of the counters.
  *
- * Every user-facing string comes from `shared/i18n.ts`, chosen from the browser
- * UI language, so the popup ships in Vietnamese and English.
+ * Every user-facing string comes from `shared/i18n`, in Vietnamese or English.
  */
 
-import { createRulesetManager } from '../background/ruleset-manager';
 import { createFingerprintSettings } from '../background/security/fingerprint-settings';
+import { createFilterUpdater } from '../background/filter-updater';
+import { createProtectionPause, PAUSE_OPTIONS } from '../background/pause';
+import { createRulesetManager } from '../background/ruleset-manager';
+import { createSitePreferences } from '../background/site-settings';
 import { createStatsCounter } from '../background/stats';
 import { createWhitelist } from '../background/whitelist';
-import { isMessageKey, resolveLocale, t, type Locale } from '../shared/i18n';
+import { scanUrl } from '../background/url-scan';
+import { isMessageKey, t, type MessageKey } from '../shared/i18n';
 import { logger } from '../shared/logger';
+import { TypedStorage } from '../shared/storage';
+import {
+  applyStaticText,
+  applyTheme,
+  collectElements,
+  popupLocale,
+  type Elements,
+  type LiveState,
+} from './elements';
+import {
+  bannerTone,
+  render,
+  renderModuleList,
+  renderPause,
+  renderSite,
+  renderStats,
+  renderStatus,
+} from './render';
 import { domainFromUrl } from './url';
+import { findingKey, verdictKey } from './view';
 
-/** Popup elements, looked up once at start-up. */
-interface Elements {
-  readonly siteDomain: HTMLElement;
-  readonly siteStatus: HTMLElement;
-  readonly siteToggle: HTMLButtonElement;
-  readonly fingerprintSite: HTMLInputElement;
-  readonly statsSite: HTMLElement;
-  readonly statsTotal: HTMLElement;
-  readonly statsClear: HTMLButtonElement;
-  readonly masterStatus: HTMLElement;
-  readonly masterToggle: HTMLButtonElement;
-}
-
-/** The tab the popup acts on. */
-interface TargetTab {
-  readonly id: number | undefined;
-  readonly domain: string | undefined;
-}
-
-function elementById(id: string): HTMLElement {
-  const element = document.getElementById(id);
-  if (element === null) {
-    throw new Error(`popup: missing #${id}`);
-  }
-  return element;
-}
-
-function buttonById(id: string): HTMLButtonElement {
-  const element = elementById(id);
-  if (!(element instanceof HTMLButtonElement)) {
-    throw new Error(`popup: #${id} is not a button`);
-  }
-  return element;
-}
-
-function inputById(id: string): HTMLInputElement {
-  const element = elementById(id);
-  if (!(element instanceof HTMLInputElement)) {
-    throw new Error(`popup: #${id} is not an input`);
-  }
-  return element;
-}
-
-function collectElements(): Elements {
+/** Reads every piece of state from its owning module in one pass. */
+async function loadState(storage: TypedStorage): Promise<LiveState> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const domain = domainFromUrl(tab?.url);
+  const locale = await popupLocale(storage);
+  const masterEnabled = (await storage.get('enabled')) ?? true;
+  const paused = await createProtectionPause().state();
+  const blocking = domain === undefined ? false : !(await createWhitelist().isAllowed(domain));
+  const site = domain === undefined ? {} : await createSitePreferences().get(domain);
+  const fingerprintOn =
+    domain === undefined ? false : await createFingerprintSettings().isSiteEnabled(domain);
+  const counter = createStatsCounter();
+  const tabId = tab?.id;
+  const siteCount = tabId === undefined ? 0 : await counter.forTab(tabId);
+  const { total } = await counter.snapshot();
   return {
-    siteDomain: elementById('site-domain'),
-    siteStatus: elementById('site-status'),
-    siteToggle: buttonById('site-toggle'),
-    fingerprintSite: inputById('fingerprint-site'),
-    statsSite: elementById('stats-site'),
-    statsTotal: elementById('stats-total'),
-    statsClear: buttonById('stats-clear'),
-    masterStatus: elementById('master-status'),
-    masterToggle: buttonById('master-toggle'),
+    locale,
+    domain,
+    tabId,
+    url: tab?.url,
+    masterEnabled,
+    paused,
+    blocking,
+    fingerprintOn,
+    cosmeticOff: site.cosmeticOff === true,
+    siteCount,
+    total,
+    today: await counter.todayTotal(),
+    failures: (await createFilterUpdater().status()).failures,
+    disabled: await createRulesetManager().disabledGroups(),
   };
 }
 
-/** Fills the static labels declared with `data-i18n` in `index.html`. */
-function applyStaticText(locale: Locale): void {
-  for (const element of document.querySelectorAll<HTMLElement>('[data-i18n]')) {
-    const key = element.dataset['i18n'];
-    if (key !== undefined && isMessageKey(key)) {
-      element.textContent = t(key, locale);
-    }
-  }
-}
-
-/** The active tab of the window that opened the popup. */
-async function resolveTargetTab(): Promise<TargetTab> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  return { id: tab?.id, domain: domainFromUrl(tab?.url) };
-}
-
-function renderSite(
-  elements: Elements,
-  locale: Locale,
-  domain: string | undefined,
-  blocking: boolean,
-): void {
-  if (domain === undefined) {
-    elements.siteDomain.textContent = t('siteNotApplicable', locale);
-    elements.siteStatus.textContent = '';
-    elements.siteToggle.disabled = true;
-    elements.siteToggle.setAttribute('aria-pressed', 'false');
-    return;
-  }
-  elements.siteDomain.textContent = domain;
-  elements.siteStatus.textContent = t(blocking ? 'siteBlockingOn' : 'siteBlockingOff', locale);
-  elements.siteToggle.disabled = false;
-  elements.siteToggle.setAttribute('aria-pressed', String(blocking));
-}
-
-/** AC-6.5: reflects the per-page anti-fingerprinting switch for `domain`. */
-function renderFingerprint(
-  elements: Elements,
-  domain: string | undefined,
-  enabled: boolean,
-): void {
-  elements.fingerprintSite.disabled = domain === undefined;
-  elements.fingerprintSite.checked = domain !== undefined && enabled;
-}
-
-function renderStats(elements: Elements, locale: Locale, siteCount: number, total: number): void {
-  elements.statsSite.textContent = t('statsSite', locale, { count: siteCount });
-  elements.statsTotal.textContent = t('statsTotal', locale, { count: total });
-}
-
-function renderMaster(elements: Elements, locale: Locale, enabled: boolean): void {
-  elements.masterStatus.textContent = t(enabled ? 'masterOn' : 'masterOff', locale);
-  elements.masterToggle.textContent = t(enabled ? 'masterToggleOff' : 'masterToggleOn', locale);
-}
-
-async function readStats(tabId: number | undefined): Promise<{ site: number; total: number }> {
-  const counter = createStatsCounter();
-  const site = tabId === undefined ? 0 : await counter.forTab(tabId);
-  const { total } = await counter.snapshot();
-  return { site, total };
-}
-
-/**
- * Shows the counts the worker has already gathered. The popup does not poll
- * itself: only the worker writes the counters (stats.ts serialises its polls),
- * so a match can never be counted by two contexts at once.
- */
-async function loadStats(
-  elements: Elements,
-  locale: Locale,
-  tabId: number | undefined,
-): Promise<void> {
-  const { site, total } = await readStats(tabId);
-  renderStats(elements, locale, site, total);
-}
-
-/** AC-3.2: clears the counters (the cursor is kept, so nothing is recounted). */
-async function clearStats(
-  elements: Elements,
-  locale: Locale,
-  tabId: number | undefined,
-): Promise<void> {
-  await createStatsCounter().reset();
-  const { site, total } = await readStats(tabId);
-  renderStats(elements, locale, site, total);
+/** Opens a dashboard section (options page) in a new tab and closes the popup. */
+function openSection(section: string): void {
+  void chrome.tabs.create({ url: chrome.runtime.getURL(`src/options/index.html#${section}`) });
+  window.close();
 }
 
 /** AC-2.1: toggles blocking on the current site by (un)whitelisting its host. */
-async function toggleSite(
-  elements: Elements,
-  locale: Locale,
-  domain: string | undefined,
-): Promise<void> {
-  if (domain === undefined) {
+async function toggleSite(elements: Elements, state: LiveState): Promise<void> {
+  if (state.domain === undefined) {
     return;
   }
   const whitelist = createWhitelist();
-  const allowed = await whitelist.isAllowed(domain);
-  await whitelist.setEnabled(domain, !allowed);
-  renderSite(elements, locale, domain, !(await whitelist.isAllowed(domain)));
+  const allowed = await whitelist.isAllowed(state.domain);
+  await whitelist.setEnabled(state.domain, !allowed);
+  renderSite(elements, state.locale, { ...state, blocking: !(await whitelist.isAllowed(state.domain)) });
 }
 
 /** AC-2.3: turns the whole extension off (or back on) in one action. */
-async function toggleMaster(elements: Elements, locale: Locale): Promise<void> {
-  const rulesets = createRulesetManager();
-  const enabled = await rulesets.isEnabled();
-  await rulesets.setEnabled(!enabled);
-  renderMaster(elements, locale, !enabled);
+async function toggleMaster(elements: Elements, state: LiveState): Promise<void> {
+  const next = !state.masterEnabled;
+  await createRulesetManager().setEnabled(next);
+  render(elements, { ...state, masterEnabled: next }, openSection);
+}
+
+/** Re-renders the parts that depend on the pause state. */
+function renderPaused(elements: Elements, state: LiveState, paused: LiveState['paused']): void {
+  const updated = { ...state, paused };
+  renderStatus(elements, state.locale, updated);
+  renderPause(elements, state.locale, paused);
+  renderModuleList(elements, updated, openSection);
+}
+
+/** Phase 9 §2: pauses (or resumes) protection for the chosen duration. */
+async function changePause(elements: Elements, state: LiveState): Promise<void> {
+  const value = elements.pauseSelect.value;
+  elements.pauseSelect.value = '';
+  if (value !== 'manual' && value !== 'five' && value !== 'fifteen' && value !== 'thirty') {
+    return;
+  }
+  const pause = createProtectionPause();
+  await pause.pause(value === 'manual' ? null : PAUSE_OPTIONS[value]);
+  renderPaused(elements, state, await pause.state());
+}
+
+async function resume(elements: Elements, state: LiveState): Promise<void> {
+  const pause = createProtectionPause();
+  await pause.resume();
+  renderPaused(elements, state, await pause.state());
+}
+
+/** AC-3.2: clears the counters (cursor kept, so nothing is recounted). */
+async function clearStats(elements: Elements, state: LiveState): Promise<void> {
+  await createStatsCounter().reset();
+  renderStats(elements, { ...state, siteCount: 0, total: 0, today: 0 });
+}
+
+/** Phase 2 quick action: locally analyse the current page URL (no network). */
+function scanCurrent(elements: Elements, state: LiveState): void {
+  if (state.url === undefined) {
+    return;
+  }
+  const result = scanUrl(state.url);
+  const details = result.findings
+    .map((finding) => findingKey(finding.id))
+    .filter((key): key is MessageKey => key !== undefined && isMessageKey(key))
+    .map((key) => t(key, state.locale));
+  const body = details.length === 0 ? t('scanNoFindings', state.locale) : details.join(' · ');
+  elements.scanResult.textContent = `${t(verdictKey(result.verdict), state.locale)} — ${body}`;
+  elements.scanResult.className = `banner span2 ${bannerTone(result.verdict)}`;
 }
 
 /**
- * AC-6.5: the per-page quick switch. Unchecking adds the host to the off list
- * the worker consults before injecting anti-fingerprinting.
+ * AC-6.5: the per-page anti-fingerprinting switch. Unchecking adds the host to
+ * the off list the worker consults before injecting.
  */
-async function toggleFingerprintSite(elements: Elements, domain: string | undefined): Promise<void> {
-  if (domain === undefined) {
+async function toggleFingerprintSite(elements: Elements, state: LiveState): Promise<void> {
+  if (state.domain === undefined) {
     return;
   }
-  await createFingerprintSettings().setSiteEnabled(domain, elements.fingerprintSite.checked);
+  await createFingerprintSettings().setSiteEnabled(state.domain, elements.fingerprintSite.checked);
 }
 
 function reportError(error: unknown): void {
   logger.error('popup action failed', error);
 }
 
-async function main(): Promise<void> {
-  const locale = resolveLocale(chrome.i18n.getUILanguage());
-  document.documentElement.lang = locale;
-  applyStaticText(locale);
-
-  const elements = collectElements();
-  const target = await resolveTargetTab();
-
-  const whitelist = createWhitelist();
-  const blocking =
-    target.domain === undefined ? false : !(await whitelist.isAllowed(target.domain));
-  const fingerprints = createFingerprintSettings();
-  const fingerprintSite =
-    target.domain === undefined ? false : await fingerprints.isSiteEnabled(target.domain);
-
-  renderSite(elements, locale, target.domain, blocking);
-  renderFingerprint(elements, target.domain, fingerprintSite);
-  renderMaster(elements, locale, await createRulesetManager().isEnabled());
-  await loadStats(elements, locale, target.id);
-
+function wireActions(elements: Elements, state: LiveState): void {
   elements.siteToggle.addEventListener('click', () => {
-    void toggleSite(elements, locale, target.domain).catch(reportError);
-  });
-  elements.fingerprintSite.addEventListener('change', () => {
-    void toggleFingerprintSite(elements, target.domain).catch(reportError);
-  });
-  elements.statsClear.addEventListener('click', () => {
-    void clearStats(elements, locale, target.id).catch(reportError);
+    void toggleSite(elements, state).catch(reportError);
   });
   elements.masterToggle.addEventListener('click', () => {
-    void toggleMaster(elements, locale).catch(reportError);
+    void toggleMaster(elements, state).catch(reportError);
   });
+  elements.pauseSelect.addEventListener('change', () => {
+    void changePause(elements, state).catch(reportError);
+  });
+  elements.pauseResume.addEventListener('click', () => {
+    void resume(elements, state).catch(reportError);
+  });
+  elements.statsClear.addEventListener('click', () => {
+    void clearStats(elements, state).catch(reportError);
+  });
+  elements.fingerprintSite.addEventListener('change', () => {
+    void toggleFingerprintSite(elements, state).catch(reportError);
+  });
+  elements.actionScan.addEventListener('click', () => scanCurrent(elements, state));
+  elements.openActivity.addEventListener('click', () => openSection('activity'));
+  elements.openDashboard.addEventListener('click', () => openSection('overview'));
+  elements.openSettings.addEventListener('click', () => openSection('settings'));
+}
+
+/** Keeps the "paused until HH:MM" chip counting down while the popup is open. */
+function startPauseTicker(elements: Elements, locale: LiveState['locale']): void {
+  const timer = setInterval(() => {
+    void createProtectionPause()
+      .state()
+      .then((paused) => renderPause(elements, locale, paused))
+      .catch(reportError);
+  }, 1000);
+  window.addEventListener('unload', () => clearInterval(timer));
+}
+
+async function main(): Promise<void> {
+  const storage = new TypedStorage();
+  await applyTheme(storage);
+  const state = await loadState(storage);
+  document.documentElement.lang = state.locale;
+  applyStaticText(state.locale);
+
+  const elements = collectElements();
+  render(elements, state, openSection);
+  wireActions(elements, state);
+  startPauseTicker(elements, state.locale);
 }
 
 void main().catch(reportError);

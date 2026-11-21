@@ -30,6 +30,7 @@ export function iconPath(size: number): string {
 export const UI_ASSETS: readonly UiAsset[] = [
   { from: 'src/shared/ui/design-tokens.css', to: 'src/shared/ui/design-tokens.css' },
   { from: 'src/shared/ui/components.css', to: 'src/shared/ui/components.css' },
+  { from: 'src/shared/ui/dashboard.css', to: 'src/shared/ui/dashboard.css' },
   { from: 'src/shared/ui/icon.svg', to: 'src/shared/ui/icon.svg' },
   ...ICON_SIZES.map((size) => ({
     from: `src/shared/ui/icons/icon-${size}.png`,

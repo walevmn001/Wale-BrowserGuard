@@ -15,13 +15,11 @@ describe('buildPrivacyRules', () => {
   const rules = buildPrivacyRules(42);
   const upgrade = rules[0]!;
   const strip = rules[1]!;
-  const referer = rules[2]!;
 
-  it('emits the upgrade, the strip and the referer rules, with sequential ids', () => {
-    expect(rules).toHaveLength(3);
+  it('emits the upgrade and the strip rules, with sequential ids', () => {
+    expect(rules).toHaveLength(2);
     expect(upgrade.id).toBe(42);
     expect(strip.id).toBe(43);
-    expect(referer.id).toBe(44);
   });
 
   it('upgrades insecure sub-resources at the upgrade priority', () => {
@@ -54,20 +52,11 @@ describe('buildPrivacyRules', () => {
     expect(strip.condition.resourceTypes).toContain('image');
   });
 
-  it('trims the Referer header on third-party sub-resources', () => {
-    expect(referer.priority).toBe(PRIORITY.REFERER_POLICY);
-    expect(referer.action).toEqual({
-      type: 'modifyHeaders',
-      requestHeaders: [{ header: 'referer', operation: 'remove' }],
-    });
-    expect(referer.condition.domainType).toBe('thirdParty');
-    expect(referer.condition.resourceTypes).toEqual([...REFERER_RESOURCE_TYPES]);
-    expect(referer.condition.resourceTypes).toContain('image');
-  });
-
-  it('leaves top-level navigations alone, so a referer-dependent page keeps working', () => {
+  it('leaves top-level navigations out of the referer resource types', () => {
+    // Referer trimming is a dynamic rule now, but the resource-type list stays
+    // here as shared data and must still exclude navigations.
     expect(REFERER_RESOURCE_TYPES).not.toContain('main_frame');
-    expect(referer.condition.resourceTypes).not.toContain('main_frame');
+    expect(REFERER_RESOURCE_TYPES).toContain('image');
   });
 
   it('is outranked by the user whitelist, which is what makes a site an exception', () => {

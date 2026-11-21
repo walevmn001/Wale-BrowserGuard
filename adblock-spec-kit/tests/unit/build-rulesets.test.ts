@@ -34,7 +34,7 @@ describe('buildStaticRuleSets', () => {
     expect(filters).toContain('||ads.example.test^');
   });
 
-  it('includes the code-generated privacy ruleset (upgrade + strip + referer)', () => {
+  it('includes the code-generated privacy ruleset (upgrade + strip)', () => {
     const privacy = report.ruleSets.find(({ descriptor }) => descriptor.id === 'privacy');
 
     expect(privacy?.rules.some((rule) => rule.action.type === 'upgradeScheme')).toBe(true);
@@ -45,15 +45,10 @@ describe('buildStaticRuleSets', () => {
           (rule.action.redirect?.transform?.queryTransform?.removeParams?.length ?? 0) > 0,
       ),
     ).toBe(true);
+    // Referer trimming is a dynamic rule now, so it is not in the static set.
     expect(
-      privacy?.rules.some(
-        (rule) =>
-          rule.action.type === 'modifyHeaders' &&
-          rule.action.requestHeaders?.some(
-            (header) => header.header === 'referer' && header.operation === 'remove',
-          ) === true,
-      ),
-    ).toBe(true);
+      privacy?.rules.some((rule) => rule.action.type === 'modifyHeaders'),
+    ).toBe(false);
   });
 
   it('emits JSON that round-trips to the same rules', () => {

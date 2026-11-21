@@ -50,9 +50,18 @@ export class RulesetManager {
     this.deps = deps;
   }
 
-  /** Master switch state; defaults to on until the user turns it off. */
+  /**
+   * Effective protection state: the master switch is on *and* protection is not
+   * temporarily paused (Phase 9 §2). A live `pausedUntil` turns everything off
+   * without touching the stored switch, so resuming restores the user's choice.
+   */
   async isEnabled(): Promise<boolean> {
-    return (await this.deps.storage.get('enabled')) ?? true;
+    const master = (await this.deps.storage.get('enabled')) ?? true;
+    if (!master) {
+      return false;
+    }
+    const pausedUntil = await this.deps.storage.get('pausedUntil');
+    return pausedUntil === undefined || pausedUntil <= Date.now();
   }
 
   /** Persists the switch and applies it right away. */

@@ -11,6 +11,77 @@ export interface FilterActiveSnapshot {
   readonly groups: Record<string, FilterGroupInfo>;
 }
 
+/** Protection profiles (Phase 9 §1). `custom` is the user's own mix. */
+export type ProtectionProfileId = 'balanced' | 'strict' | 'custom';
+
+/** UI theme choice; `system` follows the OS. */
+export type ThemeChoice = 'system' | 'light' | 'dark';
+
+/** UI language choice; `auto` follows the browser UI language. */
+export type LanguageChoice = 'auto' | 'vi' | 'en';
+
+/** Which events may raise a desktop notification (Phase 9 §9). */
+export interface NotificationSettings {
+  readonly filterUpdate: boolean;
+  readonly securityBlock: boolean;
+  readonly protectionOff: boolean;
+  readonly errors: boolean;
+}
+
+/** Block-reason bucket derived from the ruleset that matched. */
+export type BlockCategory = 'ads' | 'trackers' | 'malware' | 'privacy' | 'other';
+
+/**
+ * One local record of a blocked request (Phase 4). DNR's `getMatchedRules` does
+ * not expose the blocked URL, so a record carries what the browser *does*
+ * report — the matching ruleset/rule, the tab and the time — plus the page host
+ * resolved at poll time. Never leaves the machine.
+ */
+export interface ActivityEntry {
+  /** Page host that the request came from, or `''` when it could not be read. */
+  readonly host: string;
+  readonly category: BlockCategory;
+  readonly rulesetId: string;
+  readonly ruleId: number;
+  readonly tabId: number;
+  readonly timeStamp: number;
+}
+
+/** A user-authored rule (Phase 9 §5). Validated before it is applied. */
+export interface CustomRule {
+  readonly id: string;
+  readonly text: string;
+  readonly enabled: boolean;
+}
+
+/** Referer trimming policy (Phase 8). */
+export type RefererPolicy = 'default' | 'third-party';
+
+/** A user-added filter-list URL (Phase 5). Stored metadata only in v1. */
+export interface CustomList {
+  readonly id: string;
+  readonly name: string;
+  readonly url: string;
+  readonly enabled: boolean;
+  /** Rule count once downloaded and validated, when known. */
+  readonly rules?: number;
+  /** Last successful download, ms since epoch, when known. */
+  readonly updatedAt?: number;
+}
+
+/**
+ * Per-domain overrides (Phase 9 §3).
+ *
+ * Only the settings DNR can actually scope per site live here: cosmetic
+ * element-hiding can be turned off for one site, and the whitelist (a separate
+ * key) exempts a site entirely. Network block lists are global — DNR cannot
+ * disable one list for one host — so they are deliberately not modelled here.
+ */
+export interface SiteSetting {
+  /** Turn cosmetic (element-hiding) filtering off for this site. */
+  readonly cosmeticOff?: boolean;
+}
+
 /**
  * Shared domain types.
  *
@@ -76,4 +147,40 @@ export interface StorageSchema {
    * switch (US-6 / AC-6.5, T036); missing means it runs everywhere it is on.
    */
   antiFingerprintOffSites: string[];
+  /**
+   * When temporary protection pause lapses, ms since epoch. Absent, or at/below
+   * the current time, means protection is running normally (Phase 9 §2).
+   */
+  pausedUntil?: number;
+  /** Selected protection profile; missing means `balanced` (Phase 9 §1). */
+  profile?: ProtectionProfileId;
+  /** UI language; missing means `auto` (follow the browser). */
+  language?: LanguageChoice;
+  /** UI theme; missing means `system`. */
+  theme?: ThemeChoice;
+  /** Notification preferences; missing means every event is off. */
+  notifications?: NotificationSettings;
+  /** Local block log, newest first, capped (Phase 4). */
+  activity?: ActivityEntry[];
+  /** How long activity records are kept, in days (Phase 4). */
+  activityRetentionDays?: number;
+  /** User-authored rules (Phase 9 §5). */
+  customRules?: CustomRule[];
+  /** Per-domain overrides keyed by host (Phase 9 §3). */
+  siteSettings?: Record<string, SiteSetting>;
+  /**
+   * Locally hidden elements keyed by host — selectors the element picker saved
+   * (Phase 9 §4). Injected as element-hiding CSS on top of the shipped lists.
+   */
+  hiddenSelectors?: Record<string, string[]>;
+  /** Referer trimming policy; missing means the browser default (Phase 8). */
+  refererPolicy?: RefererPolicy;
+  /** Blocked-request counts per category since install (Phase 4). */
+  statsCategories?: Record<string, number>;
+  /** Local date (`YYYY-MM-DD`) the `statsToday` counter belongs to. */
+  statsTodayDate?: string;
+  /** Blocked requests on `statsTodayDate` (Phase 4). */
+  statsToday?: number;
+  /** User-added filter-list URLs (Phase 5). */
+  customLists?: CustomList[];
 }

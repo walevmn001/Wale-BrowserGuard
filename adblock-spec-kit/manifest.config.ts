@@ -63,6 +63,15 @@ export interface ManifestV3 {
   readonly key: string;
   readonly permissions: readonly string[];
   readonly host_permissions: readonly string[];
+  /**
+   * Keyboard shortcuts (Phase 9 §10). `_execute_action` opens the popup; the
+   * other three are handled in the service worker. Users can rebind them in
+   * `chrome://extensions/shortcuts`.
+   */
+  readonly commands: Record<
+    string,
+    { readonly suggested_key?: { readonly default: string }; readonly description: string }
+  >;
   readonly web_accessible_resources: readonly {
     readonly resources: readonly string[];
     readonly matches: readonly string[];
@@ -72,7 +81,7 @@ export interface ManifestV3 {
   };
 }
 
-export const EXTENSION_NAME = 'AdBlock Security';
+export const EXTENSION_NAME = 'WALE GUARD';
 export const EXTENSION_VERSION = '0.1.0';
 
 export function createManifest(): ManifestV3 {
@@ -106,8 +115,27 @@ export function createManifest(): ManifestV3 {
       'scripting',
       'alarms',
       'privacy',
+      'notifications',
     ],
     host_permissions: ['<all_urls>'],
+    commands: {
+      _execute_action: {
+        suggested_key: { default: 'Alt+Shift+W' },
+        description: 'Open the WALE GUARD popup',
+      },
+      'toggle-protection': {
+        suggested_key: { default: 'Alt+Shift+T' },
+        description: 'Toggle protection on or off',
+      },
+      'pause-protection': {
+        suggested_key: { default: 'Alt+Shift+P' },
+        description: 'Pause protection',
+      },
+      'open-activity': {
+        suggested_key: { default: 'Alt+Shift+A' },
+        description: 'Open the activity log',
+      },
+    },
     // T030: the malware ruleset redirects a blocked top-level navigation to the
     // warning page, so that page must be reachable from a web-initiated
     // navigation.

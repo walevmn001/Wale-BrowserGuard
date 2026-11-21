@@ -18,6 +18,34 @@
 
 import { logger } from '../shared/logger';
 import { TypedStorage } from '../shared/storage';
+import type { BlockCategory } from '../shared/types';
+
+/**
+ * Maps a matched rule's ruleset id to the block category the UI groups by.
+ * Unknown ids (e.g. custom dynamic rules) fall back to `other`.
+ */
+export function categoryForRuleset(rulesetId: string): BlockCategory {
+  switch (rulesetId) {
+    case 'ads':
+      return 'ads';
+    case 'trackers':
+      return 'trackers';
+    case 'malware':
+      return 'malware';
+    case 'privacy':
+      return 'privacy';
+    default:
+      return 'other';
+  }
+}
+
+/** Local `YYYY-MM-DD` for a timestamp, used to bucket the "today" counter. */
+export function localDateKey(time: number): string {
+  const date = new Date(time);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
 
 /**
  * Serialises polls within one context. The read-modify-write on `chrome.storage`
@@ -38,6 +66,16 @@ export interface StatsDeps {
   readonly getMatchedRules: (
     filter?: chrome.declarativeNetRequest.MatchedRulesFilter,
   ) => Promise<chrome.declarativeNetRequest.RulesMatchedDetails>;
+  /**
+   * Optional hook the worker uses to build the local activity log from the same
+   * `getMatchedRules` batch, so the 20-calls-per-10-minutes quota is only spent
+   * once (Phase 4).
+   */
+  readonly onMatches?: (
+    fresh: readonly chrome.declarativeNetRequest.MatchedRuleInfo[],
+  ) => void | Promise<void>;
+  /** Clock, injectable so tests can pin "today" (Phase 4). */
+  readonly now?: () => number;
 }
 
 export class StatsCounter {
@@ -72,10 +110,15 @@ export class StatsCounter {
     }
 
     const byTab: Record<string, number> = { ...(await this.deps.storage.get('statsByTab')) };
+    const categories: Record<string, number> = {
+      ...(await this.deps.storage.get('statsCategories')),
+    };
     let newest = cursor;
     for (const info of fresh) {
       const key = String(info.tabId);
       byTab[key] = (byTab[key] ?? 0) + 1;
+      const category = categoryForRuleset(info.rule.rulesetId);
+      categories[category] = (categories[category] ?? 0) + 1;
       if (info.timeStamp > newest) {
         newest = info.timeStamp;
       }
@@ -84,9 +127,34 @@ export class StatsCounter {
     const total = ((await this.deps.storage.get('statsTotal')) ?? 0) + fresh.length;
     await this.deps.storage.set('statsByTab', byTab);
     await this.deps.storage.set('statsTotal', total);
+    await this.deps.storage.set('statsCategories', categories);
     await this.deps.storage.set('statsCursor', newest);
+    await this.addToday(fresh.length);
+    await this.deps.onMatches?.(fresh);
     logger.info(`stats: +${fresh.length} blocked (total ${total})`);
     return fresh.length;
+  }
+
+  /** Adds to the "blocked today" counter, resetting it on a new local day. */
+  private async addToday(added: number): Promise<void> {
+    const now = this.deps.now?.() ?? Date.now();
+    const today = localDateKey(now);
+    const storedDay = await this.deps.storage.get('statsTodayDate');
+    const base = storedDay === today ? ((await this.deps.storage.get('statsToday')) ?? 0) : 0;
+    await this.deps.storage.set('statsTodayDate', today);
+    await this.deps.storage.set('statsToday', base + added);
+  }
+
+  /** Blocked counts per category since install (Phase 4 statistics). */
+  async categoryTotals(): Promise<Record<string, number>> {
+    return { ...(await this.deps.storage.get('statsCategories')) };
+  }
+
+  /** Blocked requests counted on the current local day (Phase 4). */
+  async todayTotal(): Promise<number> {
+    const now = this.deps.now?.() ?? Date.now();
+    const storedDay = await this.deps.storage.get('statsTodayDate');
+    return storedDay === localDateKey(now) ? ((await this.deps.storage.get('statsToday')) ?? 0) : 0;
   }
 
   /** Current totals: overall and per tab. */
@@ -110,14 +178,20 @@ export class StatsCounter {
   async reset(): Promise<void> {
     await this.deps.storage.set('statsTotal', 0);
     await this.deps.storage.set('statsByTab', {});
+    await this.deps.storage.set('statsCategories', {});
+    await this.deps.storage.set('statsToday', 0);
+    await this.deps.storage.set('statsTodayDate', localDateKey(this.deps.now?.() ?? Date.now()));
     logger.info('stats: reset');
   }
 }
 
 /** Builds a counter backed by the real `chrome.*` APIs (used by the worker). */
-export function createStatsCounter(): StatsCounter {
+export function createStatsCounter(
+  onMatches?: StatsDeps['onMatches'],
+): StatsCounter {
   return new StatsCounter({
     storage: new TypedStorage(),
     getMatchedRules: (filter) => chrome.declarativeNetRequest.getMatchedRules(filter),
+    ...(onMatches === undefined ? {} : { onMatches }),
   });
 }

@@ -31,7 +31,7 @@ test('loads the extension service worker and popup', async () => {
   const page = await context.newPage();
   await page.goto(`chrome-extension://${id}/src/popup/index.html`);
 
-  await expect(page.locator('h1')).toHaveText('AdBlock Security');
+  await expect(page.locator('h1')).toHaveText('WALE GUARD');
 });
 
 test('serves the rasterised toolbar icon as PNG (T070)', async () => {

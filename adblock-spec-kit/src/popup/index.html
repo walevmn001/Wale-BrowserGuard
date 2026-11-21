@@ -3,41 +3,168 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AdBlock Security</title>
+    <title>WALE GUARD</title>
+    <link rel="stylesheet" href="../shared/ui/design-tokens.css" />
+    <link rel="stylesheet" href="../shared/ui/components.css" />
+    <link rel="stylesheet" href="./popup.css" />
   </head>
   <body>
-    <main id="app">
-      <h1>AdBlock Security</h1>
-
-      <section aria-labelledby="site-heading">
-        <h2 id="site-heading" data-i18n="siteHeading">Trang hiện tại</h2>
-        <p id="site-domain">…</p>
-        <p id="site-status">…</p>
-        <button id="site-toggle" type="button" aria-pressed="false" data-i18n="siteToggleBlock">
-          Chặn trên trang này
+    <main class="pop">
+      <!-- Header: brand, protection status chip, settings shortcut -->
+      <header class="pop-head">
+        <div class="brand">
+          <img src="../shared/ui/icon.svg" alt="" width="30" height="30" />
+          <div class="truncate">
+            <h1 class="name">WALE GUARD</h1>
+            <div class="tag" data-i18n="ppNoData">Không thu thập dữ liệu</div>
+          </div>
+        </div>
+        <button
+          id="open-settings"
+          class="icon-btn"
+          type="button"
+          data-i18n-title="ppSettings"
+          title="Cài đặt"
+        >
+          <svg
+            width="19"
+            height="19"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+            />
+          </svg>
         </button>
+      </header>
+
+      <!-- Main protection card: overall state + master switch + pause -->
+      <section class="card guard" aria-labelledby="guard-status">
+        <div class="between">
+          <div class="cluster">
+            <span id="status-ico" class="ico" aria-hidden="true">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <path id="status-ico-mark" d="m9 12 2 2 4-4" />
+              </svg>
+            </span>
+            <div>
+              <div id="guard-status" class="guard-status" role="status">…</div>
+              <div id="master-status" class="tiny muted">…</div>
+            </div>
+          </div>
+          <button
+            id="master-toggle"
+            class="toggle big"
+            type="button"
+            role="switch"
+            aria-checked="true"
+            data-i18n-title="ovMaster"
+            title="Bảo vệ toàn bộ extension"
+          ></button>
+        </div>
+        <div id="pause-bar" class="pause-bar hidden">
+          <span id="pause-state" class="chip warn">…</span>
+          <button id="pause-resume" class="btn xs ghost" type="button" data-i18n="ppResume">
+            Bật lại ngay
+          </button>
+        </div>
       </section>
 
-      <section aria-labelledby="fingerprint-heading">
-        <h2 id="fingerprint-heading" data-i18n="fingerprintHeading">Chống dấu vết trình duyệt</h2>
-        <label>
-          <input id="fingerprint-site" type="checkbox" checked />
-          <span data-i18n="fingerprintSiteLabel">Chống dấu vết trên trang này</span>
-        </label>
+      <!-- Current website: domain, status, per-site switch and live counts -->
+      <section class="card" aria-labelledby="site-heading">
+        <div class="between">
+          <div class="grow">
+            <div id="site-heading" class="section-title" data-i18n="ppSiteLabel">
+              Trang hiện tại
+            </div>
+            <div id="site-domain" class="strong truncate">…</div>
+            <div id="site-status" class="tiny muted">…</div>
+          </div>
+          <button
+            id="site-toggle"
+            class="toggle"
+            type="button"
+            aria-pressed="true"
+            data-i18n-title="ppProtectionOn"
+            title="Bảo vệ đang bật"
+          ></button>
+        </div>
+        <div class="stats" style="margin-top: var(--s3)">
+          <div class="stat accent">
+            <b id="stats-site">0</b><span data-i18n="ppStatsPage">Chặn ở trang này</span>
+          </div>
+          <div class="stat"><b id="stats-total">0</b><span data-i18n="ppStatsTotal">Tổng cộng</span></div>
+          <div class="stat blue">
+            <b id="stats-today">0</b><span data-i18n="ovStatToday">Đã chặn hôm nay</span>
+          </div>
+        </div>
       </section>
 
-      <section aria-labelledby="stats-heading">
-        <h2 id="stats-heading" data-i18n="statsHeading">Thống kê</h2>
-        <p id="stats-site">…</p>
-        <p id="stats-total">…</p>
-        <button id="stats-clear" type="button" data-i18n="statsClear">Xoá thống kê</button>
+      <!-- Quick actions: scan page, temporary pause, clear stats -->
+      <section class="card" aria-labelledby="quick-heading">
+        <div id="quick-heading" class="section-title" data-i18n="ppQuick">Hành động nhanh</div>
+        <div class="actions">
+          <button id="action-scan" class="btn ghost sm" type="button" data-i18n="ppScan">
+            Quét trang này
+          </button>
+          <button id="stats-clear" class="btn ghost sm" type="button" data-i18n="ppClearSite">
+            Xoá thống kê trang
+          </button>
+          <select id="pause-select" class="btn ghost sm span2" aria-label="Tạm dừng bảo vệ">
+            <option value="" data-i18n="statusPaused">Tạm dừng bảo vệ</option>
+            <option value="five" data-i18n="pause5">5 phút</option>
+            <option value="fifteen" data-i18n="pause15">15 phút</option>
+            <option value="thirty" data-i18n="pause30">30 phút</option>
+            <option value="manual" data-i18n="pauseManual">Đến khi bật lại</option>
+          </select>
+          <p id="scan-result" class="banner info hidden span2"></p>
+        </div>
       </section>
 
-      <section aria-labelledby="master-heading">
-        <h2 id="master-heading" data-i18n="masterHeading">Toàn bộ extension</h2>
-        <p id="master-status">…</p>
-        <button id="master-toggle" type="button">…</button>
+      <!-- Protection modules: click a row to open its settings -->
+      <section class="card" aria-labelledby="modules-heading">
+        <div id="modules-heading" class="section-title" data-i18n="ppModules">Mô-đun bảo vệ</div>
+        <div id="modules" class="modules"></div>
       </section>
+
+      <!-- Anti-fingerprinting for the current site -->
+      <section class="card">
+        <div class="row" style="padding: 0">
+          <span class="grow">
+            <span class="t" data-i18n="fingerprintSiteLabel">Chống dấu vết trên trang này</span>
+          </span>
+          <label class="switch">
+            <input id="fingerprint-site" type="checkbox" checked />
+            <span class="track"></span>
+          </label>
+        </div>
+      </section>
+
+      <footer class="pop-foot">
+        <button id="open-activity" class="btn link" type="button" data-i18n="ppActivity">
+          Nhật ký hoạt động
+        </button>
+        <button id="open-dashboard" class="btn link" type="button" data-i18n="ppOpenDashboard">
+          Mở bảng điều khiển
+        </button>
+      </footer>
     </main>
     <script type="module" src="./popup.ts"></script>
   </body>

@@ -155,25 +155,37 @@ export interface CosmeticInjector {
   readonly runObserver?: (tabId: number, selectors: readonly string[]) => Promise<void>;
 }
 
+/** Per-navigation cosmetic options (Phase 3/9): local selectors and a per-site off switch. */
+export interface CosmeticRunOptions {
+  /**
+   * User-picked selectors for this host (Phase 9 §4 element inspector). Added to
+   * the shipped selectors rather than replacing them.
+   */
+  readonly extraSelectors?: readonly string[];
+  /** When `false`, this site has cosmetic filtering switched off (Phase 3). */
+  readonly enabled?: boolean;
+}
+
 /**
  * Injects the element-hiding CSS for `url`'s host into `tabId`, then runs the
  * optional late-injection observer with the same selectors.
  *
  * Returns the number of style chunks inserted (0 when the page cannot be
- * styled or has no matching selector). Errors from `insertCss`/`runObserver`
- * propagate so the caller can log them.
+ * styled, has no matching selector, or the site has cosmetic filtering off).
+ * Errors from `insertCss`/`runObserver` propagate so the caller can log them.
  */
 export async function applyCosmetic(
   injector: CosmeticInjector,
   tabId: number,
   url: string | undefined,
+  options: CosmeticRunOptions = {},
 ): Promise<number> {
   const host = pageHost(url);
-  if (host === undefined) {
+  if (host === undefined || options.enabled === false) {
     return 0;
   }
   const data = await injector.loadData();
-  const selectors = selectorsForHost(host, data);
+  const selectors = [...selectorsForHost(host, data), ...(options.extraSelectors ?? [])];
   const chunks = buildCosmeticCss(selectors);
   for (const css of chunks) {
     await injector.insertCss(tabId, css);

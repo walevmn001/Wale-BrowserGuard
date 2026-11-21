@@ -1,41 +1,13 @@
 /**
  * Manifest V3 background service worker entry point.
  *
- * T002: bootstrap. T013: wires the master switch (`ruleset-manager.ts`) so the
- * static rulesets follow the stored `enabled` flag — applied on install/startup
- * and whenever the flag changes, which keeps blocking working after a browser
- * restart without opening the popup (AC-1.4).
- *
- * T014: wires the per-domain whitelist (`whitelist.ts`) so the stored domains
- * are re-applied on install/startup and whenever the list changes (AC-2.2).
- *
- * T015: polls the local block counter (`stats.ts`) on install/startup and after
- * each page finishes loading, so the totals follow real blocking (AC-3.1).
- *
- * T021: injects the cosmetic element-hiding CSS (`content/cosmetic.ts`) into
- * each navigation using the packaged selector data (AC-4.1).
- *
- * T022: attaches the page-side observer (`content/cosmetic-observer.ts`) so ads
- * injected after load are pinned too (AC-4.2, AC-4.3).
- *
- * T023: arms and reacts to the daily `update-filters` alarm (`filter-updater.ts`)
- * so the filter lists refresh on schedule without ever losing the previous set
- * on failure (AC-7.1, AC-7.2).
- *
- * T024: re-applies the static rulesets when the per-group toggles change
- * (`disabledRuleSets`), so the options page switches individual list groups on
- * and off.
- *
- * T031: applies the temporary malware exceptions (`temp-exception.ts`) the
- * warning page's "continue anyway" publishes, and clears a pass once its alarm
- * fires (AC-5.2, AC-5.3).
- *
- * T035: applies the opt-in WebRTC IP handling policy (`security/privacy-settings.ts`)
- * on startup and whenever the choice changes (AC-6.4).
- *
- * T036: injects the opt-in anti-fingerprinting reducer (`content/anti-fingerprint.ts`)
- * into the page's MAIN world once a navigation completes — only when the user
- * enabled it and the host is not on the per-page off list (AC-6.5).
+ * Bootstraps every background module and keeps their stored state applied to the
+ * browser. Original wiring (T013–T036) plus the WALE GUARD expansion:
+ *  - protection pause (`pause.ts`), profiles (`profiles.ts`)
+ *  - activity log (`activity.ts`) fed from the same `getMatchedRules` batch
+ *  - custom rules (`custom-rules.ts`), referer policy (`referer.ts`)
+ *  - per-site cosmetic preferences + hidden selectors (`site-settings.ts`)
+ *  - notifications (`notifications.ts`) and keyboard commands
  *
  * No module-level mutable state: the worker can be stopped at any time
  * (Constitution 14); state lives in `chrome.storage`.
@@ -50,82 +22,130 @@ import {
   COSMETIC_PATHS,
 } from '../content/cosmetic';
 import { installCosmeticObserver, OBSERVER_OPTIONS } from '../content/cosmetic-observer';
+import { createActivityLog } from './activity';
+import { createCustomRules } from './custom-rules';
 import { createFilterUpdater, UPDATE_ALARM } from './filter-updater';
-import { createFingerprintSettings } from './security/fingerprint-settings';
-import { createPrivacySettings } from './security/privacy-settings';
+import { createNotifications } from './notifications';
+import { createProtectionPause, PAUSE_ALARM } from './pause';
+import { createRefererSettings } from './referer';
 import { createRulesetManager } from './ruleset-manager';
-import { createStatsCounter } from './stats';
+import { createSitePreferences } from './site-settings';
+import { categoryForRuleset, createStatsCounter } from './stats';
 import { createTempException, TEMP_EXCEPTION_ALARM } from './temp-exception';
 import { createWhitelist } from './whitelist';
+import { createFingerprintSettings } from './security/fingerprint-settings';
+import { createPrivacySettings } from './security/privacy-settings';
+import { resolveLocale, t, type Locale } from '../shared/i18n';
 import { logger } from '../shared/logger';
+import { TypedStorage } from '../shared/storage';
 
-async function applyStoredRulesets(): Promise<void> {
+async function guard(label: string, run: () => Promise<unknown>): Promise<void> {
   try {
-    await createRulesetManager().applyStored();
+    await run();
   } catch (error) {
-    logger.error('failed to apply the ruleset master switch', error);
+    logger.error(`failed to ${label}`, error);
   }
 }
 
-async function applyStoredWhitelist(): Promise<void> {
+const applyStoredRulesets = (): Promise<void> =>
+  guard('apply the ruleset master switch', () => createRulesetManager().applyStored());
+const applyStoredWhitelist = (): Promise<void> =>
+  guard('apply the stored whitelist', () => createWhitelist().applyStored());
+const applyStoredTempExceptions = (): Promise<void> =>
+  guard('apply the stored temporary exceptions', () => createTempException().applyStored());
+const applyStoredPrivacy = (): Promise<void> =>
+  guard('apply the WebRTC privacy setting', () => createPrivacySettings().applyStored());
+const applyStoredReferer = (): Promise<void> =>
+  guard('apply the referer policy', () => createRefererSettings().applyStored());
+const applyStoredCustomRules = (): Promise<void> =>
+  guard('apply the custom rules', () => createCustomRules().applyStored());
+
+/** Locale for worker-originated strings (notifications): stored choice or browser. */
+async function workerLocale(): Promise<Locale> {
+  const choice = await new TypedStorage().get('language');
+  if (choice === 'vi' || choice === 'en') {
+    return choice;
+  }
+  return resolveLocale(chrome.i18n.getUILanguage());
+}
+
+async function notify(
+  kind: 'filterUpdate' | 'securityBlock' | 'protectionOff' | 'errors',
+  bodyKey: 'notifSecurityBody' | 'notifFilterFailBody' | 'notifProtectionOffBody' | 'notifErrorBody',
+): Promise<void> {
+  const locale = await workerLocale();
+  await createNotifications().notify({
+    kind,
+    title: t('notifTitle', locale),
+    message: t(bodyKey, locale),
+  });
+}
+
+/** Resolves the page host for a tab, or `''` when it cannot be read. */
+async function resolveHost(tabId: number): Promise<string> {
   try {
-    await createWhitelist().applyStored();
-  } catch (error) {
-    logger.error('failed to apply the stored whitelist', error);
+    const tab = await chrome.tabs.get(tabId);
+    return pageHost(tab.url) ?? '';
+  } catch {
+    return '';
   }
 }
 
-/** Applies the temporary malware exceptions (AC-5.2, AC-5.3). */
-async function applyStoredTempExceptions(): Promise<void> {
-  try {
-    await createTempException().applyStored();
-  } catch (error) {
-    logger.error('failed to apply the stored temporary exceptions', error);
+/** Builds local activity records from a matched-rules batch (Phase 4). */
+async function recordActivity(
+  fresh: readonly chrome.declarativeNetRequest.MatchedRuleInfo[],
+): Promise<void> {
+  const hosts = new Map<number, string>();
+  for (const info of fresh) {
+    if (!hosts.has(info.tabId)) {
+      hosts.set(info.tabId, await resolveHost(info.tabId));
+    }
+  }
+  const entries = [...fresh]
+    .sort((a, b) => b.timeStamp - a.timeStamp)
+    .map((info) => ({
+      host: hosts.get(info.tabId) ?? '',
+      category: categoryForRuleset(info.rule.rulesetId),
+      rulesetId: info.rule.rulesetId,
+      ruleId: info.rule.ruleId,
+      tabId: info.tabId,
+      timeStamp: info.timeStamp,
+    }));
+  await createActivityLog().record(entries);
+  if (entries.some((entry) => entry.category === 'malware')) {
+    await guard('raise the security notification', () => notify('securityBlock', 'notifSecurityBody'));
   }
 }
 
 async function pollStats(): Promise<void> {
-  try {
-    await createStatsCounter().poll();
-  } catch (error) {
-    logger.error('failed to update blocked-request stats', error);
-  }
+  await guard('update blocked-request stats', () =>
+    createStatsCounter(recordActivity).poll(),
+  );
 }
 
-/** Applies the opt-in WebRTC IP handling policy (AC-6.4). */
-async function applyStoredPrivacy(): Promise<void> {
-  try {
-    await createPrivacySettings().applyStored();
-  } catch (error) {
-    logger.error('failed to apply the WebRTC privacy setting', error);
-  }
-}
-
-/** Arms the daily filter-update alarm if it is not already scheduled (AC-7.1). */
 async function scheduleFilterUpdates(): Promise<void> {
-  try {
-    await createFilterUpdater().scheduleInitial();
-  } catch (error) {
-    logger.error('failed to schedule filter updates', error);
-  }
+  await guard('schedule filter updates', () => createFilterUpdater().scheduleInitial());
 }
 
-/** Runs one filter update; failures keep the previous set (AC-7.2). */
+/** Runs one filter update; failures keep the previous set and may notify (AC-7.2). */
 async function runFilterUpdate(): Promise<void> {
-  try {
-    await createFilterUpdater().updateNow();
-  } catch (error) {
-    logger.error('filter update threw unexpectedly', error);
-  }
+  await guard('run the filter update', async () => {
+    const result = await createFilterUpdater().updateNow();
+    if (!result.ok) {
+      await notify('filterUpdate', 'notifFilterFailBody');
+    }
+  });
 }
 
 function applyStoredState(): void {
   void applyStoredRulesets();
   void applyStoredWhitelist();
   void applyStoredTempExceptions();
+  void applyStoredCustomRules();
+  void applyStoredReferer();
+  void applyStoredPrivacy();
   void pollStats();
   void scheduleFilterUpdates();
-  void applyStoredPrivacy();
 }
 
 async function fetchJson(path: string): Promise<unknown> {
@@ -133,11 +153,6 @@ async function fetchJson(path: string): Promise<unknown> {
   return response.json() as Promise<unknown>;
 }
 
-/**
- * Loads the packaged cosmetic data (T020) and validates its shape before use.
- * T040: wrapped in a single-flight cache so the immutable JSON is fetched and
- * parsed at most once per worker lifetime instead of on every navigation.
- */
 const loadCosmeticData = createCosmeticDataCache(async () => {
   const [generic, domains] = await Promise.all([
     fetchJson(COSMETIC_PATHS.generic),
@@ -151,15 +166,17 @@ const loadCosmeticData = createCosmeticDataCache(async () => {
 });
 
 async function injectCosmetic(tabId: number, url: string | undefined): Promise<void> {
-  try {
+  await guard('inject cosmetic filters', async () => {
+    const host = pageHost(url);
+    const prefs = createSitePreferences();
+    const site = host === undefined ? {} : await prefs.get(host);
+    const extraSelectors = host === undefined ? [] : await prefs.hidden(host);
     await applyCosmetic(
       {
         loadData: loadCosmeticData,
         insertCss: async (id, css) => {
           await chrome.scripting.insertCSS({ target: { tabId: id }, css });
         },
-        // T022: pin ads injected after load. The function is serialised, so it
-        // ships its own selectors/options as arguments (no shared scope).
         runObserver: async (id, selectors) => {
           await chrome.scripting.executeScript({
             target: { tabId: id },
@@ -170,18 +187,13 @@ async function injectCosmetic(tabId: number, url: string | undefined): Promise<v
       },
       tabId,
       url,
+      { extraSelectors, enabled: site.cosmeticOff !== true },
     );
-  } catch (error) {
-    logger.error('failed to inject cosmetic filters', error);
-  }
+  });
 }
 
-/**
- * Injects the anti-fingerprinting reducer (AC-6.5) into the page's MAIN world,
- * but only when the global opt-in is on and the host is not switched off.
- */
 async function injectAntiFingerprint(tabId: number, url: string | undefined): Promise<void> {
-  try {
+  await guard('inject anti-fingerprinting', async () => {
     const host = pageHost(url);
     if (host === undefined || !(await createFingerprintSettings().appliesTo(host))) {
       return;
@@ -192,10 +204,24 @@ async function injectAntiFingerprint(tabId: number, url: string | undefined): Pr
       func: installAntiFingerprint,
       injectImmediately: true,
     });
-  } catch (error) {
-    logger.error('failed to inject anti-fingerprinting', error);
-  }
+  });
 }
+
+/** Keyboard commands (Phase 9 §10); the browser owns the shortcut bindings. */
+chrome.commands.onCommand.addListener((command) => {
+  if (command === 'toggle-protection') {
+    void guard('toggle protection', async () => {
+      const manager = createRulesetManager();
+      await manager.setEnabled(!(await manager.isEnabled()));
+    });
+  }
+  if (command === 'pause-protection') {
+    void guard('pause protection', () => createProtectionPause().pause(null));
+  }
+  if (command === 'open-activity') {
+    void chrome.tabs.create({ url: chrome.runtime.getURL('src/options/index.html#activity') });
+  }
+});
 
 chrome.runtime.onInstalled.addListener(() => {
   logger.info('service worker installed');
@@ -210,10 +236,13 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local') {
     return;
   }
-  if (changes['enabled'] !== undefined) {
+  if (changes['enabled'] !== undefined || changes['disabledRuleSets'] !== undefined) {
     void applyStoredRulesets();
+    if (changes['enabled']?.newValue === false) {
+      void notify('protectionOff', 'notifProtectionOffBody');
+    }
   }
-  if (changes['disabledRuleSets'] !== undefined) {
+  if (changes['pausedUntil'] !== undefined) {
     void applyStoredRulesets();
   }
   if (changes['whitelist'] !== undefined) {
@@ -225,26 +254,28 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   if (changes['webrtcProtection'] !== undefined) {
     void applyStoredPrivacy();
   }
+  if (changes['refererPolicy'] !== undefined) {
+    void applyStoredReferer();
+  }
+  if (changes['customRules'] !== undefined) {
+    void applyStoredCustomRules();
+  }
 });
 
-// T023: the daily alarm drives filter updates; a failure re-arms it with
-// backoff (AC-7.1, AC-7.2).
-// T031: the temp-exception alarm fires when the earliest pass lapses, so
-// `applyStored` prunes it and removes its rule (AC-5.2, AC-5.3).
+// `update-filters` drives the daily refresh (AC-7.1/7.2); `pause-expired` resumes
+// protection; `temp-exception` prunes a lapsed malware pass (AC-5.2/5.3).
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === UPDATE_ALARM) {
     void runFilterUpdate();
+  }
+  if (alarm.name === PAUSE_ALARM) {
+    void applyStoredRulesets();
   }
   if (alarm.name === TEMP_EXCEPTION_ALARM) {
     void applyStoredTempExceptions();
   }
 });
 
-// A page load is when new requests get blocked; count them once it settles.
-// T021/T022: inject the cosmetic CSS and the page-side observer once the
-// document is complete. Injecting during the `loading` phase also worked, but
-// it woke the worker mid-navigation and pushed the AC-1.3 latency delta past
-// its 5ms budget, so the injection is deferred to `complete`.
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete') {
     void pollStats();
