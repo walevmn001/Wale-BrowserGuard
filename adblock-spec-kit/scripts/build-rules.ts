@@ -19,7 +19,7 @@
 import { PRIORITY } from '../src/shared/constants.ts';
 import { malwareRules } from './malware-rules.ts';
 
-export type RuleCategory = 'ads' | 'trackers' | 'malware' | 'privacy';
+export type RuleCategory = 'ads' | 'trackers' | 'malware' | 'privacy' | 'youtube';
 
 export type SkipReason =
   'empty' | 'comment' | 'cosmetic' | 'unsupported-option' | 'unsupported-syntax';
@@ -44,6 +44,7 @@ export interface RulesByCategory {
   readonly trackers: chrome.declarativeNetRequest.Rule[];
   readonly malware: chrome.declarativeNetRequest.Rule[];
   readonly privacy: chrome.declarativeNetRequest.Rule[];
+  readonly youtube: chrome.declarativeNetRequest.Rule[];
 }
 
 export interface ConversionSummary {
@@ -278,7 +279,7 @@ export function convertFilterList(
 
 /** Splits converted rules into the per-category buckets used by the rulesets. */
 export function groupByCategory(rules: readonly ConvertedRule[]): RulesByCategory {
-  const grouped: RulesByCategory = { ads: [], trackers: [], malware: [], privacy: [] };
+  const grouped: RulesByCategory = { ads: [], trackers: [], malware: [], privacy: [], youtube: [] };
   for (const { category, rule } of rules) {
     grouped[category].push(rule);
   }

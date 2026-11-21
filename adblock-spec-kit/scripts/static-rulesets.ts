@@ -51,4 +51,17 @@ export const STATIC_RULESETS: readonly StaticRuleSetDescriptor[] = [
     source: null,
     output: 'rules/static/privacy.json',
   },
+  {
+    // Not filter-list derived: `build-rulesets.ts` generates it from
+    // `scripts/youtube-rules.ts`, which reads `data/youtube-config.json`
+    // (algorithm.md §Q1). Declared *disabled* on purpose: the YouTube module is
+    // opt-in (AC-15.1) and owns this ruleset's enable state, so the master
+    // switch never turns it on for a user who never opted in (see
+    // `MODULE_OWNED_RULESETS` in `src/shared/constants.ts`).
+    id: 'youtube',
+    category: 'youtube',
+    enabled: false,
+    source: null,
+    output: 'rules/static/youtube.json',
+  },
 ];

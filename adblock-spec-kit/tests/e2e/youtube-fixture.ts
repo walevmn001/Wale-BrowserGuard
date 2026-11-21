@@ -37,8 +37,11 @@ export const YOUTUBE_MOCK_URL = `https://${YOUTUBE_HOST}${MOCK_PATH}`;
 /**
  * The mock page. `window.ytInitialPlayerResponse` mirrors a real player response
  * shape: ad keys (stripped by Q2) alongside the content keys that must survive.
+ * Exported so the Q1 network spec (T062) can serve the *same* page from a plain
+ * local origin, where a same-origin `fetch` to an ad endpoint is observable
+ * without the `youtube.com` HSTS/route machinery.
  */
-const YOUTUBE_MOCK_HTML = `<!doctype html>
+export const YOUTUBE_MOCK_HTML = `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />

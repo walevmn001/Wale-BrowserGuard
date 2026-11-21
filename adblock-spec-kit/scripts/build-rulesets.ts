@@ -23,6 +23,7 @@ import { convertFilterList } from './build-rules.ts';
 import { buildPrivacyRules } from './privacy-rules.ts';
 import { STATIC_RULESETS, type StaticRuleSetDescriptor } from './static-rulesets.ts';
 import { assertValidRules, type RuleSetInput } from './validate-rules.ts';
+import { buildYouTubeRules } from './youtube-rules.ts';
 
 export interface BuiltRuleSet {
   readonly descriptor: StaticRuleSetDescriptor;
@@ -43,14 +44,19 @@ function readSourceLines(repoRoot: string, relativePath: string): readonly strin
 
 /**
  * Rules for a ruleset that is generated in code rather than converted from an
- * ABP source list. `privacy` is the only such category today.
+ * ABP source list. `privacy` (upgrade + tracker strip) and `youtube` (Q1 ad
+ * endpoints, read from `data/youtube-config.json`) are the two today.
  */
 function buildGeneratedRules(
+  repoRoot: string,
   category: StaticRuleSetDescriptor['category'],
   startId: number,
 ): readonly chrome.declarativeNetRequest.Rule[] {
   if (category === 'privacy') {
     return buildPrivacyRules(startId);
+  }
+  if (category === 'youtube') {
+    return buildYouTubeRules(repoRoot, startId);
   }
   throw new Error(`no code generator for category "${category}"`);
 }
@@ -62,7 +68,7 @@ function buildRuleSetRules(
   startId: number,
 ): { readonly rules: readonly chrome.declarativeNetRequest.Rule[]; readonly skipped: number } {
   if (descriptor.source === null) {
-    return { rules: buildGeneratedRules(descriptor.category, startId), skipped: 0 };
+    return { rules: buildGeneratedRules(repoRoot, descriptor.category, startId), skipped: 0 };
   }
   const { rules, skipped } = convertFilterList(
     readSourceLines(repoRoot, descriptor.source),

@@ -162,4 +162,15 @@ describe('ruleSetIdsFromManifest', () => {
   it('returns an empty list when no static rulesets are declared', () => {
     expect(ruleSetIdsFromManifest({})).toEqual([]);
   });
+
+  it('excludes module-owned rulesets so the master switch never touches them', () => {
+    const manifest: ManifestRuleResources = {
+      declarative_net_request: {
+        rule_resources: [{ id: 'ads' }, { id: 'youtube' }, { id: 'privacy' }],
+      },
+    };
+
+    // `youtube` is owned by the opt-in YouTube module (AC-15.1), not the switch.
+    expect(ruleSetIdsFromManifest(manifest)).toEqual(['ads', 'privacy']);
+  });
 });

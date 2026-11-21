@@ -12,6 +12,7 @@
  * real browser; `createRulesetManager` wires the real `chrome.*` APIs.
  */
 
+import { MODULE_OWNED_RULESETS } from '../shared/constants';
 import { logger } from '../shared/logger';
 import { TypedStorage } from '../shared/storage';
 
@@ -35,12 +36,21 @@ export interface RulesetManagerDeps {
   readonly updateEnabledRulesets: UpdateEnabledRulesets;
 }
 
-/** Static ruleset ids declared in the manifest — the runtime source of truth. */
+/**
+ * Static ruleset ids declared in the manifest — the runtime source of truth.
+ *
+ * Rulesets owned by an isolated module (`MODULE_OWNED_RULESETS`, e.g. the
+ * YouTube module's `youtube`) are filtered out: the master switch never touches
+ * them, so a user who never opted in never gets them (AC-15.1). The module
+ * enables/disables its own ruleset.
+ */
 export function ruleSetIdsFromManifest(
   manifest: ManifestRuleResources = chrome.runtime.getManifest(),
 ): readonly string[] {
   const resources = manifest.declarative_net_request?.rule_resources ?? [];
-  return resources.map(({ id }) => id);
+  return resources
+    .map(({ id }) => id)
+    .filter((id) => !MODULE_OWNED_RULESETS.includes(id));
 }
 
 export class RulesetManager {

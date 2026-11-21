@@ -23,3 +23,12 @@ export const PRIORITY = {
 
 export type PriorityName = keyof typeof PRIORITY;
 export type Priority = (typeof PRIORITY)[PriorityName];
+
+/**
+ * Static ruleset ids whose enabled state is owned by an isolated, opt-in module
+ * instead of the master switch (AC-15.1). The YouTube module (`youtube`) is off
+ * until the user turns it on, so the master switch must never enable it for
+ * someone who never opted in — the module publishes its own switch and the
+ * service worker toggles the ruleset from that.
+ */
+export const MODULE_OWNED_RULESETS: readonly string[] = ['youtube'];

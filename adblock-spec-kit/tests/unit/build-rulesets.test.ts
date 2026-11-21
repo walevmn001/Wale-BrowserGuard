@@ -57,9 +57,9 @@ describe('buildStaticRuleSets', () => {
   });
 
   it('produces only converter-shaped conditions (urlFilter xor regexFilter)', () => {
-    // The `privacy` ruleset is built in code, not converted from a filter list,
-    // so its conditions (e.g. the referer rule's `domainType`) are out of scope.
-    const converted = report.ruleSets.filter(({ descriptor }) => descriptor.id !== 'privacy');
+    // The `privacy` and `youtube` rulesets are built in code, not converted
+    // from a filter list, so their condition shapes are out of scope here.
+    const converted = report.ruleSets.filter(({ descriptor }) => descriptor.source !== null);
     for (const { rules } of converted) {
       for (const rule of rules) {
         const hasUrl = rule.condition.urlFilter !== undefined;
@@ -273,7 +273,13 @@ describe('validate-rules — the packaged rulesets (B2b-3)', () => {
 
   it('counts every shipped ruleset and rule', () => {
     expect(packaged.stats.ruleSets).toBe(STATIC_RULESETS.length);
-    expect(packaged.stats.enabledRules).toBe(report.totalRules);
+    // `report.totalRules` counts every emitted rule, including rulesets shipped
+    // disabled (e.g. `youtube`); the validator's `enabledRules` counts only the
+    // rules in enabled rulesets.
+    const enabledRules = report.ruleSets
+      .filter(({ descriptor }) => descriptor.enabled)
+      .reduce((total, { rules }) => total + rules.length, 0);
+    expect(packaged.stats.enabledRules).toBe(enabledRules);
   });
 });
 
