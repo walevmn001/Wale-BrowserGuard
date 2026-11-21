@@ -23,6 +23,7 @@ import { convertFilterList } from './build-rules.ts';
 import { buildPrivacyRules } from './privacy-rules.ts';
 import { STATIC_RULESETS, type StaticRuleSetDescriptor } from './static-rulesets.ts';
 import { assertValidRules, type RuleSetInput } from './validate-rules.ts';
+import { buildYouTubeCosmeticAsset } from './youtube-cosmetic.ts';
 import { buildYouTubeRules } from './youtube-rules.ts';
 
 export interface BuiltRuleSet {
@@ -115,17 +116,20 @@ export interface BuildCosmeticReport {
   readonly genericSelectors: number;
   readonly domainSelectors: number;
   readonly domains: number;
+  readonly youtubeSelectors: number;
   readonly skipped: number;
 }
 
 /**
- * Converts the bundled cosmetic source list into the two JSON assets the
- * content script loads at runtime (`rules/cosmetic/*.json`, plan.md §2).
+ * Converts the bundled cosmetic source list into the JSON assets the content
+ * script loads at runtime (`rules/cosmetic/*.json`, plan.md §2), plus the YouTube
+ * module's own cosmetic data (T064) built from the config's `selectors`.
  */
 export function buildCosmeticAssets(repoRoot: string): BuildCosmeticReport {
   const lines = readSourceLines(repoRoot, COSMETIC_SOURCE);
   const { bundle, skipped } = buildCosmetic(lines);
   const json = serializeCosmetic(bundle);
+  const youtube = buildYouTubeCosmeticAsset(repoRoot);
 
   const domainSelectors = Object.values(bundle.domains).reduce(
     (total, entry) => total + entry.selectors.length,
@@ -136,10 +140,12 @@ export function buildCosmeticAssets(repoRoot: string): BuildCosmeticReport {
     assets: [
       { path: COSMETIC_OUTPUT.generic, json: json.generic },
       { path: COSMETIC_OUTPUT.domainSpecific, json: json.domainSpecific },
+      { path: youtube.path, json: youtube.json },
     ],
     genericSelectors: bundle.generic.selectors.length,
     domainSelectors,
     domains: Object.keys(bundle.domains).length,
+    youtubeSelectors: youtube.selectors,
     skipped: skipped.length,
   };
 }

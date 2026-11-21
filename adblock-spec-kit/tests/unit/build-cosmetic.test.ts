@@ -7,6 +7,7 @@ import {
   type CosmeticSkipReason,
 } from '../../scripts/build-cosmetic';
 import { buildCosmeticAssets } from '../../scripts/build-rulesets';
+import { YOUTUBE_COSMETIC_PATH } from '../../src/shared/youtube-config';
 
 describe('buildCosmetic — parsing', () => {
   it('parses a generic hide rule', () => {
@@ -122,10 +123,11 @@ describe('buildCosmeticAssets — bundled cosmetic source list', () => {
     report.assets.find(({ path }) => path === COSMETIC_OUTPUT.domainSpecific)?.json ?? '{}',
   ) as Record<string, { selectors: string[]; exceptions: string[] }>;
 
-  it('emits exactly the generic + domain-specific assets', () => {
+  it('emits exactly the generic + domain-specific + youtube assets', () => {
     expect(report.assets.map(({ path }) => path)).toEqual([
       COSMETIC_OUTPUT.generic,
       COSMETIC_OUTPUT.domainSpecific,
+      YOUTUBE_COSMETIC_PATH,
     ]);
   });
 

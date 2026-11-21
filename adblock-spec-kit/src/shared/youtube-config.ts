@@ -52,6 +52,14 @@ export interface YouTubeConfig {
  */
 export const YOUTUBE_CONFIG_PATH = 'data/youtube-config.json';
 
+/**
+ * Where the build emits the module's element-hiding data (Q3). It is the
+ * `selectors` list above turned into the same `CosmeticData` shape the core
+ * cosmetic pipeline consumes, scoped to `youtube.com` (T064); only the opt-in
+ * module loads it, so the core cosmetic path is never affected.
+ */
+export const YOUTUBE_COSMETIC_PATH = 'rules/cosmetic/youtube.json';
+
 /** The layer flag names, kept here so the guard and any UI iterate the same set. */
 export const YOUTUBE_LAYER_KEYS = [
   'network',

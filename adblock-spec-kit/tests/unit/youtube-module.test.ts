@@ -24,6 +24,7 @@ function makeConfig(overrides: Partial<YouTubeConfig> = {}): YouTubeConfig {
 interface Harness {
   readonly module: YouTubeModule;
   readonly injectPrune: ReturnType<typeof vi.fn>;
+  readonly injectCosmetic: ReturnType<typeof vi.fn>;
 }
 
 function makeModule(
@@ -33,12 +34,14 @@ function makeModule(
   } = {},
 ): Harness {
   const injectPrune = vi.fn(async () => {});
+  const injectCosmetic = vi.fn(async () => {});
   const deps: YouTubeModuleDeps = {
     settings: { isEnabled: async () => options.enabled ?? true },
     loadConfig: async () => ('config' in options ? options.config : makeConfig()),
     injectPrune,
+    injectCosmetic,
   };
-  return { module: new YouTubeModule(deps), injectPrune };
+  return { module: new YouTubeModule(deps), injectPrune, injectCosmetic };
 }
 
 describe('isYouTubeHost', () => {
@@ -53,35 +56,41 @@ describe('isYouTubeHost', () => {
 
 describe('YouTubeModule.handleTab', () => {
   it('ignores a non-YouTube navigation', async () => {
-    const { module, injectPrune } = makeModule();
+    const { module, injectPrune, injectCosmetic } = makeModule();
 
-    await module.handleTab(1, 'https://example.org/watch');
+    await module.handleTab(1, 'https://example.org/watch', 'complete');
 
     expect(injectPrune).not.toHaveBeenCalled();
+    expect(injectCosmetic).not.toHaveBeenCalled();
   });
 
   it('does nothing while the module switch is off (opt-in, AC-15.1)', async () => {
-    const { module, injectPrune } = makeModule({ enabled: false });
+    const { module, injectPrune, injectCosmetic } = makeModule({ enabled: false });
 
-    await module.handleTab(1, 'https://www.youtube.com/watch?v=abc');
+    await module.handleTab(1, 'https://www.youtube.com/watch?v=abc', 'complete');
 
     expect(injectPrune).not.toHaveBeenCalled();
+    expect(injectCosmetic).not.toHaveBeenCalled();
   });
 
   it('honours the Q6 kill-switch: a disabled config runs nothing', async () => {
-    const { module, injectPrune } = makeModule({ config: makeConfig({ enabled: false }) });
+    const { module, injectPrune, injectCosmetic } = makeModule({
+      config: makeConfig({ enabled: false }),
+    });
 
-    await module.handleTab(1, 'https://www.youtube.com/watch?v=abc');
+    await module.handleTab(1, 'https://www.youtube.com/watch?v=abc', 'complete');
 
     expect(injectPrune).not.toHaveBeenCalled();
+    expect(injectCosmetic).not.toHaveBeenCalled();
   });
 
   it('runs nothing when the config is unusable', async () => {
-    const { module, injectPrune } = makeModule({ config: undefined });
+    const { module, injectPrune, injectCosmetic } = makeModule({ config: undefined });
 
-    await module.handleTab(1, 'https://www.youtube.com/watch?v=abc');
+    await module.handleTab(1, 'https://www.youtube.com/watch?v=abc', 'complete');
 
     expect(injectPrune).not.toHaveBeenCalled();
+    expect(injectCosmetic).not.toHaveBeenCalled();
   });
 
   it('skips the prune layer when its flag is off', async () => {
@@ -90,7 +99,7 @@ describe('YouTubeModule.handleTab', () => {
     });
     const { module, injectPrune } = makeModule({ config });
 
-    await module.handleTab(1, 'https://www.youtube.com/watch?v=abc');
+    await module.handleTab(1, 'https://www.youtube.com/watch?v=abc', 'complete');
 
     expect(injectPrune).not.toHaveBeenCalled();
   });
@@ -99,9 +108,36 @@ describe('YouTubeModule.handleTab', () => {
     const config = makeConfig();
     const { module, injectPrune } = makeModule({ config });
 
-    await module.handleTab(7, 'https://www.youtube.com/watch?v=abc');
+    await module.handleTab(7, 'https://www.youtube.com/watch?v=abc', 'complete');
 
     expect(injectPrune).toHaveBeenCalledWith(7, config);
+  });
+
+  it('injects the cosmetic layer on the complete pass (Q3)', async () => {
+    const { module, injectCosmetic } = makeModule();
+
+    await module.handleTab(3, 'https://www.youtube.com/watch?v=abc', 'complete');
+
+    expect(injectCosmetic).toHaveBeenCalledWith(3, 'https://www.youtube.com/watch?v=abc');
+  });
+
+  it('does not inject CSS on the early loading pass (Q3 waits for the DOM)', async () => {
+    const { module, injectCosmetic } = makeModule();
+
+    await module.handleTab(3, 'https://www.youtube.com/watch?v=abc', 'loading');
+
+    expect(injectCosmetic).not.toHaveBeenCalled();
+  });
+
+  it('skips the cosmetic layer when its flag is off', async () => {
+    const config = makeConfig({
+      layers: { network: true, prune: true, cosmetic: false, skip: true, health: true },
+    });
+    const { module, injectCosmetic } = makeModule({ config });
+
+    await module.handleTab(3, 'https://www.youtube.com/watch?v=abc', 'complete');
+
+    expect(injectCosmetic).not.toHaveBeenCalled();
   });
 });
 

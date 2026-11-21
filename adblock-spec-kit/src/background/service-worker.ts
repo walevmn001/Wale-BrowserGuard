@@ -34,7 +34,7 @@ import { createSitePreferences } from './site-settings';
 import { categoryForRuleset, createStatsCounter } from './stats';
 import { createTempException, TEMP_EXCEPTION_ALARM } from './temp-exception';
 import { createWhitelist } from './whitelist';
-import { createYouTubeModule, isYouTubeHost } from './youtube-module';
+import { createYouTubeModule, isYouTubeHost, type YouTubePhase } from './youtube-module';
 import { workerLocale } from './locale';
 import { createFingerprintSettings } from './security/fingerprint-settings';
 import { createPrivacySettings } from './security/privacy-settings';
@@ -210,14 +210,19 @@ async function injectAntiFingerprint(tabId: number, url: string | undefined): Pr
 /**
  * Runs the opt-in YouTube module. The host is checked synchronously first so a
  * non-YouTube navigation never pays for the storage/config reads, and the
- * module itself is fail-open (a fault must not affect normal blocking).
+ * module itself is fail-open (a fault must not affect normal blocking). The
+ * phase lets Q2 inject early while Q3's CSS waits for a stable document.
  */
-function runYouTubeModule(tabId: number, url: string | undefined): void {
+function runYouTubeModule(
+  tabId: number,
+  url: string | undefined,
+  phase: YouTubePhase,
+): void {
   const host = pageHost(url);
   if (host === undefined || !isYouTubeHost(host)) {
     return;
   }
-  void guard('run the YouTube module', () => createYouTubeModule().handleTab(tabId, url));
+  void guard('run the YouTube module', () => createYouTubeModule().handleTab(tabId, url, phase));
 }
 
 // Injected page components (element picker, security banner) talk to the
@@ -298,14 +303,14 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   // the earliest navigation signal (a `document_start`-like injection) and the
   // `complete` pass as a fallback; the install is idempotent.
   if (changeInfo.status === 'loading') {
-    runYouTubeModule(tabId, changeInfo.url ?? tab.url);
+    runYouTubeModule(tabId, changeInfo.url ?? tab.url, 'loading');
   }
   if (changeInfo.status === 'complete') {
     void pollStats();
     void injectCosmetic(tabId, tab.url);
     void injectAntiFingerprint(tabId, tab.url);
     void guard('inject the security banner', () => injectBanner(tabId, tab.url));
-    runYouTubeModule(tabId, tab.url);
+    runYouTubeModule(tabId, tab.url, 'complete');
   }
 });
 

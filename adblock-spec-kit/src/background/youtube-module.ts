@@ -7,21 +7,27 @@
  * kill-switch). Each layer is driven from here, and every step is fail-open so
  * a YouTube change can never affect the core blocking path.
  *
- * T063 wires Q2 (`prune`): strip the advertising fields from the player
- * response by injecting a self-contained MAIN-world script. Later tasks add Q3
- * (cosmetic), Q4 (skip) and Q5 (health) to the same `handleTab` decision.
+ * T063 wires Q2 (`prune`) and T064 wires Q3 (`cosmetic`). Later tasks add Q4
+ * (skip) and Q5 (health) to the same `handleTab` decision.
  *
  * Every dependency is injected so the decision logic is unit-testable;
  * `createYouTubeModule` wires the real settings, config loader and
  * `chrome.scripting`.
  */
 
-import { pageHost } from '../content/cosmetic';
+import {
+  applyCosmetic,
+  createCosmeticDataCache,
+  isCosmeticData,
+  pageHost,
+  type CosmeticData,
+} from '../content/cosmetic';
 import { installYouTubePrune, YOUTUBE_PRUNE_LIMITS } from '../content/youtube/prune-main';
 import { logger } from '../shared/logger';
 import {
   isYouTubeConfig,
   YOUTUBE_CONFIG_PATH,
+  YOUTUBE_COSMETIC_PATH,
   type YouTubeConfig,
 } from '../shared/youtube-config';
 import { createYouTubeModuleSettings } from './youtube-settings';
@@ -31,6 +37,13 @@ export function isYouTubeHost(host: string): boolean {
   return host === 'youtube.com' || host.endsWith('.youtube.com');
 }
 
+/**
+ * Which navigation signal drove the run. Q2 needs the earliest one (so the prune
+ * hooks are installed before the page reads the player response), while Q3's CSS
+ * is inserted only once a stable document exists (`complete`).
+ */
+export type YouTubePhase = 'loading' | 'complete';
+
 /** What the orchestrator needs; injected so tests can pass fakes. */
 export interface YouTubeModuleDeps {
   readonly settings: { isEnabled(): Promise<boolean> };
@@ -38,6 +51,8 @@ export interface YouTubeModuleDeps {
   readonly loadConfig: () => Promise<YouTubeConfig | undefined>;
   /** Q2 — inject the MAIN-world prune script for one tab. */
   readonly injectPrune: (tabId: number, config: YouTubeConfig) => Promise<void>;
+  /** Q3 — hide the ad UI on `url`'s YouTube page (CSS from the shipped data). */
+  readonly injectCosmetic: (tabId: number, url: string | undefined) => Promise<void>;
 }
 
 export class YouTubeModule {
@@ -52,7 +67,11 @@ export class YouTubeModule {
    * contract: the caller wraps it in a guard, and a non-YouTube URL, a disabled
    * module or a disabled config is a silent no-op.
    */
-  async handleTab(tabId: number, url: string | undefined): Promise<void> {
+  async handleTab(
+    tabId: number,
+    url: string | undefined,
+    phase: YouTubePhase,
+  ): Promise<void> {
     const host = pageHost(url);
     if (host === undefined || !isYouTubeHost(host)) {
       return;
@@ -66,6 +85,11 @@ export class YouTubeModule {
     }
     if (config.layers.prune) {
       await this.deps.injectPrune(tabId, config);
+    }
+    // Q3 styles the DOM, so it waits for `complete`; the early pass exists only
+    // for Q2's hooks (the page may be about to swap documents at `loading`).
+    if (phase === 'complete' && config.layers.cosmetic) {
+      await this.deps.injectCosmetic(tabId, url);
     }
   }
 }
@@ -85,6 +109,20 @@ export async function loadPackagedYouTubeConfig(): Promise<YouTubeConfig | undef
   }
 }
 
+/**
+ * Reads the module's element-hiding data (`rules/cosmetic/youtube.json`, T064)
+ * and validates it; cached for the worker lifetime because it is immutable build
+ * output (like the core cosmetic data), never user state.
+ */
+const loadYouTubeCosmeticData = createCosmeticDataCache(async (): Promise<CosmeticData> => {
+  const response = await fetch(chrome.runtime.getURL(YOUTUBE_COSMETIC_PATH));
+  const raw: unknown = await response.json();
+  if (!isCosmeticData(raw)) {
+    throw new Error('youtube cosmetic data has an unexpected shape');
+  }
+  return raw;
+});
+
 /** Builds the orchestrator backed by the real settings, storage and scripting. */
 export function createYouTubeModule(): YouTubeModule {
   return new YouTubeModule({
@@ -98,6 +136,18 @@ export function createYouTubeModule(): YouTubeModule {
         args: [config.adFields, YOUTUBE_PRUNE_LIMITS],
         injectImmediately: true,
       });
+    },
+    injectCosmetic: async (tabId, url) => {
+      await applyCosmetic(
+        {
+          loadData: loadYouTubeCosmeticData,
+          insertCss: async (id, css) => {
+            await chrome.scripting.insertCSS({ target: { tabId: id }, css });
+          },
+        },
+        tabId,
+        url,
+      );
     },
   });
 }

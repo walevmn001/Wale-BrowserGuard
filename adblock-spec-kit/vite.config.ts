@@ -52,7 +52,8 @@ function rulesPlugin(): Plugin {
       );
       console.info(
         `[adblock] cosmetic: ${cosmetic.genericSelectors} generic + ${cosmetic.domainSelectors} ` +
-          `domain selectors (${cosmetic.domains} domains), ${cosmetic.skipped} lines skipped`,
+          `domain selectors (${cosmetic.domains} domains), ${cosmetic.youtubeSelectors} ` +
+          `youtube selectors, ${cosmetic.skipped} lines skipped`,
       );
     },
   };
