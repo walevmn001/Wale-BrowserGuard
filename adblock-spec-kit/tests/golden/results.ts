@@ -49,6 +49,13 @@ interface MemoryResult {
   readonly pass: boolean;
 }
 
+/** B2b-3 guard: legitimate third-party hosts the rules must not block. */
+interface BenignResult {
+  readonly total: number;
+  readonly blocked: number;
+  readonly pass: boolean;
+}
+
 export interface GoldenResults {
   readonly date: string;
   readonly generatedAt: string;
@@ -58,6 +65,7 @@ export interface GoldenResults {
   readonly navigationLatency: LatencyResult;
   readonly restart: RestartResult;
   readonly memory: MemoryResult;
+  readonly benignHosts: BenignResult;
 }
 
 /** Paired navigation samples: each page measured with and without the extension. */
@@ -89,6 +97,7 @@ export function summarize(
   latency: LatencySamples,
   restartPassed: boolean,
   memoryMb: number | null = null,
+  benign: { readonly total: number; readonly blocked: number } = { total: 0, blocked: 0 },
 ): GoldenResults {
   const total = measured.reduce((sum, page) => sum + page.knownRequests, 0);
   const blocked = measured.reduce((sum, page) => sum + page.blockedRequests, 0);
@@ -132,6 +141,11 @@ export function summarize(
       serviceWorkerHeapMb: memoryMb === null ? null : round(memoryMb),
       thresholdMb: MEMORY_THRESHOLD_MB,
       pass: memoryMb !== null && memoryMb < MEMORY_THRESHOLD_MB,
+    },
+    benignHosts: {
+      total: benign.total,
+      blocked: benign.blocked,
+      pass: benign.total > 0 && benign.blocked === 0,
     },
   };
 }

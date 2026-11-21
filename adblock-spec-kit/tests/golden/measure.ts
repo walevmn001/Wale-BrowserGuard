@@ -7,7 +7,7 @@
  * Aggregation lives in `results.ts`.
  */
 
-import type { Page, Request } from '@playwright/test';
+import type { Page, Request, Response } from '@playwright/test';
 
 import { BENIGN_PATHS, isKnownHost, pagePath, type GoldenPage } from './fixtures';
 
@@ -93,4 +93,56 @@ export async function measurePage(
     page.off('request', onRequest);
     page.off('requestfailed', onFailed);
   }
+}
+
+/**
+ * Live per-host outcome for the benign-host guard (B2b-3). `settled` holds every
+ * host the browser actually contacted; `blocked` holds those DNR stopped
+ * (`ERR_BLOCKED_BY_CLIENT`).
+ *
+ * The `privacy` ruleset upgrades every `http` sub-resource to `https`, which the
+ * offline HTTP-only fixture server cannot answer — so an *allowed* probe emits a
+ * 307 for the `http` URL and then fails TLS. Reading the error text is what
+ * separates the block rule we are guarding against from the upgrade that always
+ * applies (same technique as `tests/e2e/allow-benign-hosts.spec.ts`).
+ */
+export interface BenignProbeOutcome {
+  readonly settled: Set<string>;
+  readonly blocked: Set<string>;
+}
+
+function hostnameOf(url: string): string | null {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
+
+/** Fires a cross-host image request per host (images ignore CORS). */
+export function fireBenignProbes(page: Page, hosts: readonly string[]): Promise<void> {
+  return page.evaluate((targets) => {
+    const { port } = new URL(window.location.href);
+    for (const host of targets) {
+      const image = new Image();
+      image.src = `http://${host}:${port}/probe.png`;
+    }
+  }, hosts as string[]);
+}
+
+/** Records, per benign host, whether it was probed and whether DNR blocked it. */
+export function trackBenignProbes(page: Page, hosts: readonly string[]): BenignProbeOutcome {
+  const settled = new Set<string>();
+  const blocked = new Set<string>();
+  page.on('response', (response: Response) => {
+    const host = hostnameOf(response.url());
+    if (host !== null && hosts.includes(host)) settled.add(host);
+  });
+  page.on('requestfailed', (request: Request) => {
+    const host = hostnameOf(request.url());
+    if (host === null || !hosts.includes(host)) return;
+    settled.add(host);
+    if ((request.failure()?.errorText ?? '').includes('ERR_BLOCKED_BY_CLIENT')) blocked.add(host);
+  });
+  return { settled, blocked };
 }

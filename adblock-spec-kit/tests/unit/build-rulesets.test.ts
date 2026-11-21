@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildStaticRuleSets } from '../../scripts/build-rulesets';
 import { STATIC_RULESETS } from '../../scripts/static-rulesets';
+import { RULE_LIMITS, validateRules } from '../../scripts/validate-rules';
 
 const report = buildStaticRuleSets(process.cwd());
 
@@ -241,6 +242,38 @@ describe('rulesets — B2b-2 vendor tracking hosts', () => {
     expect(rule?.action.type).toBe('block');
     // No resourceTypes => sub-resources only; the vendor's own page still opens.
     expect(rule?.condition.resourceTypes).toBeUndefined();
+  });
+});
+
+/**
+ * B2b-3: the packaged rulesets (including every B2b-1/B2b-2 rule) must satisfy
+ * the build-time DNR validator and stay inside the documented limits. The build
+ * already calls `assertValidRules`, so this pins the *shape* of the shipped set:
+ * a regression that pushes a limit over budget fails here as well as at build.
+ */
+describe('validate-rules — the packaged rulesets (B2b-3)', () => {
+  const packaged = validateRules({
+    ruleSets: report.ruleSets.map(({ descriptor, rules }) => ({
+      id: descriptor.id,
+      enabled: descriptor.enabled,
+      rules,
+    })),
+  });
+
+  it('accepts the real rulesets with no errors', () => {
+    expect(packaged.ok).toBe(true);
+    expect(packaged.issues.filter((issue) => issue.severity === 'error')).toEqual([]);
+  });
+
+  it('stays inside the static-rule budget and regex limit', () => {
+    expect(packaged.stats.enabledRuleSets).toBeLessThanOrEqual(RULE_LIMITS.MAX_ENABLED_RULESETS);
+    expect(packaged.stats.enabledRules).toBeLessThanOrEqual(RULE_LIMITS.STATIC_RULE_BUDGET);
+    expect(packaged.stats.enabledRegexRules).toBeLessThanOrEqual(RULE_LIMITS.MAX_REGEX_RULES);
+  });
+
+  it('counts every shipped ruleset and rule', () => {
+    expect(packaged.stats.ruleSets).toBe(STATIC_RULESETS.length);
+    expect(packaged.stats.enabledRules).toBe(report.totalRules);
   });
 });
 

@@ -21,8 +21,14 @@ import { join } from 'node:path';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 import { launchContext, readServiceWorkerHeapMb } from './browser';
-import { goldenPages, pagePath, type GoldenPage } from './fixtures';
-import { isBroken, measurePage, type PageMeasurement } from './measure';
+import { BENIGN_HOSTS, goldenPages, pagePath, type GoldenPage } from './fixtures';
+import {
+  fireBenignProbes,
+  isBroken,
+  measurePage,
+  trackBenignProbes,
+  type PageMeasurement,
+} from './measure';
 import {
   BLOCK_RATE_THRESHOLD,
   BREAK_RATE_THRESHOLD,
@@ -44,6 +50,7 @@ const latencyWithout: number[] = [];
 const latencyDeltas: number[] = [];
 let restartPassed = false;
 let memoryMb: number | null = null;
+let benignOutcome: { readonly total: number; readonly blocked: number } | null = null;
 
 function requireSetup(): { server: FixtureServer; withExtension: BrowserContext } {
   if (server === undefined || withExtension === undefined) {
@@ -99,6 +106,7 @@ test.afterAll(async () => {
       { withExtensionMs: latencyWith, withoutExtensionMs: latencyWithout, deltas: latencyDeltas },
       restartPassed,
       memoryMb,
+      benignOutcome ?? { total: 0, blocked: 0 },
     ),
   );
   console.log(`golden baseline written to ${file}`);
@@ -119,6 +127,28 @@ test('AC-1.1 / AC-1.2: blocks known ad requests without breaking pages', async (
 
   const broken = measured.filter(isBroken).length;
   expect(broken / measured.length).toBeLessThanOrEqual(BREAK_RATE_THRESHOLD);
+});
+
+// Runs before AC-1.3: the latency budget is the only noisy check (see
+// PROGRESS.md), so the deterministic guard must not be masked by its flakiness.
+test('B2b-3 guard: never blocks the benign fixture hosts', async () => {
+  const { server: fixtureServer, withExtension: context } = requireSetup();
+  const fixture = goldenPages()[0];
+  if (fixture === undefined) {
+    throw new Error('fixtures are empty');
+  }
+  const page = await context.newPage();
+  const { settled, blocked } = trackBenignProbes(page, BENIGN_HOSTS);
+
+  await page.goto(`${fixtureServer.baseUrl}${pagePath(fixture)}`, { waitUntil: 'load' });
+  await fireBenignProbes(page, BENIGN_HOSTS);
+
+  // Every benign host must have been probed, and none may be blocked — the
+  // ruleset widens coverage without over-blocking legitimate infrastructure.
+  await expect.poll(() => settled.size, { timeout: 15_000 }).toBe(BENIGN_HOSTS.length);
+  benignOutcome = { total: BENIGN_HOSTS.length, blocked: blocked.size };
+  expect([...blocked]).toEqual([]);
+  await page.close();
 });
 
 test('AC-1.3: navigation latency stays within the budget', async () => {

@@ -123,6 +123,57 @@ export const TRACKER_HOSTS: readonly string[] = [
 /** Every host the packaged rules are expected to block. */
 export const KNOWN_HOSTS: readonly string[] = [...AD_HOSTS, ...TRACKER_HOSTS];
 
+/**
+ * Legitimate third-party hosts the rules must *never* block (B2b-3 guard).
+ *
+ * The B2b prefix (`||ads.`) and vendor rules widen coverage, so the main risk is
+ * over-blocking real hosting / auth / CDN / media infrastructure a page depends
+ * on. This is a >= 30-host sample of widely used hosts; none may be blocked.
+ * Self-authored for this project (MIT — see rules/README.md); the same list
+ * guards the e2e suite in `tests/e2e/allow-benign-hosts.spec.ts`.
+ */
+export const BENIGN_HOSTS: readonly string[] = [
+  'api.github.com',
+  'raw.githubusercontent.com',
+  'cdn.jsdelivr.net',
+  'unpkg.com',
+  'cdnjs.cloudflare.com',
+  'fonts.gstatic.com',
+  'fonts.googleapis.com',
+  'storage.googleapis.com',
+  'accounts.google.com',
+  'maps.google.com',
+  'mail.google.com',
+  'drive.google.com',
+  'login.microsoftonline.com',
+  'graph.microsoft.com',
+  'outlook.office.com',
+  'api.stripe.com',
+  'js.stripe.com',
+  'checkout.shopify.com',
+  'cdn.shopify.com',
+  's3.amazonaws.com',
+  'ec2.amazonaws.com',
+  'd1.cloudfront.net',
+  'upload.wikimedia.org',
+  'en.wikipedia.org',
+  'www.wikipedia.org',
+  'docs.python.org',
+  'pypi.org',
+  'files.pythonhosted.org',
+  'registry.npmjs.org',
+  'api.npmjs.org',
+  'assets.example.com',
+  'img.example.com',
+  'media.example.com',
+  'search.example.com',
+  'status.example.com',
+  'blog.example.com',
+];
+
+/** Every host the fixture server must resolve: the ones to block, and the ones not to. */
+export const FIXTURE_HOSTS: readonly string[] = [...KNOWN_HOSTS, ...BENIGN_HOSTS];
+
 /** Same-origin scripts every page loads; if any is blocked the page is "broken". */
 export const BENIGN_PATHS: readonly string[] = ['/assets/app.js', '/assets/main.js'];
 

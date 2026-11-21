@@ -12,13 +12,13 @@ import { fileURLToPath } from 'node:url';
 
 import { chromium, type BrowserContext, type CDPSession } from '@playwright/test';
 
-import { KNOWN_HOSTS } from './fixtures';
+import { FIXTURE_HOSTS } from './fixtures';
 
 /** `tests/golden/` -> project root -> `dist/` (the built extension). */
 export const EXTENSION_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '../../dist');
 
 /** Builds the `--host-resolver-rules` value that maps every host to localhost. */
-export function hostResolverRules(hosts: readonly string[] = KNOWN_HOSTS): string {
+export function hostResolverRules(hosts: readonly string[] = FIXTURE_HOSTS): string {
   return hosts.map((host) => `MAP ${host} 127.0.0.1`).join(', ');
 }
 
