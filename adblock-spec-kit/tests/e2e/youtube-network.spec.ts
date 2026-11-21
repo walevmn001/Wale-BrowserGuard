@@ -79,10 +79,11 @@ function fetchOutcome(page: Page, path: string): Promise<string> {
 test('blocks every configured ad endpoint but never the player API', async () => {
   const worker = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker'));
 
-  // The module owns this ruleset; the test enables it the way the module will.
-  await worker.evaluate(() =>
-    chrome.declarativeNetRequest.updateEnabledRulesets({ enableRulesetIds: ['youtube'] }),
-  );
+  // The module owns this ruleset: turn the module on the way a user does (its
+  // switch is the single source of truth) and wait for the module to enable Q1.
+  // Enabling the ruleset directly would race the module's startup reconcile,
+  // which (correctly) disables it while the module is off (T068).
+  await worker.evaluate(() => chrome.storage.local.set({ youtubeModule: true }));
   await expect
     .poll(() => worker.evaluate(() => chrome.declarativeNetRequest.getEnabledRulesets()))
     .toContain('youtube');
