@@ -90,11 +90,13 @@ export const YOUTUBE_MOCK_HTML = `<!doctype html>
         var player = document.getElementById('movie_player');
         var video = document.getElementById('player-video');
         var skip = document.querySelector('.ytp-ad-skip-button-modern');
-        var state = { adPlaying: false, skipClicks: 0 };
+        var state = { adPlaying: false, skipClicks: 0, seekWrites: 0 };
         var currentTime = 0;
 
         // A finite duration and a writable currentTime let the ad-skip layer
-        // (Q4) seek to the end without a real media file being loaded.
+        // (Q4) seek to the end without a real media file being loaded. Every
+        // write is counted so a test can prove the layer stops after its
+        // attempt cap (no infinite seek loop).
         Object.defineProperty(video, 'duration', {
           configurable: true,
           get: function () {
@@ -108,6 +110,7 @@ export const YOUTUBE_MOCK_HTML = `<!doctype html>
           },
           set: function (value) {
             currentTime = value;
+            state.seekWrites += 1;
           },
         });
 
@@ -179,12 +182,14 @@ export function exitAd(page: Page): Promise<void> {
 export interface MockState {
   readonly adPlaying: boolean;
   readonly skipClicks: number;
+  /** How many times the ad-skip layer wrote `video.currentTime` (Q4 bound). */
+  readonly seekWrites: number;
 }
 
 /** Read the mock's ad state (how many times the skip button was clicked). */
 export function readMockState(page: Page): Promise<MockState> {
   return page.evaluate(() => {
     const { state } = (window as unknown as { __ytMock: { state: MockState } }).__ytMock;
-    return { adPlaying: state.adPlaying, skipClicks: state.skipClicks };
+    return { adPlaying: state.adPlaying, skipClicks: state.skipClicks, seekWrites: state.seekWrites };
   });
 }

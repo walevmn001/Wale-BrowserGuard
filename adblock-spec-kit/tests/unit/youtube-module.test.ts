@@ -25,6 +25,7 @@ interface Harness {
   readonly module: YouTubeModule;
   readonly injectPrune: ReturnType<typeof vi.fn>;
   readonly injectCosmetic: ReturnType<typeof vi.fn>;
+  readonly injectAdSkip: ReturnType<typeof vi.fn>;
 }
 
 function makeModule(
@@ -35,13 +36,15 @@ function makeModule(
 ): Harness {
   const injectPrune = vi.fn(async () => {});
   const injectCosmetic = vi.fn(async () => {});
+  const injectAdSkip = vi.fn(async () => {});
   const deps: YouTubeModuleDeps = {
     settings: { isEnabled: async () => options.enabled ?? true },
     loadConfig: async () => ('config' in options ? options.config : makeConfig()),
     injectPrune,
     injectCosmetic,
+    injectAdSkip,
   };
-  return { module: new YouTubeModule(deps), injectPrune, injectCosmetic };
+  return { module: new YouTubeModule(deps), injectPrune, injectCosmetic, injectAdSkip };
 }
 
 describe('isYouTubeHost', () => {
@@ -138,6 +141,34 @@ describe('YouTubeModule.handleTab', () => {
     await module.handleTab(3, 'https://www.youtube.com/watch?v=abc', 'complete');
 
     expect(injectCosmetic).not.toHaveBeenCalled();
+  });
+
+  it('injects the ad-skip layer on the complete pass (Q4)', async () => {
+    const config = makeConfig();
+    const { module, injectAdSkip } = makeModule({ config });
+
+    await module.handleTab(4, 'https://www.youtube.com/watch?v=abc', 'complete');
+
+    expect(injectAdSkip).toHaveBeenCalledWith(4, config);
+  });
+
+  it('does not inject the ad-skip observer on the early loading pass (Q4)', async () => {
+    const { module, injectAdSkip } = makeModule();
+
+    await module.handleTab(4, 'https://www.youtube.com/watch?v=abc', 'loading');
+
+    expect(injectAdSkip).not.toHaveBeenCalled();
+  });
+
+  it('skips the ad-skip layer when its flag is off', async () => {
+    const config = makeConfig({
+      layers: { network: true, prune: true, cosmetic: true, skip: false, health: true },
+    });
+    const { module, injectAdSkip } = makeModule({ config });
+
+    await module.handleTab(4, 'https://www.youtube.com/watch?v=abc', 'complete');
+
+    expect(injectAdSkip).not.toHaveBeenCalled();
   });
 });
 
