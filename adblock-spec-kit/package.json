@@ -1,6 +1,6 @@
 {
   "name": "adblock-security-extension",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Manifest V3 extension that blocks ads, trackers and malicious sites without breaking pages or collecting user data.",
