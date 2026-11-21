@@ -49,6 +49,7 @@ const VI = {
     'Trang này có thể chứa mã độc hoặc lừa đảo. Vì an toàn, AdBlock Security đã ngăn trang tải.',
   warningBlockedDomain: 'Miền bị chặn: {domain}',
   warningBack: 'Quay lại an toàn',
+  warningContinue: 'Vẫn tiếp tục (10 phút)',
 } as const;
 
 /** Every translatable string. `EN` must cover exactly the same keys. */
@@ -90,6 +91,7 @@ const EN: Record<MessageKey, string> = {
     'This page may host malware or a phishing attempt. AdBlock Security stopped it from loading to keep you safe.',
   warningBlockedDomain: 'Blocked domain: {domain}',
   warningBack: 'Back to safety',
+  warningContinue: 'Continue anyway (10 minutes)',
 };
 
 const MESSAGES: Record<Locale, Record<MessageKey, string>> = { vi: VI, en: EN };

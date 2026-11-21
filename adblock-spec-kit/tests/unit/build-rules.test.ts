@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   convertFilterList,
   groupByCategory,
-  MALWARE_WARNING_PAGE,
   summarize,
+  WARNING_REDIRECT_PREFIX,
   type SkipReason,
 } from '../../scripts/build-rules';
 import { PRIORITY } from '../../src/shared/constants';
@@ -89,11 +89,14 @@ describe('convertFilterList — exceptions and priority', () => {
     expect(redirect?.category).toBe('malware');
     expect(redirect?.rule.priority).toBe(PRIORITY.MALWARE_BLOCK);
     expect(redirect?.rule.action.type).toBe('redirect');
-    expect(redirect?.rule.action.redirect?.extensionPath).toBe(MALWARE_WARNING_PAGE);
+    expect(redirect?.rule.action.redirect?.regexSubstitution).toBe(`${WARNING_REDIRECT_PREFIX}\\1`);
+    expect(redirect?.rule.condition.requestDomains).toEqual(['malware.example']);
+    expect(redirect?.rule.condition.regexFilter).toBe('^(https?://[^#]*)');
     expect(redirect?.rule.condition.resourceTypes).toEqual(['main_frame']);
 
     expect(block?.rule.action.type).toBe('block');
     expect(block?.rule.priority).toBe(PRIORITY.MALWARE_BLOCK);
+    expect(block?.rule.condition.urlFilter).toBe('||malware.example^');
     expect(block?.rule.condition.excludedResourceTypes).toEqual(['main_frame']);
   });
 

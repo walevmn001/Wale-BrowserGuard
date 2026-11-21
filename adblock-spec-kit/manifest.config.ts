@@ -10,8 +10,11 @@
  * the filter lists refresh on a schedule (algorithm §E). T024 adds the options
  * page (per-group toggles, manual update). T030 adds the `web_accessible_resources`
  * entry for the malware warning page (the malware ruleset's redirect target).
+ * T031 adds `key`, which fixes the extension id so the malware rule can embed a
+ * `chrome-extension://` redirect URL that carries the blocked host.
  * All of these are justified in plan.md §3.
  */
+import { EXTENSION_KEY } from './scripts/extension-key.ts';
 import { STATIC_RULESETS } from './scripts/static-rulesets.ts';
 
 export interface RuleResource {
@@ -41,6 +44,11 @@ export interface ManifestV3 {
     readonly page: string;
     readonly open_in_tab: boolean;
   };
+  /**
+   * Base64 DER public key. Fixes the extension id so DNR rules can embed
+   * `chrome-extension://<id>/…` redirect URLs (T031).
+   */
+  readonly key: string;
   readonly permissions: readonly string[];
   readonly host_permissions: readonly string[];
   readonly web_accessible_resources: readonly {
@@ -74,6 +82,7 @@ export function createManifest(): ManifestV3 {
       page: 'src/options/index.html',
       open_in_tab: true,
     },
+    key: EXTENSION_KEY,
     permissions: [
       'declarativeNetRequest',
       'declarativeNetRequestFeedback',

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createManifest } from '../../manifest.config';
+import { EXTENSION_ID, EXTENSION_KEY, extensionIdFromKey } from '../../scripts/extension-key';
 import { STATIC_RULESETS } from '../../scripts/static-rulesets';
 
 describe('manifest', () => {
@@ -49,5 +50,12 @@ describe('manifest', () => {
       STATIC_RULESETS.map(({ id, enabled, output }) => ({ id, enabled, path: output })),
     );
     expect(manifest.declarative_net_request.rule_resources.length).toBeGreaterThan(0);
+  });
+
+  it('pins a fixed extension id with the key so the warning redirect can be baked in', () => {
+    const manifest = createManifest();
+
+    expect(manifest.key).toBe(EXTENSION_KEY);
+    expect(extensionIdFromKey(manifest.key)).toBe(EXTENSION_ID);
   });
 });

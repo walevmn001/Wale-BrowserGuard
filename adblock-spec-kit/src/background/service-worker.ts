@@ -26,6 +26,10 @@
  * (`disabledRuleSets`), so the options page switches individual list groups on
  * and off.
  *
+ * T031: applies the temporary malware exceptions (`temp-exception.ts`) the
+ * warning page's "continue anyway" publishes, and clears a pass once its alarm
+ * fires (AC-5.2, AC-5.3).
+ *
  * No module-level mutable state: the worker can be stopped at any time
  * (Constitution 14); state lives in `chrome.storage`.
  */
@@ -40,6 +44,7 @@ import { installCosmeticObserver, OBSERVER_OPTIONS } from '../content/cosmetic-o
 import { createFilterUpdater, UPDATE_ALARM } from './filter-updater';
 import { createRulesetManager } from './ruleset-manager';
 import { createStatsCounter } from './stats';
+import { createTempException, TEMP_EXCEPTION_ALARM } from './temp-exception';
 import { createWhitelist } from './whitelist';
 import { logger } from '../shared/logger';
 
@@ -56,6 +61,15 @@ async function applyStoredWhitelist(): Promise<void> {
     await createWhitelist().applyStored();
   } catch (error) {
     logger.error('failed to apply the stored whitelist', error);
+  }
+}
+
+/** Applies the temporary malware exceptions (AC-5.2, AC-5.3). */
+async function applyStoredTempExceptions(): Promise<void> {
+  try {
+    await createTempException().applyStored();
+  } catch (error) {
+    logger.error('failed to apply the stored temporary exceptions', error);
   }
 }
 
@@ -88,6 +102,7 @@ async function runFilterUpdate(): Promise<void> {
 function applyStoredState(): void {
   void applyStoredRulesets();
   void applyStoredWhitelist();
+  void applyStoredTempExceptions();
   void pollStats();
   void scheduleFilterUpdates();
 }
@@ -161,13 +176,21 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   if (changes['whitelist'] !== undefined) {
     void applyStoredWhitelist();
   }
+  if (changes['tempExceptions'] !== undefined) {
+    void applyStoredTempExceptions();
+  }
 });
 
 // T023: the daily alarm drives filter updates; a failure re-arms it with
 // backoff (AC-7.1, AC-7.2).
+// T031: the temp-exception alarm fires when the earliest pass lapses, so
+// `applyStored` prunes it and removes its rule (AC-5.2, AC-5.3).
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === UPDATE_ALARM) {
     void runFilterUpdate();
+  }
+  if (alarm.name === TEMP_EXCEPTION_ALARM) {
+    void applyStoredTempExceptions();
   }
 });
 

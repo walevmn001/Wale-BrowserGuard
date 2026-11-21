@@ -36,6 +36,12 @@ export interface StorageSchema {
    * restart and can be shown/edited by the popup.
    */
   whitelist: string[];
+  /**
+   * Temporary malware exceptions from the warning page's "continue anyway"
+   * button: host -> expiry time (ms since epoch). Cleared when a host lapses
+   * (US-5 / AC-5.2, T031); missing means none.
+   */
+  tempExceptions: Record<string, number>;
   /** Total blocked requests since install (US-3 / AC-3.1). */
   statsTotal: number;
   /** Blocked requests per tab; keys are stringified tab ids (US-3 / AC-3.1). */
