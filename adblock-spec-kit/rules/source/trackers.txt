@@ -69,3 +69,18 @@
 ||cdn.taboola.com^
 ||taboola.com^
 ||outbrain.com^
+!
+! B2b-1: generic measurement subdomain prefixes (third-party sub-resources
+! only). Public analytics/telemetry naming convention, self-authored for this
+! project (MIT). Trailing dot = label boundary; `$third-party` + no
+! `resourceTypes` keep them off first-party and off top-level navigation.
+||analytics.$third-party
+||metrics.$third-party
+||telemetry.$third-party
+||tracking.$third-party
+||tracker.$third-party
+||pixel.$third-party
+||trk.$third-party
+||events.$third-party
+||stats.$third-party
+||beacon.$third-party

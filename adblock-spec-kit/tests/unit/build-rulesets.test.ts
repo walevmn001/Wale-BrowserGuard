@@ -133,3 +133,67 @@ describe('ads ruleset — B4 ad-script path rules', () => {
   });
 });
 
+/**
+ * B2b-1 generic subdomain-prefix rules.
+ *
+ * `||<prefix>.` anchors a leading host label, so the same prefix blocks
+ * `<prefix>.<anything>` across vendors instead of enumerating every host. The
+ * trailing dot and `$third-party` keep them narrow: `||ads.` cannot match the
+ * unrelated `https://ads.example.company` (see the DNR "Write good URL
+ * conditions" guidance) and first-party requests are left alone. With no
+ * `resourceTypes` the rules never match `main_frame`, so the vendor's own site
+ * still opens (T033).
+ *
+ * The prefixes are public ad/measurement conventions, self-authored for this
+ * project (MIT — see rules/README.md); none are copied from a third-party list.
+ */
+describe('rulesets — B2b-1 generic subdomain prefixes', () => {
+  const rulesOf = (id: string): readonly chrome.declarativeNetRequest.Rule[] =>
+    report.ruleSets.find(({ descriptor }) => descriptor.id === id)?.rules ?? [];
+
+  const ruleFor = (
+    id: string,
+    filter: string,
+  ): chrome.declarativeNetRequest.Rule | undefined =>
+    rulesOf(id).find((rule) => rule.condition.urlFilter === filter);
+
+  // Ad-side prefixes live in ads.txt; measurement prefixes in trackers.txt.
+  const adPrefixes = ['ads', 'ad', 'adserver', 'adx'];
+  const measurePrefixes = [
+    'analytics',
+    'metrics',
+    'telemetry',
+    'tracking',
+    'tracker',
+    'pixel',
+    'trk',
+    'events',
+    'stats',
+    'beacon',
+  ];
+
+  const cases = [
+    ...adPrefixes.map((prefix) => ['ads', prefix] as const),
+    ...measurePrefixes.map((prefix) => ['trackers', prefix] as const),
+  ];
+
+  it.each(cases)('%s anchors ||%s. as a third-party, sub-resource-only block', (id, prefix) => {
+    const rule = ruleFor(id, `||${prefix}.`);
+
+    expect(rule?.action.type).toBe('block');
+    expect(rule?.condition.domainType).toBe('thirdParty');
+    // No resourceTypes => not applied to main_frame; only sub-resources.
+    expect(rule?.condition.resourceTypes).toBeUndefined();
+  });
+
+  it('always keeps the trailing dot so the anchor stays on a label boundary', () => {
+    for (const id of ['ads', 'trackers']) {
+      const filters = new Set(rulesOf(id).map((rule) => rule.condition.urlFilter));
+      for (const [, prefix] of cases) {
+        // A bare `||ads` would also match `https://ads.example.company`.
+        expect(filters.has(`||${prefix}`)).toBe(false);
+      }
+    }
+  });
+});
+

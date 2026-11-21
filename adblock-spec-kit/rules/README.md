@@ -25,6 +25,17 @@ Yahoo analytics, Taboola, Outbrain). These entries are **self-authored for this
 project (MIT)** and were *not* copied from any third-party list — in particular
 not from the test site's domain list (NC-SA).
 
+B2b-1 added **generic subdomain-prefix** rules of the form `||<prefix>.` with
+`$third-party` — ad prefixes (`ads`, `ad`, `adserver`, `adx`) in `ads.txt`,
+measurement prefixes (`analytics`, `metrics`, `telemetry`, `tracking`,
+`tracker`, `pixel`, `trk`, `events`, `stats`, `beacon`) in `trackers.txt`.
+These names are public ad/measurement conventions, **self-authored for this
+project (MIT)**, not copied from any list. The trailing dot keeps the anchor on
+a label boundary (so `||ads.` cannot match `adserver.com`); `$third-party` and
+the absence of `resourceTypes` keep the rules off first-party requests and off
+top-level navigation. `tests/e2e/allow-benign-hosts.spec.ts` guards against
+over-blocking with a list of legitimate hosts that must never be blocked.
+
 Full third-party lists (EasyList, EasyPrivacy, URLhaus) are layered in later
 tasks. Each must carry its own license note here when added, e.g.:
 

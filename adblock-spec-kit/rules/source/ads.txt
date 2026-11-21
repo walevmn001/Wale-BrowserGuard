@@ -66,6 +66,17 @@
 ||brightcom.com^
 ||conversantmedia.com^
 
+! --- B2b-1: generic ad subdomain prefixes (third-party sub-resources only) ---
+! Public ad-microsite convention, self-authored for this project (MIT). The
+! trailing dot keeps the anchor on a label boundary, so `||ads.` matches
+! `ads.<anything>` without also matching e.g. `adserver.com`; `$third-party`
+! leaves a site's own first-party requests alone and, with no `resourceTypes`,
+! the rules never match main_frame (see rules/README.md).
+||ads.$third-party
+||ad.$third-party
+||adserver.$third-party
+||adx.$third-party
+
 ! --- Common ad-script paths (rarely overlap with site code) ---
 ||googlesyndication.com/pagead/js/adsbygoogle.js$script
 ||securepubads.g.doubleclick.net^$script
