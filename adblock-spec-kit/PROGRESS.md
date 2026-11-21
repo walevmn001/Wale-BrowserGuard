@@ -4,7 +4,7 @@
 > Ghi chú chi tiết T001–T043, B0–B5, T0 đã chuyển sang `docs/history.md` (không xoá nội dung).
 
 ## Trạng thái
-- Giai đoạn hiện tại: **P4 ĐÃ XONG (T040–T043)** — tag `phase-P4-done`; **v1.0 ĐÃ PHÁT HÀNH** (tag + GitHub release `v1.0`).
+- Giai đoạn hiện tại: **P4 ĐÃ XONG (T040–T043)** — tag `phase-P4-done`; **v1.0 ĐÃ PHÁT HÀNH** (tag + GitHub release `v1.0`), asset đã cập nhật lên **v1.0.1**.
 - Task đã xong: T001–T004 (P0), T010–T018 (P1), T020–T025 (P2), T030–T037 (P3), T040–T043 (P4); Prompt 14 (B0–B5); Prompt 15 (B2 + G1 + D1 → `v1.0`).
 - Task kế tiếp: **Prompt 16 — nâng độ phủ chặn** (KHÔNG đổi giấy phép MIT, KHÔNG dùng list copyleft, KHÔNG vá theo từng domain của bài test; rule chặn chỉ tầng sub-resource):
   - **T0 ĐÃ XONG** — dọn `PROGRESS.md` (≤ ~80 dòng), chuyển chi tiết sang `docs/history.md`.
@@ -28,7 +28,7 @@
 - `filter-updater` (T023) mới validate/lưu mô tả list tải về, **chưa** biến thành rule chặn — việc giai đoạn sau.
 
 ## Dở dang / việc kế tiếp
-- **Phát hành lại**: phiên này bump `1.0.0` → **`1.0.1`** và cập nhật asset cho release `v1.0` (giữ nguyên tag `v1.0`).
+- **Phát hành `1.0.1`**: ĐÃ XONG — bump `1.0.0` → `1.0.1`, zip `release/adblock-security-1.0.1.zip` (md5 `2d0c64c9118ef327e6d4048f82724621`), cập nhật asset cho release `v1.0` (giữ nguyên tag `v1.0`).
 - **Sau B2b**: nếu vẫn chưa đạt mục tiêu Toolz → người dùng quyết định (mở rộng thủ công hoặc đổi giấy phép); Trae KHÔNG tự quyết.
 - **G1 bằng URL thật do người dùng điền** vẫn phải làm trước khi gắn `v1.0` (hiện có khung 40 trang offline).
 - Nhật ký chi tiết (từng task + commit): `docs/history.md`.
