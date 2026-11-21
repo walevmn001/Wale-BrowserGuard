@@ -51,7 +51,7 @@ export function createManifest(): ManifestV3 {
       default_title: EXTENSION_NAME,
       default_popup: 'src/popup/index.html',
     },
-    permissions: ['declarativeNetRequest', 'storage'],
+    permissions: ['declarativeNetRequest', 'declarativeNetRequestFeedback', 'storage'],
     host_permissions: ['<all_urls>'],
     declarative_net_request: {
       rule_resources: STATIC_RULESETS.map(({ id, enabled, output }) => ({

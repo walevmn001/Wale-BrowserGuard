@@ -18,4 +18,13 @@ export interface StorageSchema {
    * restart and can be shown/edited by the popup.
    */
   whitelist: string[];
+  /** Total blocked requests since install (US-3 / AC-3.1). */
+  statsTotal: number;
+  /** Blocked requests per tab; keys are stringified tab ids (US-3 / AC-3.1). */
+  statsByTab: Record<string, number>;
+  /**
+   * Newest matched-rule timestamp already counted. Used as the `getMatchedRules`
+   * cursor so a match is never counted twice (US-3 / AC-3.2 keeps it local).
+   */
+  statsCursor: number;
 }

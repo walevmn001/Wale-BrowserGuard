@@ -9,11 +9,15 @@
  * T014: wires the per-domain whitelist (`whitelist.ts`) so the stored domains
  * are re-applied on install/startup and whenever the list changes (AC-2.2).
  *
+ * T015: polls the local block counter (`stats.ts`) on install/startup and after
+ * each page finishes loading, so the totals follow real blocking (AC-3.1).
+ *
  * No module-level mutable state: the worker can be stopped at any time
  * (Constitution 14); state lives in `chrome.storage`.
  */
 
 import { createRulesetManager } from './ruleset-manager';
+import { createStatsCounter } from './stats';
 import { createWhitelist } from './whitelist';
 import { logger } from '../shared/logger';
 
@@ -33,9 +37,18 @@ async function applyStoredWhitelist(): Promise<void> {
   }
 }
 
+async function pollStats(): Promise<void> {
+  try {
+    await createStatsCounter().poll();
+  } catch (error) {
+    logger.error('failed to update blocked-request stats', error);
+  }
+}
+
 function applyStoredState(): void {
   void applyStoredRulesets();
   void applyStoredWhitelist();
+  void pollStats();
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -56,6 +69,13 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
   if (changes['whitelist'] !== undefined) {
     void applyStoredWhitelist();
+  }
+});
+
+// A page load is when new requests get blocked; count them once it settles.
+chrome.tabs.onUpdated.addListener((_tabId, changeInfo) => {
+  if (changeInfo.status === 'complete') {
+    void pollStats();
   }
 });
 
