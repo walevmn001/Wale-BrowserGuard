@@ -46,9 +46,7 @@ describe('buildStaticRuleSets', () => {
       ),
     ).toBe(true);
     // Referer trimming is a dynamic rule now, so it is not in the static set.
-    expect(
-      privacy?.rules.some((rule) => rule.action.type === 'modifyHeaders'),
-    ).toBe(false);
+    expect(privacy?.rules.some((rule) => rule.action.type === 'modifyHeaders')).toBe(false);
   });
 
   it('emits JSON that round-trips to the same rules', () => {
@@ -67,6 +65,51 @@ describe('buildStaticRuleSets', () => {
         const hasRegex = rule.condition.regexFilter !== undefined;
         expect(hasUrl !== hasRegex).toBe(true);
       }
+    }
+  });
+});
+
+describe('trackers ruleset — B2 social / pixel / error hosts', () => {
+  const trackers = report.ruleSets.find(({ descriptor }) => descriptor.id === 'trackers');
+  const filters = new Set(
+    (trackers?.rules ?? [])
+      .map((rule) => rule.condition.urlFilter)
+      .filter((filter): filter is string => filter !== undefined),
+  );
+
+  // A ~20-host sample covering the vendors the B2 list targets; every entry is
+  // self-authored (MIT), not copied from any third-party list.
+  const hosts = [
+    'connect.facebook.net',
+    'facebook.com/tr',
+    'analytics.tiktok.com',
+    'business-api.tiktok.com',
+    'ct.pinterest.com',
+    'log.pinterest.com',
+    'analytics.twitter.com',
+    'ads-twitter.com',
+    'alb.reddit.com',
+    'events.reddit.com',
+    'sentry.io',
+    'sentry-cdn.com',
+    'luckyorange.com',
+    'luckyorange.net',
+    'analytics.yahoo.com',
+    'geo.yahoo.com',
+    'trc.taboola.com',
+    'cdn.taboola.com',
+    'taboola.com',
+    'outbrain.com',
+  ];
+
+  it.each(hosts)('blocks ||%s^', (host) => {
+    expect(filters.has(`||${host}^`)).toBe(true);
+  });
+
+  it('leaves every tracker rule unrestricted by resource type', () => {
+    for (const rule of trackers?.rules ?? []) {
+      expect(rule.condition.resourceTypes).toBeUndefined();
+      expect(rule.action.type).toBe('block');
     }
   });
 });

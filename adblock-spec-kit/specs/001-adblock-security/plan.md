@@ -65,6 +65,7 @@ manifest.config.ts
 - Runtime: (không có, trừ khi duyệt thêm tại đây).
 - Công cụ chuyển đổi filter: **tự viết converter tối giản** trong `scripts/build-rules.ts` (clarify #4). Không thêm dependency runtime hay dev. Hỗ trợ tập con cú pháp ABP cần cho P1 (domain/url/regex cơ bản, `@@` exception, `$` options phổ biến: `third-party`, `script`, `image`, `xmlhttprequest`, `~` negation, `|`/`||`/`^`); phần không hỗ trợ bỏ có kiểm soát và ghi vào báo cáo build.
 - Giấy phép: code MIT; dữ liệu rule theo giấy phép từng nguồn (ghi ở `rules/README.md`).
+- **Nguồn dữ liệu rule (rules/source/)**: `ads.txt`, `trackers.txt`, `malware.txt`, `cosmetic.txt` đều **tự soạn cho dự án, giấy phép MIT** (không chép danh sách của trang test bên thứ ba — loại giấy phép NC-SA). `trackers.txt` mở rộng ở **B2** với nhóm Social/Ad-pixel/Error-tracking (Facebook/Meta, TikTok, Pinterest, Twitter/X, Reddit, Sentry, LuckyOrange, Yahoo analytics, Taboola, Outbrain). Danh sách chỉ dạng domain/path-anchored để không vỡ trang.
 
 ## 7. Chiến lược test
 - Unit: ruleset-manager, whitelist, stats, parser/validator, filter-updater (mock fetch).

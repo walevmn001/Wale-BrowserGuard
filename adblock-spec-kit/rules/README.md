@@ -19,6 +19,12 @@ The P1 starter lists are a small, curated set of well-known ad/tracker hosts,
 written for this project (MIT, same as the code). They are deliberately narrow
 (domain-anchored) so pages are not broken.
 
+`trackers.txt` was extended in B2 with Social / ad-pixel / error-tracking hosts
+(Facebook/Meta, TikTok, Pinterest, Twitter/X, Reddit, Sentry, LuckyOrange,
+Yahoo analytics, Taboola, Outbrain). These entries are **self-authored for this
+project (MIT)** and were *not* copied from any third-party list — in particular
+not from the test site's domain list (NC-SA).
+
 Full third-party lists (EasyList, EasyPrivacy, URLhaus) are layered in later
 tasks. Each must carry its own license note here when added, e.g.:
 

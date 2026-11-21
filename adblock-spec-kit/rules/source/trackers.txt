@@ -45,3 +45,27 @@
 ||siftscience.com^
 ||adobe-analytics.com^
 ||agkn.com^
+!
+! Social, ad-pixel and error-tracking endpoints (B2). Domain- or path-anchored
+! only. Self-authored for this project (MIT — see rules/README.md and plan.md §6);
+! not copied from any third-party list.
+||connect.facebook.net^
+||facebook.com/tr^
+||analytics.tiktok.com^
+||business-api.tiktok.com^
+||ct.pinterest.com^
+||log.pinterest.com^
+||analytics.twitter.com^
+||ads-twitter.com^
+||alb.reddit.com^
+||events.reddit.com^
+||sentry.io^
+||sentry-cdn.com^
+||luckyorange.com^
+||luckyorange.net^
+||analytics.yahoo.com^
+||geo.yahoo.com^
+||trc.taboola.com^
+||cdn.taboola.com^
+||taboola.com^
+||outbrain.com^
