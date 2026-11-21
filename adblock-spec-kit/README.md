@@ -6,6 +6,7 @@ Quy trình kiểu GitHub Spec Kit: **Spec → Plan → Tasks → Implement**, m�
 
 - [Chính sách riêng tư](docs/privacy-policy.md) — không thu thập dữ liệu, chỉ lưu cục bộ.
 - [Mô tả store](docs/store-listing.md) — nội dung niêm yết Chrome Web Store (vi/en) + lý do từng quyền.
+- [Cân nhắc port Firefox](docs/firefox-port.md) — khác biệt MV3 Firefox vs Chromium và kế hoạch port (hoãn cho v1).
 
 ## Cấu trúc
 ```
