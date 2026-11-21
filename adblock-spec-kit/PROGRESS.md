@@ -4,13 +4,15 @@
 
 ## Trạng thái
 - Giai đoạn hiện tại: P0 (khung dự án)
-- Task đã xong: T001
-- Task kế tiếp: T002
-- Commit/tag mới nhất: (cập nhật sau commit T001)
+- Task đã xong: T001, T002
+- Task kế tiếp: T003
+- Commit/tag mới nhất: bc7b646 (T001)
 - Test vàng gần nhất: (chưa chạy)
 
 ## Dở dang / ghi chú cho phiên sau
-- T001 tạo `src/index.ts` + `tests/unit/index.test.ts` là **placeholder** để build/test chạy được. T002 sẽ thay bằng entry thật (service worker + popup) và cập nhật `vite.config.ts`.
+- T002 tạo manifest MV3 tối thiểu (chưa có `permissions`/`host_permissions`; thêm ở task cần). Popup build ra `dist/src/popup/index.html` (đường dẫn lồng theo cấu trúc `src/`).
+- Chưa có icon cho extension (Chrome dùng icon mặc định). Bổ sung ở task polish/P4.
+- T003 sẽ tạo `src/shared/` (types, constants priority, logger, storage wrapper) + unit test mock `chrome.storage`.
 
 ## Quyết định đã chốt (từ clarify.md)
 - Chromium v1; UI Vi+En; filter EasyList + EasyPrivacy + URLhaus.
@@ -25,4 +27,5 @@
 ## Nhật ký
 | Ngày | Task | Kết quả | Commit |
 |------|------|---------|--------|
-| 2026-11-21 | T001 | Khởi tạo Vite + TS strict + ESLint + Prettier + Vitest; typecheck/lint/test/build xanh | (đang commit) |
+| 2026-11-21 | T001 | Khởi tạo Vite + TS strict + ESLint + Prettier + Vitest; typecheck/lint/test/build xanh | bc7b646 |
+| 2026-11-21 | T002 | Manifest MV3 tối thiểu + service worker + popup rỗng; build emit `dist/manifest.json`; test xanh | (đang commit) |
