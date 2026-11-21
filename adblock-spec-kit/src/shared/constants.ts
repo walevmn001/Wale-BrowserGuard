@@ -17,6 +17,8 @@ export const PRIORITY = {
   UPGRADE_SCHEME: 300,
   /** Strip tracking parameters from the URL. */
   REMOVE_PARAM: 200,
+  /** Trim the Referer header on third-party requests. */
+  REFERER_POLICY: 200,
 } as const;
 
 export type PriorityName = keyof typeof PRIORITY;

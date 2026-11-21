@@ -34,7 +34,7 @@ describe('buildStaticRuleSets', () => {
     expect(filters).toContain('||ads.example.test^');
   });
 
-  it('includes the code-generated privacy ruleset (https upgrade + tracking strip)', () => {
+  it('includes the code-generated privacy ruleset (upgrade + strip + referer)', () => {
     const privacy = report.ruleSets.find(({ descriptor }) => descriptor.id === 'privacy');
 
     expect(privacy?.rules.some((rule) => rule.action.type === 'upgradeScheme')).toBe(true);
@@ -43,6 +43,15 @@ describe('buildStaticRuleSets', () => {
         (rule) =>
           rule.action.type === 'redirect' &&
           (rule.action.redirect?.transform?.queryTransform?.removeParams?.length ?? 0) > 0,
+      ),
+    ).toBe(true);
+    expect(
+      privacy?.rules.some(
+        (rule) =>
+          rule.action.type === 'modifyHeaders' &&
+          rule.action.requestHeaders?.some(
+            (header) => header.header === 'referer' && header.operation === 'remove',
+          ) === true,
       ),
     ).toBe(true);
   });
@@ -54,7 +63,10 @@ describe('buildStaticRuleSets', () => {
   });
 
   it('produces only converter-shaped conditions (urlFilter xor regexFilter)', () => {
-    for (const { rules } of report.ruleSets) {
+    // The `privacy` ruleset is built in code, not converted from a filter list,
+    // so its conditions (e.g. the referer rule's `domainType`) are out of scope.
+    const converted = report.ruleSets.filter(({ descriptor }) => descriptor.id !== 'privacy');
+    for (const { rules } of converted) {
       for (const rule of rules) {
         const hasUrl = rule.condition.urlFilter !== undefined;
         const hasRegex = rule.condition.regexFilter !== undefined;

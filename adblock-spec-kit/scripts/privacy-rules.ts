@@ -132,6 +132,17 @@ export const ALL_RESOURCE_TYPES = [
   'other',
 ] as const;
 
+/**
+ * The referer rule targets sub-resources, not top-level navigations. Dropping
+ * the header a page sends while loading its own resources is a small step past
+ * the browser default (`strict-origin-when-cross-origin` already strips the
+ * path cross-site), but doing the same on a navigation can blank out login
+ * redirects and hotlink checks — "chặn thiếu hơn chặn nhầm".
+ */
+export const REFERER_RESOURCE_TYPES = ALL_RESOURCE_TYPES.filter(
+  (type) => type !== 'main_frame',
+);
+
 /** Builds the privacy rules, numbering ids from `startId`. */
 export function buildPrivacyRules(startId: number): chrome.declarativeNetRequest.Rule[] {
   return [
@@ -152,6 +163,18 @@ export function buildPrivacyRules(startId: number): chrome.declarativeNetRequest
         redirect: { transform: { queryTransform: { removeParams: [...TRACKING_PARAMS] } } },
       },
       condition: { regexFilter: TRACKING_QUERY_REGEX, resourceTypes: [...ALL_RESOURCE_TYPES] },
+    },
+    {
+      id: startId + 2,
+      priority: PRIORITY.REFERER_POLICY,
+      action: {
+        type: 'modifyHeaders',
+        requestHeaders: [{ header: 'referer', operation: 'remove' }],
+      },
+      // `domainType: thirdParty` keeps the referer on same-site requests, and a
+      // lower priority than the whitelist (1000) means an excepted site is left
+      // untouched — DNR drops modifyHeaders rules outranked by `allowAllRequests`.
+      condition: { domainType: 'thirdParty', resourceTypes: [...REFERER_RESOURCE_TYPES] },
     },
   ];
 }

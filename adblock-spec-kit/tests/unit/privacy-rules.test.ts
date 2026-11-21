@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ALL_RESOURCE_TYPES,
   buildPrivacyRules,
+  REFERER_RESOURCE_TYPES,
   TRACKING_PARAMS,
   TRACKING_QUERY_REGEX,
   UPGRADE_SCHEME_REGEX,
@@ -14,11 +15,13 @@ describe('buildPrivacyRules', () => {
   const rules = buildPrivacyRules(42);
   const upgrade = rules[0]!;
   const strip = rules[1]!;
+  const referer = rules[2]!;
 
-  it('emits the https upgrade and the tracking-parameter strip, with sequential ids', () => {
-    expect(rules).toHaveLength(2);
+  it('emits the upgrade, the strip and the referer rules, with sequential ids', () => {
+    expect(rules).toHaveLength(3);
     expect(upgrade.id).toBe(42);
     expect(strip.id).toBe(43);
+    expect(referer.id).toBe(44);
   });
 
   it('upgrades insecure sub-resources at the upgrade priority', () => {
@@ -51,11 +54,28 @@ describe('buildPrivacyRules', () => {
     expect(strip.condition.resourceTypes).toContain('image');
   });
 
+  it('trims the Referer header on third-party sub-resources', () => {
+    expect(referer.priority).toBe(PRIORITY.REFERER_POLICY);
+    expect(referer.action).toEqual({
+      type: 'modifyHeaders',
+      requestHeaders: [{ header: 'referer', operation: 'remove' }],
+    });
+    expect(referer.condition.domainType).toBe('thirdParty');
+    expect(referer.condition.resourceTypes).toEqual([...REFERER_RESOURCE_TYPES]);
+    expect(referer.condition.resourceTypes).toContain('image');
+  });
+
+  it('leaves top-level navigations alone, so a referer-dependent page keeps working', () => {
+    expect(REFERER_RESOURCE_TYPES).not.toContain('main_frame');
+    expect(referer.condition.resourceTypes).not.toContain('main_frame');
+  });
+
   it('is outranked by the user whitelist, which is what makes a site an exception', () => {
     // algorithm.md §G asks for "domain trong danh sách ngoại lệ": a whitelisted
     // site is allowed by `allowAllRequests` before the privacy rules are reached.
     expect(PRIORITY.WHITELIST_ALLOW_ALL).toBeGreaterThan(PRIORITY.UPGRADE_SCHEME);
     expect(PRIORITY.WHITELIST_ALLOW_ALL).toBeGreaterThan(PRIORITY.REMOVE_PARAM);
+    expect(PRIORITY.WHITELIST_ALLOW_ALL).toBeGreaterThan(PRIORITY.REFERER_POLICY);
   });
 
   it('keeps the strip below every blocking rule so a blocked request stays blocked', () => {
