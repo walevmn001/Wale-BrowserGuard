@@ -92,6 +92,33 @@ Optional permissions (requested only when the matching feature is turned on):
   code. This satisfies the "no remote code" policy.
 - **Data sold to third parties:** No.
 
+## Chrome Web Store policy review (T093)
+
+A self-review against the CWS program policies, focused on the part reviewers
+scrutinize most: the **MAIN-world scripts** in the YouTube module.
+
+| Policy | How we comply |
+|--------|---------------|
+| **Single purpose** | One purpose: block ads/trackers/malware and the optional privacy protections. The YouTube module is a *separate, opt-in* switch, clearly presented as best-effort and off by default, so the core purpose stays narrow. |
+| **Remote code use** | Prohibited: we run **no remote code**. Filter lists and the YouTube config are **data** (JSON), never executed. All injected functions are bundled in the package and shipped as source (`chrome.scripting.executeScript({ func })`), so no string is ever `eval`'d or fetched. |
+| **Use of injected scripts** | We use `chrome.scripting` (not the `chrome.userScripts` API), so no user-script permission flow is involved. MAIN-world injection is limited to the **opt-in** YouTube module and the **opt-in** anti-fingerprinting mode. |
+| **Minimum permissions** | Broad permissions (`management`) are **optional** and requested only in-window when the user presses Scan. See the justifications above. |
+| **Data usage / privacy** | No data collection, no sale, no transmission. The privacy policy says so plainly; the review form selects "no data collection". |
+
+**TODO(verify) — MAIN-world scripts.** The YouTube module (Q2/Q4) and the
+opt-in anti-fingerprinting mode inject functions into the page's MAIN world via
+`chrome.scripting.executeScript({ world: 'MAIN' })`. This is a **supported,
+documented API** and is *not* remote code — but MAIN-world injection is a common
+review trigger. Before submitting:
+
+- Confirm the current CWS wording on `scripting`-injected scripts and
+  `world: 'MAIN'` (see [Chrome docs: executeScript](https://developer.chrome.com/docs/extensions/reference/api/scripting#method-executeScript)
+  and the [program policies](https://developer.chrome.com/docs/webstore/program-policies/)).
+- Keep the module **off by default** and behind the explicit risk banner it
+  already shows, so injection only happens after a deliberate user opt-in.
+- If a reviewer objects, the fallback is to ship without the MAIN-world layers
+  (network DNR + cosmetic CSS still work) — document this in the release notes.
+
 ## Graphic assets (TODO(verify) — produce before submitting)
 
 - Store icon 128×128 PNG.
