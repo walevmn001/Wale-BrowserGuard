@@ -1,9 +1,13 @@
-# Considering a Firefox port (T042)
+# Considering a Firefox port (T092)
 
 Status: **decision — defer the port; keep the codebase portable.** Chromium
 (Chrome / Edge / Brave) stays the v1 target, as fixed in Constitution #1. This
 document records what a Firefox build would take, grounded in the official MDN
 documentation, so the work is scoped and can be picked up in a later phase.
+
+> This task (T092) revisits the earlier scoping note now that the **YouTube
+> module** exists: Firefox's stronger network APIs would make that module
+> *easier*, not harder (see [The YouTube module on Firefox](#the-youtube-module-on-firefox)).
 
 > Scope note: this task is a *consideration*, not the port itself. Nothing here
 > ships a Firefox build.
@@ -47,6 +51,39 @@ Unknowns still to confirm against the current docs when the port starts
   for the `getMatchedRules`-based stats, or whether a simpler in-page counter is
   cleaner.
 
+## The YouTube module on Firefox
+
+Our YouTube module (P5) works around Chrome's limits: Chrome removed blocking
+`webRequest` for MV3 extensions, so the ad-field pruning (Q2) and ad-skip (Q4)
+run as **MAIN-world page scripts** that hook `ytInitialPlayerResponse` /
+`JSON.parse` — powerful but fragile, and it is exactly the pattern Chrome Web
+Store policy is most wary of (see T093). Firefox does not have that limitation,
+which makes the port *easier* on the module that is hardest on Chrome.
+
+| Concern | Chrome (current) | Firefox (MV3) | Source |
+|---------|------------------|---------------|--------|
+| Blocking / rewriting requests | blocking `webRequest` removed in MV3; we use DNR for block, MAIN world for the rest | keeps **both** blocking `webRequest` **and** `declarativeNetRequest` | [Mozilla blog: MV3 in Firefox](https://blog.mozilla.org/addons/2025/02/25/manifest-v3-in-firefox/) |
+| Rewriting a response body | not possible from an extension; we hook `JSON.parse`/`Response.json` in the page | **`webRequest.filterResponseData()`** streams the response so the extension can read and rewrite the body — the ad fields could be stripped at the network layer (Q2) instead of via the fragile MAIN-world hook | [MDN: filterResponseData](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/filterResponseData) |
+| Permission for the above | — | MV3 also needs `webRequestFilterResponse` (from Firefox 110) | [MDN: filterResponseData](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/filterResponseData) |
+| MAIN-world page scripts | `world: "MAIN"` via `chrome.scripting` | `world: "MAIN"` supported since **Firefox 128**, and injected with the `browser.scripting` namespace (MAIN-world scripts get **no** WebExtension API) | [MDN: content_scripts](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/content_scripts), [Firefox 128 release notes](https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Releases/128) |
+
+Consequences for the port:
+
+- **Q2 (hide ad fields)** could move from the MAIN-world `JSON.parse` hook to a
+  `filterResponseData` rewrite of the player response — fewer moving parts, and
+  robust against YouTube renaming page globals. This is the main *win*.
+- **Q1 (network block)** already uses DNR, which Firefox supports since 113; the
+  blocking-`webRequest` fallback exists if a rule needs per-request logic.
+- **Q4 (skip / fast-forward)** is DOM/`<video>` work with no network angle, so it
+  ports unchanged (still MAIN world, still fail-open).
+- The optional-permission and fail-open rules (Constitution VI) carry over
+  as-is; `filterResponseData` requires its own opt-in permission, which fits the
+  same "ask only when the user enables the module" model.
+
+Net: the YouTube module — the most Chrome-fragile part of the codebase — would
+get **simpler and more robust** on Firefox, which strengthens the case for doing
+the port in a future phase.
+
 ## Recommended approach (when we do port)
 
 1. **Introduce a thin `browser` adapter** so features call one promise-based
@@ -63,10 +100,17 @@ Unknowns still to confirm against the current docs when the port starts
    Chrome-specific; derive the warning-page URL from `browser.runtime.getURL()`.
 5. **Re-run the golden and e2e suites** against Firefox via Playwright's Firefox
    build to prove parity (AC-1.1…AC-1.5).
+6. **Simplify the YouTube module.** On Firefox, move Q2's ad-field pruning to a
+   `filterResponseData` rewrite (behind the module's opt-in flag) instead of the
+   MAIN-world `JSON.parse` hook; keep the MAIN-world path for Chrome. Q1 DNR and
+   Q4 DOM logic port unchanged.
 
 ## Recommendation
 
 Ship **Chromium-first** for v1. The gaps above are real but contained; step 1
 (the `browser` adapter) is worth doing opportunistically because it costs little
-on Chrome and is the prerequisite for everything else. Track the full port as a
-new task in a later phase rather than folding it into P4.
+on Chrome and is the prerequisite for everything else. The YouTube module is an
+argument *for* the port rather than against it: Firefox's `filterResponseData`
+lets us strip the ad fields at the network layer, removing the most fragile part
+of the Chrome implementation. Track the full port as a new task in a later phase
+rather than folding it into P7.
