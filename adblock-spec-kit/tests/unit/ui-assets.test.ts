@@ -29,6 +29,14 @@ describe('UI_ASSETS', () => {
     }
   });
 
+  it('ships the local Inter font subsets and their license', () => {
+    const destinations = UI_ASSETS.map((asset) => asset.to);
+
+    expect(destinations).toContain('src/shared/ui/fonts/inter-latin.woff2');
+    expect(destinations).toContain('src/shared/ui/fonts/inter-vietnamese.woff2');
+    expect(destinations).toContain('src/shared/ui/fonts/OFL.txt');
+  });
+
   it('never emits two assets at the same destination', () => {
     const destinations = UI_ASSETS.map((asset) => asset.to);
 
@@ -62,6 +70,8 @@ describe('readUiAsset', () => {
     const components = readUiAsset(ROOT, { from: 'src/shared/ui/components.css', to: '' });
 
     expect(tokens.toString('utf8')).toContain('--mint-500');
+    expect(tokens.toString('utf8')).toContain('font-family:"Inter"');
+    expect(tokens.toString('utf8')).toContain('fonts/inter-vietnamese.woff2');
     expect(components.toString('utf8')).toContain('.switch');
   });
 });

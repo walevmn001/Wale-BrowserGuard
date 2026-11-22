@@ -32,6 +32,12 @@ export const UI_ASSETS: readonly UiAsset[] = [
   { from: 'src/shared/ui/components.css', to: 'src/shared/ui/components.css' },
   { from: 'src/shared/ui/dashboard.css', to: 'src/shared/ui/dashboard.css' },
   { from: 'src/shared/ui/icon.svg', to: 'src/shared/ui/icon.svg' },
+  { from: 'src/shared/ui/fonts/inter-latin.woff2', to: 'src/shared/ui/fonts/inter-latin.woff2' },
+  {
+    from: 'src/shared/ui/fonts/inter-vietnamese.woff2',
+    to: 'src/shared/ui/fonts/inter-vietnamese.woff2',
+  },
+  { from: 'src/shared/ui/fonts/OFL.txt', to: 'src/shared/ui/fonts/OFL.txt' },
   ...ICON_SIZES.map((size) => ({
     from: `src/shared/ui/icons/icon-${size}.png`,
     to: iconPath(size),

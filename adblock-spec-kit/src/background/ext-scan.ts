@@ -48,6 +48,18 @@ export interface ScanInput {
   readonly updateUrl?: string;
 }
 
+/** Management API entries can omit permission lists when an extension has none. */
+export interface ManagementEntry {
+  readonly id: string;
+  readonly name: string;
+  readonly type: string;
+  readonly enabled: boolean;
+  readonly permissions?: readonly string[];
+  readonly hostPermissions?: readonly string[];
+  readonly installType?: string;
+  readonly updateUrl?: string;
+}
+
 /** Why an extension scored what it did — mapped to a label by the UI. */
 export type RiskReason =
   | { readonly kind: 'permission'; readonly permission: string }
@@ -96,7 +108,20 @@ export function scoreExtension(input: ScanInput): ExtensionRisk {
 
 /** The slice of `chrome.management` the scanner needs (injected for tests). */
 export interface ManagementApi {
-  getAll(): Promise<readonly ScanInput[]>;
+  getAll(): Promise<readonly ManagementEntry[]>;
+}
+
+function toScanInput(entry: ManagementEntry): ScanInput {
+  return {
+    id: entry.id,
+    name: entry.name,
+    type: entry.type,
+    enabled: entry.enabled,
+    permissions: entry.permissions ?? [],
+    hostPermissions: entry.hostPermissions ?? [],
+    installType: entry.installType ?? 'unknown',
+    ...(entry.updateUrl === undefined ? {} : { updateUrl: entry.updateUrl }),
+  };
 }
 
 /** Scores every other installed extension, riskiest first (AC-16.1). */
@@ -107,6 +132,6 @@ export async function scanExtensions(
   const all = await api.getAll();
   return all
     .filter((entry) => entry.type === 'extension' && entry.id !== selfId)
-    .map(scoreExtension)
+    .map((entry) => scoreExtension(toScanInput(entry)))
     .sort((a, b) => b.score - a.score);
 }

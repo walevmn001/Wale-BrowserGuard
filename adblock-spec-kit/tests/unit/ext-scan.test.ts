@@ -135,4 +135,21 @@ describe('scanExtensions', () => {
 
     await expect(scanExtensions(api, 'self')).resolves.toEqual([]);
   });
+
+  it('handles management entries that omit permission lists', async () => {
+    const api: ManagementApi = {
+      getAll: async () => [
+        {
+          id: 'minimal',
+          name: 'Minimal extension',
+          type: 'extension',
+          enabled: true,
+        },
+      ],
+    };
+
+    await expect(scanExtensions(api, 'self')).resolves.toMatchObject([
+      { id: 'minimal', score: 10, reasons: [{ kind: 'noUpdate' }] },
+    ]);
+  });
 });

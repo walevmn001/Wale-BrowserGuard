@@ -6,6 +6,16 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Make the installed-extension scan tolerate missing permission metadata returned
+  by the browser management API.
+
+### Changed
+
+- Bundle Inter locally, including Vietnamese glyphs, so the UI uses the same font
+  across devices without fetching remote assets.
+
 ## [1.1.0] — 2026-11-22
 
 ### Added
