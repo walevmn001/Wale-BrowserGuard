@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-11-22
+
 ### Fixed
 
 - Make the installed-extension scan tolerate missing permission metadata returned
