@@ -1,52 +1,38 @@
-# AdBlock Security Extension — Bộ Spec Kit cho Trae AI
+# AdBlock Security Extension
 
-Quy trình kiểu GitHub Spec Kit: **Spec → Plan → Tasks → Implement**, mỗi bước có "cổng duyệt".
+Extension Manifest V3 chặn quảng cáo, tracker và site độc hại mà không làm vỡ trang, không thu thập dữ liệu người dùng. Viết bằng TypeScript.
 
 ## Tài liệu
 
 - [Chính sách riêng tư](docs/privacy-policy.md) — không thu thập dữ liệu, chỉ lưu cục bộ.
 - [Mô tả store](docs/store-listing.md) — nội dung niêm yết Chrome Web Store (vi/en) + lý do từng quyền.
-- [Cân nhắc port Firefox](docs/firefox-port.md) — khác biệt MV3 Firefox vs Chromium và kế hoạch port (hoãn cho v1).
-- [Hiệu năng](docs/performance.md) — ngân sách + số liệu đo trước/sau, gồm script MAIN world.
 - [Changelog](CHANGELOG.md) — lịch sử thay đổi theo Keep a Changelog / SemVer.
 - [Giấy phép](LICENSE) — MIT.
 
 ## Cấu trúc
+
 ```
-.specify/memory/constitution.md      ← Luật bất biến (đưa vào context MỌI prompt)
-specs/001-adblock-security/
-  spec.md        ← LÀM GÌ (yêu cầu + tiêu chí nghiệm thu)
-  clarify.md     ← Câu hỏi cần chốt trước khi plan
-  plan.md        ← LÀM BẰNG CÁCH NÀO (kiến trúc, thư mục)
-  algorithm.md   ← Thuật toán chặn / ưu tiên rule / cosmetic / bảo mật
-  tasks.md       ← Task nhỏ, có thứ tự, có test
-  analyze.md     ← Checklist đối chiếu spec ↔ plan ↔ tasks
-  test-golden.md ← Bộ test vàng đo độ ổn định
-prompts/                              ← Prompt dán vào Trae: START-HERE rồi 00 → 08
-.trae/rules/project_rules.md          ← Rules Trae tự nạp (kiểm tra đúng đường dẫn theo phiên bản Trae của bạn)
+src/            mã nguồn (background, content, options, popup, shared, warning)
+scripts/        build & sinh rules (DNR, cosmetic, youtube, privacy, malware)
+rules/source/   nguồn luật lọc (ads, cosmetic, malware, trackers)
+data/           dữ liệu cấu hình (youtube-config.json)
+ui/             HTML/CSS tĩnh dùng cho build
+tests/          unit (vitest) · e2e (playwright) · golden
+docs/           tài liệu phát hành
 ```
 
-## Cách dùng với Trae
-1. Mở thư mục này làm project trong Trae.
-2. Dán lần lượt prompt trong `prompts/` (00 → 08). Mỗi prompt chỉ làm đúng 1 việc.
-3. Sau mỗi bước: đọc file Trae tạo ra, sửa tay nếu cần, rồi mới sang bước sau.
-4. Giai đoạn implement: **1 task = 1 prompt = 1 commit**. Test xanh mới sang task tiếp.
-5. Nếu Trae sinh code lệch: đưa lại `constitution.md` + task hiện tại, yêu cầu "chỉ sửa file liệt kê".
+## Lệnh
 
-## Nguyên tắc vàng
+```
+npm ci              # cài phụ thuộc
+npm run build       # typecheck + vite build
+npm test            # unit test (vitest)
+npm run test:e2e    # e2e (playwright)
+npm run lint
+```
+
+## Nguyên tắc
+
 - Không có spec thì không code. Không có test thì không merge.
-- Không để Trae "đoán" API: bắt đối chiếu tài liệu chính thức của Chrome/Firefox Extensions.
-- Mỗi lần chỉ 1 giai đoạn: P1 MVP → P2 Cosmetic → P3 Security → P4 Tiện ích → P5 YouTube → P6 Tuỳ chọn → P7 Phát hành.
-
-## Dùng với GitHub + Trae
-1. Push thư mục lên repo, clone về máy, mở bằng Trae.
-2. Rules ở `.trae/rules/project_rules.md` sẽ được nạp tự động. Nếu Trae của bạn không nhận, mở phần Rules trong cài đặt và dán nội dung file vào.
-3. Dán `prompts/START-HERE.md` một lần, sau đó duyệt từng bước.
-
-## Chống mất dữ liệu / làm tiếp khi bị ngắt
-- `.trae/rules/project_rules.md`: luật tự nạp mọi hội thoại (kiểm tra tên thư mục rules đúng với phiên bản Trae của bạn; nếu khác, chép nội dung vào mục Rules của project).
-- `PROGRESS.md`: điểm dừng. Trae đọc đầu mỗi phiên, cập nhật trước mỗi commit.
-- Quy tắc Git: xong **mỗi task xanh** → commit + push `main`; xong **mỗi giai đoạn** → tag `phase-<P>-done` và push.
-- Code đang đỏ mà sắp hết phiên → đẩy lên nhánh `wip/<TID>`, không đẩy lên `main`.
-- Phiên mới / sau lỗi server: dán `prompts/09-resume.md`.
-- Lần đầu: dán `prompts/10-bootstrap-github.md` để nối repo.
+- Không đoán API: đối chiếu tài liệu chính thức Chrome/Firefox Extensions.
+- Ưu tiên "chặn thiếu" hơn "chặn nhầm" (không làm vỡ trang).
