@@ -1,0 +1,33 @@
+# YT Ad Shield
+
+**Trạng thái:** đặc tả v5. Chưa có code, chưa kiểm tra trên YouTube thật. Không có tính năng nào được xác nhận là hoạt động.
+
+## Hành vi chờ adapter (quan trọng)
+
+Ba hook chạy trong trang (MAIN world) gồm `ENABLE_JSON_PRUNER`, `ENABLE_FETCH_HOOK` và `ENABLE_XHR_HOOK` hiện chưa thể tắt qua popup.
+
+- Khi chưa có snapshot cấu hình hợp lệ, ba hook này chạy theo mặc định: **bật**.
+- Popup hiển thị chúng ở trạng thái **Chờ adapter**. Popup không hiển thị chúng là "đã tắt" khi hiệu lực vẫn là bật.
+- Khi bạn lưu lựa chọn tắt cho các hook này, lựa chọn được lưu nhưng **chưa được áp dụng**. Popup nói rõ điều này.
+- Lý do: cơ chế truyền cờ từ phần cô lập (ISOLATED) sang trang (MAIN) chưa được chốt (quyết định T004).
+
+Các cờ còn lại (ví dụ `ENABLE_DNR`, `ENABLE_RUNTIME_GUARD`) chạy ở phần cô lập và áp dụng bình thường qua `chrome.storage`.
+
+## Những điều chưa được xác minh
+
+- Chrome cho phép MAIN world đọc `chrome.storage` hay không (A-2): chưa xác minh.
+- Thứ tự chạy giữa hai world ở `document_start` (A-4): chưa xác minh.
+- Mọi selector, endpoint, khóa JSON và sự kiện YouTube: chưa xác minh. Xem `docs/SELECTORS.md` và `docs/ENDPOINTS.md`.
+- Mọi ngưỡng số trong cấu hình là giá trị đề xuất, chưa đo.
+
+## Cài đặt và kiểm tra
+
+Chưa có bản dựng để cài. Khi có, sẽ ghi các bước tại đây và trong `docs/TESTING.md`.
+
+## Tài liệu
+
+- Đặc tả: `specs/001-yt-ad-shield/spec.md`
+- Kiến trúc: `docs/ARCHITECTURE.md`
+- Ranh giới adapter: `specs/001-yt-ad-shield/contracts/adapter.md`
+- Trạng thái popup: `specs/001-yt-ad-shield/contracts/popup-state.md`
+- Trạng thái hạng mục: `specs/001-yt-ad-shield/status.md`
