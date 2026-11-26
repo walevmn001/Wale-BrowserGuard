@@ -60,6 +60,6 @@ Trạng thái pha: **Phase 0–3 hoàn tất** (audit, kiến trúc/hợp đồn
 
 ## Git & push
 
-- Commit Phase 0–3: `PENDING` (sẽ cập nhật sau khi commit).
-- Push lên `origin main`: `PENDING`.
+- Commit Phase 0–3: `bad64af` (51 file, +4323/−42).
+- Push lên `origin main`: **thành công** (`7bfdbde..bad64af main -> main`).
 - Remote: `https://github.com/walevmn001/Wale-BrowserGuard`.
