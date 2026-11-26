@@ -5,7 +5,7 @@
 
 ## 1. Bằng chứng hiện có
 
-Không có hạng mục nào ở trạng thái IMPLEMENTED, TESTED hoặc VERIFIED. Không có source code, không có test đã chạy, không có kiểm thử trên YouTube thật. Mọi hạng mục dưới đây đều là SPECIFIED.
+> **Cập nhật 2026-11-27:** Engine Phase 1–3 đã có bằng chứng IMPLEMENTED và TESTED (unit) trong extension WALE GUARD. Xem **mục 13** ở cuối tài liệu. Các mục 2–12 dưới đây giữ nguyên trạng thái lịch sử (SPECIFIED) và được thay thế một phần bởi mục 13. **Không có hạng mục nào VERIFIED trên YouTube/Chrome thật.**
 
 ## 2. Sáu thuật toán ban đầu (giữ nguyên, không xóa)
 
@@ -181,3 +181,71 @@ Không có hạng mục nào ở trạng thái IMPLEMENTED, TESTED hoặc VERIFI
 - Popup có thêm `RECONCILING` ngoài danh sách yêu cầu (`WAITING_FOR_ADAPTER`, `ENABLED`, `DISABLED`, `ERROR`, `UNKNOWN`). Lý do: cần trạng thái trung gian để không báo thành công trước khi MAIN xác nhận.
 
 **Không mở rộng phạm vi:** tài liệu không chọn cơ chế truyền. T004 vẫn OPEN.
+
+
+---
+
+## 13. Cập nhật v6: engine Phase 1–3 IMPLEMENTED / TESTED (2026-11-27)
+
+**Trạng thái định nghĩa:** SPECIFIED cho Phase 4–7; **IMPLEMENTED / TESTED (unit)** cho Phase 1–3; **chưa VERIFIED** trên Chrome/YouTube thật.
+
+**Vị trí code:** `adblock-spec-kit/src/youtube/**` (TypeScript, tích hợp vào build Vite hiện có theo quyết định đã chốt).
+
+### Hạng mục có bằng chứng
+
+| Trách nhiệm (17) | File | Interface | Trạng thái | Test |
+|------------------|------|-----------|------------|------|
+| 1 JSON Pruner | `core/json-pruner.ts` | `pruneJson(value, adKeys, limits)` | IMPLEMENTED / TESTED | `json-pruner.test.ts` |
+| 2 Player Response Hook | `main/player-response-hook.ts` | `installPlayerResponseHook(target, opts)` | IMPLEMENTED / TESTED | `player-response-hook.test.ts` |
+| 3 Fetch Interceptor | `main/fetch-interceptor.ts` | `createFetchInterceptor(deps).wrap(orig)` | IMPLEMENTED / TESTED | `fetch-interceptor.test.ts` |
+| 4 XHR Interceptor | `main/xhr-interceptor.ts` | `createXhrInterceptor(deps).wrap(Ctor)` | IMPLEMENTED / TESTED | `xhr-interceptor.test.ts` |
+| 6 Ad Detector | `core/ad-detector.ts` | `classifyAd`, `classifyPlayback` | IMPLEMENTED / TESTED | `ad-detector.test.ts` |
+| 7 Ad State Machine | `core/ad-state-machine.ts` | `reduce(state, event, now, max?)` | IMPLEMENTED / TESTED | `ad-state-machine.test.ts` |
+| 8 Ad Action Controller | `core/ad-action-controller.ts` | `performAdAction(target, opts)` | IMPLEMENTED / TESTED | `ad-action-controller.test.ts` |
+| 9 Audio State Manager | `core/audio-state-manager.ts` | `AudioStateManager` | IMPLEMENTED / TESTED | `audio-state-manager.test.ts` |
+| 14 Lifecycle Manager | `core/lifecycle-manager.ts` | `add(fn)`, `disposeAll()` | IMPLEMENTED / TESTED | `registry.test.ts` |
+| 16 Debug Logger | `core/debug-logger.ts` | `DebugLogger` | IMPLEMENTED / TESTED | `registry.test.ts` |
+| Feature Flags (world-independent) | `config/flags.ts` | `FeatureFlags` (12 cờ, all-or-nothing) | IMPLEMENTED / TESTED | `flags.test.ts` |
+| Adapter boundary | `adapter/adapter.ts`, `adapter/null-adapter.ts` | `FlagAdapter`, `NullAdapter` | IMPLEMENTED / TESTED | `adapter-null.test.ts` |
+| Selector registry | `registry/selectors.ts` | `SelectorRegistry`, `skipButtonSelectors()` | IMPLEMENTED (UNVERIFIED) | `architecture.test.ts` |
+| Endpoint registry | `registry/endpoints.ts` | `isProtected`, `PROTECTED_PLAYER_PATH` | IMPLEMENTED (UNVERIFIED) | `architecture.test.ts` |
+| DNR rule builder | `registry/rules.ts` | `buildDnrRules(...)` | IMPLEMENTED (UNVERIFIED) | `architecture.test.ts` |
+| Popup state | `state/toggle-state.ts` | `resolveDisplay`, `displayMessage` | IMPLEMENTED / TESTED | `toggle-state.test.ts` |
+| Module registry | `core/registry.ts` | `ModuleRegistry` | IMPLEMENTED / TESTED | `registry.test.ts` |
+| MAIN boot | `main/main.ts`, `main/content-entry.ts` | `bootYouTubeEngine(win)` | IMPLEMENTED / TESTED | (gián tiếp) |
+| Registration seam (ISOLATED) | `isolated/registration.ts` | `syncEngineRegistration(api, enabled)` | IMPLEMENTED / TESTED (chưa gọi) | `registration.test.ts` |
+| Tuning | `config/tuning.ts` | `TUNING`, `TUNING_VERSION` | IMPLEMENTED (UNVERIFIED) | `architecture.test.ts` |
+
+### Chưa triển khai (Phase 4–7)
+
+| # | Trách nhiệm | Trạng thái |
+|---|-------------|------------|
+| 5 | DNR Manager (áp dụng/rollback rule động) | SPECIFIED |
+| 10 | Playback Watchdog | SPECIFIED |
+| 11 | Playback Recovery | SPECIFIED |
+| 12 | DOM Observer | SPECIFIED |
+| 13 | SPA Navigation Manager | SPECIFIED |
+| 15 | CSS Hider | SPECIFIED |
+| — | Tích hợp worker (gọi `syncEngineRegistration`) | SPECIFIED (Phase 5–6) |
+| — | Popup 3 cờ MAIN + `WAITING_FOR_ADAPTER` | SPECIFIED (Phase 6) |
+
+### Bằng chứng kiểm thử
+
+- `npx vitest run` → **563 passed / 50 file** (14 file `tests/unit/youtube/*` thuộc engine mới).
+- `npx tsc --noEmit` → pass.
+- `npm run build` → pass, sinh `dist/youtube-main.js` (25.08 kB, IIFE).
+- **Chưa có** bằng chứng trên Chrome/YouTube thật → mọi mục playback là UNVERIFIED.
+
+### Ràng buộc đã giữ
+
+- Engine **chưa được kích hoạt** (seam inert) → không đổi hành vi hiện tại.
+- Module YouTube cũ **không bị xóa/sửa**.
+- T004 vẫn **OPEN**. A-2, A-4 vẫn **UNVERIFIED**. Không chọn cơ chế truyền cờ.
+- Logic dùng chung không chạm `window`/`document`/`chrome` (kiểm bằng `architecture.test.ts`).
+
+### Rủi ro còn tồn tại
+
+- Selector, endpoint, khóa JSON quảng cáo đều UNVERIFIED → nguy cơ false positive/negative chưa đo.
+- Ngưỡng `TUNING` là đề xuất, chưa hiệu chỉnh.
+- Chưa có bằng chứng engine mới ở world MAIN không gây màn hình đen (đây chính là mục tiêu Phase 4 + 7).
+- Việc kích hoạt engine (Phase 5–6) là thay đổi có rủi ro playback → phải sau khi có bằng chứng Chrome thật.

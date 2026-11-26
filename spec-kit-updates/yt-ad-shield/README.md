@@ -1,6 +1,9 @@
 # YT Ad Shield
 
-**Trạng thái:** đặc tả v5. Chưa có code, chưa kiểm tra trên YouTube thật. Không có tính năng nào được xác nhận là hoạt động.
+**Trạng thái:** đặc tả v5. Engine Phase 1–3 đã **IMPLEMENTED / TESTED** (unit) trong extension WALE GUARD tại `adblock-spec-kit/src/youtube/**`, nhưng **chưa kích hoạt** và **chưa VERIFIED** trên YouTube/Chrome thật.
+
+- Engine mới chạy song song, đăng ký qua `chrome.scripting.registerContentScripts` (`world: 'MAIN'`, `runAt: 'document_start'`) nhưng **seam chưa được gọi** từ worker → hành vi hiện tại của extension không đổi.
+- Module YouTube cũ (`src/background/youtube-*.ts`, Q1–Q6) vẫn là đường chạy hiện hành.
 
 ## Hành vi chờ adapter (quan trọng)
 
@@ -22,12 +25,21 @@ Các cờ còn lại (ví dụ `ENABLE_DNR`, `ENABLE_RUNTIME_GUARD`) chạy ở 
 
 ## Cài đặt và kiểm tra
 
-Chưa có bản dựng để cài. Khi có, sẽ ghi các bước tại đây và trong `docs/TESTING.md`.
+Chưa có bản dựng riêng để cài (engine nằm trong extension WALE GUARD và chưa được kích hoạt). 
+
+Kiểm tra cục bộ engine mới:
+```
+cd adblock-spec-kit
+npx vitest run tests/unit/youtube   # unit test engine (Phase 1–3)
+npm run build                        # sinh dist/youtube-main.js
+```
+Chi tiết tại `docs/TESTING.md`.
 
 ## Tài liệu
 
 - Đặc tả: `specs/001-yt-ad-shield/spec.md`
 - Kiến trúc: `docs/ARCHITECTURE.md`
+- Tiến độ: `docs/PROGRESS.md`
 - Ranh giới adapter: `specs/001-yt-ad-shield/contracts/adapter.md`
 - Trạng thái popup: `specs/001-yt-ad-shield/contracts/popup-state.md`
 - Trạng thái hạng mục: `specs/001-yt-ad-shield/status.md`

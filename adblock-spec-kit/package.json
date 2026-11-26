@@ -9,8 +9,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc --noEmit && vite build",
-    "package": "npm run build -- --mode release",
+    "build": "tsc --noEmit && vite build && vite build --config vite.youtube.config.ts",
+    "package": "tsc --noEmit && vite build --mode release && vite build --config vite.youtube.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

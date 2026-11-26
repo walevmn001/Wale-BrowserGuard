@@ -1,8 +1,12 @@
 # Selector registry
 
-Trạng thái: SPECIFIED. Không có selector nào được xác minh.
+Trạng thái: **IMPLEMENTED** (`src/youtube/registry/selectors.ts`), **UNVERIFIED** — không có selector nào được xác minh trên YouTube thật.
 
-Nguồn: `src/registry/selectors.js`, `SELECTORS_VERSION` hiện là chưa đặt.
+Nguồn: `adblock-spec-kit/src/youtube/registry/selectors.ts`.
+
+- `class SelectorRegistry`: đăng ký và tra selector theo `id`, có `fallback` hẹp hơn hoặc bằng selector chính; ghi `lastVerified`.
+- `skipButtonSelectors()`: danh sách selector nút skip.
+- **Mọi mục dưới đây là UNVERIFIED.** Registry chưa đặt `SELECTORS_VERSION`.
 
 | id | selector | mục đích | xác minh | lastVerified | fallback |
 |----|----------|----------|----------|--------------|----------|
