@@ -51,7 +51,7 @@ Trạng thái pha: **Phase 0–6 hoàn tất / TESTED (unit)** (audit, kiến tr
 - **Chưa chạy** bất kỳ ca Phase 7 nào. Đã bàn giao kế hoạch + mẫu kết quả để người dùng tự chạy.
 - Kế hoạch: `specs/001-yt-ad-shield/verification/PHASE_7_REAL_CHROME_TEST_PLAN.md` (24 ca: setup, xác nhận trạng thái engine, ba cờ MAIN truyền/nhận snapshot, bảo toàn playback A/B, regression ngoài YouTube, T066/A-2, T067/A-4). Kế hoạch gốc viết trước khi kích hoạt; khi chạy cần đọc ba cờ MAIN ở trạng thái đã kích hoạt thay vì `WAITING_FOR_ADAPTER` mặc định.
 - Mẫu kết quả: `specs/001-yt-ad-shield/verification/PHASE_7_TEST_RESULTS.md` (tất cả ô = `NOT_RUN`).
-- Artifact đối chiếu (sau kích hoạt): `dist/manifest.json` SHA-256 `c13a64de…7426`; `dist/youtube-main.js` SHA-256 `5cacd7b7…dc9a`; `dist/youtube-isolated.js` SHA-256 `65186805…c99f`. Hash của `youtube-main.js` đã đổi so với checkpoint `phase-P7-pending` (trước là `154b4612…3a97`) do engine nay nối thêm DatasetAdapter + ad-control.
+- Artifact đối chiếu (release `v1.2.0`): `dist/manifest.json` SHA-256 `a129f517…d193` (version `1.2.0`); `dist/youtube-main.js` SHA-256 `5cacd7b7…dc9a`; `dist/youtube-isolated.js` SHA-256 `65186805…c99f`. Hash `youtube-main.js` đã đổi so với checkpoint trước kích hoạt (từ `154b4612…3a97`) do engine nay nối thêm DatasetAdapter + ad-control.
 - **Chưa xác nhận khả năng chặn quảng cáo YouTube trên Chrome thật** — engine đã kích hoạt nhưng chưa có kết quả chạy thật.
 
 ## Chưa triển khai
@@ -83,4 +83,8 @@ Trạng thái pha: **Phase 0–6 hoàn tất / TESTED (unit)** (audit, kiến tr
 - Commit checkpoint Phase 7 (validation pending): `chore(release): checkpoint YouTube validation pending` → tag/Release `phase-P7-pending` (hash ghi trong release notes và `git log`).
 - Commit tích hợp/kích hoạt engine (v10): `76b1417` — `feat(youtube): tích hợp và kích hoạt engine YT Ad Shield vào WALE GUARD` (29 file, +968/−195).
 - Push: **thành công** lên nhánh `trae/agent-scTM9F` (`d1b85e3..76b1417 trae/agent-scTM9F -> trae/agent-scTM9F`).
+- Bump phiên bản `1.1.1 → 1.2.0`: `0c974c3` — `chore(release): bump WALE GUARD to 1.2.0 (YouTube engine integrated)` (`manifest.config.ts`, `package.json`, `package-lock.json`, `CHANGELOG.md`).
+- Merge fast-forward nhánh → `main` và push `main`: **thành công** (`adb11f2..0c974c3 main -> main`).
+- **Release GitHub `v1.2.0`** (Latest, target `main`) kèm asset `adblock-security-1.2.0.zip`.
+- Đã **xóa** các release/tag cũ (theo yêu cầu): release `v1.1.1`, `phase-P7-pending`, `phase-P4-done` (kèm tag) và các tag `phase-P1-done`…`phase-P7-done`. Hiện chỉ còn release/tag `v1.2.0`.
 - Remote: `https://github.com/walevmn001/Wale-BrowserGuard`.

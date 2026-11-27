@@ -6,8 +6,9 @@
 - **T004 = CLOSED** — chọn phương án A: thuộc tính JSON `data-wg-yt-flags` trên `<html>`; ISOLATED publish snapshot, MAIN đọc lần đầu + `MutationObserver` → `FeatureFlags.applyRemote`. Ba cờ MAIN nay bật/tắt được qua popup (`READY` khi đã đăng ký).
 - Nguyên nhân: hoàn tất chuỗi tích hợp (đăng ký động qua seam, thay trọn module YouTube v1, chốt cơ chế dataset).
 - Tác động playback: engine **đã chạy** trong trang YouTube → cần theo dõi trong Phase 7; đường `executeScript` prune/skip/health của v1 đã retire.
-- Kiểm thử (sandbox): unit **666 pass / 666** (62 file, 26 file `tests/unit/youtube/*`); `tsc --noEmit` pass. Hash: `dist/manifest.json` = `c13a64de…7426`, `dist/youtube-main.js` = `5cacd7b7…dc9a`, `dist/youtube-isolated.js` = `65186805…c99f`.
+- Kiểm thử (sandbox): unit **666 pass / 666** (62 file, 26 file `tests/unit/youtube/*`); `tsc --noEmit` pass. Hash (release `v1.2.0`): `dist/manifest.json` = `a129f517…d193`, `dist/youtube-main.js` = `5cacd7b7…dc9a`, `dist/youtube-isolated.js` = `65186805…c99f`.
 - **Chưa xác minh (UNVERIFIED):** chặn quảng cáo YouTube trên Chrome thật, bảo toàn playback thật, A-2, A-4.
+- Git: bump `1.1.1 → 1.2.0` (`0c974c3`); merge fast-forward vào `main` (`adb11f2..0c974c3`); **Release `v1.2.0`** (Latest) kèm `adblock-security-1.2.0.zip`. Đã xóa release/tag cũ (`v1.1.1`, `phase-P7-pending`, `phase-P4-done`, các tag `phase-P1..P7`).
 
 ## [Chưa phát hành] — 2026-11-27 — checkpoint Phase 7 (validation pending) (IMPLEMENTED / TESTED, chưa VERIFIED)
 - Loại: **bàn giao implementation/validation-preparation**. **Không** phải bản stable hay production-ready.
