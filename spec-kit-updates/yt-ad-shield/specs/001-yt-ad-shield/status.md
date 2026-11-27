@@ -305,4 +305,4 @@ Các mục 5, 10–13, 15 nay **IMPLEMENTED / TESTED (unit)**; 17/17 trách nhi�
 
 ### Git
 
-- Commit Phase 4–5: (điền hash sau khi push lên `origin main`).
+- Commit Phase 4–5: `60d9bc4` (23 file, +2514/−23); push `origin main` **thành công** (`f7b3c3a..60d9bc4`).

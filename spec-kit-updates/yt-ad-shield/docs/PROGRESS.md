@@ -61,5 +61,6 @@ Trạng thái pha: **Phase 0–5 hoàn tất** (audit, kiến trúc/hợp đồn
 
 - Commit Phase 0–3: `bad64af` (51 file, +4323/−42).
 - Push lên `origin main`: **thành công** (`7bfdbde..bad64af main -> main`).
-- Commit Phase 4–5: (xem `specs/001-yt-ad-shield/status.md` mục 14 — điền hash sau khi push).
+- Commit Phase 4–5: `60d9bc4` (23 file, +2514/−23).
+- Push lên `origin main`: **thành công** (`f7b3c3a..60d9bc4 HEAD -> main`).
 - Remote: `https://github.com/walevmn001/Wale-BrowserGuard`.
