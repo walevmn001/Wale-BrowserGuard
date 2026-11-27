@@ -88,7 +88,7 @@ export interface ManifestV3 {
 }
 
 export const EXTENSION_NAME = 'WALE GUARD';
-export const EXTENSION_VERSION = '1.2.0';
+export const EXTENSION_VERSION = '1.2.1';
 
 export function createManifest(): ManifestV3 {
   const icons = iconManifestEntries();

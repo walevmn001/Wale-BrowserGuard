@@ -4,6 +4,36 @@ All notable changes to WALE GUARD (AdBlock Security) are recorded here. The
 format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses [Semantic Versioning](https://semver.org/).
 
+## [1.2.1] — 2026-11-27
+
+### Fixed
+
+- YouTube engine now actually activates: the MAIN world boot order is
+  `safe flag defaults → receive/validate snapshot → apply flags →
+  init dependent modules → subscribe for the whole document lifecycle`
+  (previously `registry.initAll` ran before the adapter snapshot, so modules
+  initialised with hard-coded defaults).
+- The Player JSON Pruner, Fetch Hook and XHR Hook no longer stay stuck on
+  `WAITING_FOR_ADAPTER`. JSON Pruner checks `ENABLE_JSON_PRUNER` at data
+  processing time (and uninstalls when turned off); Fetch/XHR hooks are
+  installed once and gate per request/response, fail-open, with a body size
+  guard and timeout. Turning a hook off now preserves original request
+  behaviour (status/headers/response type/errors unchanged).
+- The popup no longer reports a false `READY`: it probes the MAIN world
+  runtime status via the new `data-wg-yt-status` attribute handshake
+  (`MSG_YT_ENGINE_STATUS`) and resolves six independent states
+  (`DISABLED`, `WAITING_FOR_REGISTRATION`, `WAITING_FOR_ADAPTER`,
+  `INITIALIZING`, `READY`, `ERROR`). `isEngineRegistered` now requires **both**
+  the MAIN and ISOLATED scripts; partial registration converges on the next
+  sync instead of leaving one script unregistered.
+
+### Notes
+
+- Real-Chrome validation (Phase 7 + FIX-01) is still **pending** — the engine
+  is activated and unit-tested, but ad-blocking behaviour is **not yet
+  VERIFIED** on real YouTube/Chrome. Checklist:
+  `spec-kit-updates/yt-ad-shield/specs/001-yt-ad-shield/verification/FIX_01_REAL_CHROME_CHECKLIST.md`.
+
 ## [1.2.0] — 2026-11-27
 
 ### Added
