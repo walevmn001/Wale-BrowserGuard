@@ -66,4 +66,6 @@ Trạng thái pha: **Phase 0–6 hoàn tất** (audit, kiến trúc/hợp đồn
 - Push lên `origin main`: **thành công** (`7bfdbde..bad64af main -> main`).
 - Commit Phase 4–5: `60d9bc4` (23 file, +2514/−23).
 - Push lên `origin main`: **thành công** (`f7b3c3a..60d9bc4 HEAD -> main`).
+- Commit Phase 6: `2c60594` (22 file, +916/−74).
+- Push lên `origin main`: **thành công** (`f7ced95..2c60594 HEAD -> main`).
 - Remote: `https://github.com/walevmn001/Wale-BrowserGuard`.

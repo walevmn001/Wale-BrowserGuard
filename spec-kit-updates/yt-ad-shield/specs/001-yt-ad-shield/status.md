@@ -356,4 +356,4 @@ Các mục 5, 10–13, 15 nay **IMPLEMENTED / TESTED (unit)**; 17/17 trách nhi�
 
 ### Git
 
-- Commit Phase 6: `<pending>`; push `origin main`: `<pending>`.
+- Commit Phase 6: `2c60594` (22 file, +916/−74); push `origin main` **thành công** (`f7ced95..2c60594`).
