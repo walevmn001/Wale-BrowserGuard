@@ -1,6 +1,9 @@
 # Contract: Trạng thái popup và mô hình trạng thái cờ
 
-**Trạng thái:** IMPLEMENTED. Mô hình trạng thái và cách hiển thị đã được cài trong `src/youtube/popup/yt-layers.ts` + `src/popup/popup.ts`. Adapter đang hoạt động là `DatasetAdapter` (T004 đã chốt, phương án A) nên phần reconcile đã có đường chạy thật; nhánh `WAITING_FOR_ADAPTER` giữ lại cho trường hợp chưa có snapshot hợp lệ.
+**Trạng thái:** IMPLEMENTED. Mô hình trạng thái và cách hiển thị đã được cài trong `src/popup/yt-layers.ts` + `src/popup/popup.ts`. Adapter đang hoạt động là `DatasetAdapter` (T004 đã chốt, phương án A) nên phần reconcile đã có đường chạy thật; nhánh `WAITING_FOR_ADAPTER` giữ lại cho trường hợp chưa có snapshot hợp lệ.
+
+> **Cập nhật FIX-01 (2026-11-27): mô hình runtime 6 trạng thái + handshake MAIN → ISOLATED.**
+> Ba cờ MAIN **không còn** suy trạng thái từ `isEngineRegistered()` không. Xem **mục 9** — đây là mô hình hiện hành và thay thế bảng suy ra ở mục 3. Các mục 1–8 giữ nguyên để tham chiếu lịch sử.
 
 ## 1. Mục đích
 
@@ -107,3 +110,39 @@ Nội dung **không được** dùng các cụm sau cho ba cờ MAIN khi trạng
 
 - Bảng suy ra (mục 3) và các acceptance mục 7 không phụ thuộc T004: vẫn có thể kiểm thử bằng `adapter-null` và adapter giả.
 - Reconcile thực tế (mục 5.2): T004 **đã chốt** (phương án A), `DatasetAdapter` đã có đường chạy; phần xác minh trên Chrome thật thuộc Phase 7.
+
+## 9. FIX-01 — Mô hình runtime 6 trạng thái (thay thế mục 3)
+
+Popup **không** được kết luận ba hook đã `READY` chỉ vì content script đã đăng ký. Ba cờ MAIN nay suy trạng thái từ mô hình 6 trạng thái, tính trong `src/youtube/state/engine-status.ts` (`resolveComponentState`) — thuần logic, có test riêng.
+
+### 9.1 Sáu trạng thái
+
+| Trạng thái | Ý nghĩa |
+|------------|---------|
+| `DISABLED` | Người dùng tắt module (công tắc module OFF). |
+| `WAITING_FOR_REGISTRATION` | Chưa đăng ký content script (hoặc tab không phải YouTube). |
+| `WAITING_FOR_ADAPTER` | Đã đăng ký nhưng adapter chưa nhận snapshot hợp lệ (`adapter.status()` = `WAITING`). |
+| `INITIALIZING` | MAIN im lặng, hoặc hook chưa cài, hoặc hiệu lực chưa khớp lựa chọn. |
+| `READY` | Hook đã cài **và xác nhận** hiệu lực khớp lựa chọn người dùng. |
+| `ERROR` | Adapter báo `lastError` (`adapterStateOf` = `ERROR`). |
+
+### 9.2 Thứ tự ưu tiên (cố định)
+
+1. Module OFF → `DISABLED`.
+2. Chưa registered → `WAITING_FOR_REGISTRATION`.
+3. Chưa có status từ MAIN → `INITIALIZING`.
+4. `status.adapter === 'ERROR'` → `ERROR`.
+5. `status.adapter === 'WAITING'` → `WAITING_FOR_ADAPTER`.
+6. Hook chưa `ready` → `INITIALIZING`.
+7. `hook.enabled === desiredOn` → `READY`; ngược lại → `INITIALIZING`.
+
+### 9.3 Handshake MAIN → ISOLATED
+
+- MAIN engine ghi trạng thái runtime vào thuộc tính thứ hai `data-wg-yt-status` trên `<html>` (`ENGINE_STATUS_ATTRIBUTE`, schema `ENGINE_STATUS_SCHEMA_VERSION = 1`), gồm `{schemaVersion, adapter, delivered, hooks:{ENABLE_JSON_PRUNER, ENABLE_FETCH_HOOK, ENABLE_XHR_HOOK}}`.
+- Popup probe qua `chrome.tabs.sendMessage(tabId, {type: MSG_YT_ENGINE_STATUS})`; bridge ISOLATED (`youtube-isolated.js`) trả `{ok, raw}` (giá trị thô của attribute); popup parse bằng `parseEngineStatus` (strict — sai schema thì bỏ, coi như `INITIALIZING`).
+- `isEngineRegistered()` nay yêu cầu **cả hai** script (`wg-youtube-engine-main` **và** `wg-youtube-engine-isolated`); một nửa đăng ký → coi như chưa đăng ký.
+
+### 9.4 Nguồn bằng chứng
+
+- Unit: `tests/unit/youtube/engine-status.test.ts`, `tests/unit/youtube/popup-yt-layers.test.ts`, `tests/unit/youtube/registration.test.ts`.
+- Hiển thị trên popup thật: **PENDING REAL-CHROME VERIFICATION** (`verification/FIX_01_REAL_CHROME_CHECKLIST.md`).

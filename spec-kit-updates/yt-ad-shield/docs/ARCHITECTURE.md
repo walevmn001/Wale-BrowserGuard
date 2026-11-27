@@ -80,4 +80,13 @@ content-entry.ts → bootYouTubeEngine(win)
 
 ## 6. Kích hoạt (đã bật qua công tắc module)
 
-`src/youtube/isolated/registration.ts` cung cấp `syncEngineRegistration(api, enabled)` (idempotent, fail-open), **đã được gọi** từ worker: `src/background/service-worker.ts` (`applyYouTubeEngineRegistration`) đăng ký/huỷ đăng ký động cả `youtube-main.js` (MAIN) và `youtube-isolated.js` (ISOLATED) theo công tắc module (`createYouTubeModuleSettings().isEnabled()`) VÀ effective config (`loadEffectiveYouTubeConfig()?.enabled`, kill-switch Q6). Vì dùng đăng ký động nên `manifest.json` **không** có `content_scripts` cho engine, và tắt module sẽ gỡ injection mà không cần reload. Popup phản ánh trạng thái thật: 3 cờ MAIN hiển thị `ENABLED`/`DISABLED` khi engine đã đăng ký (`isEngineRegistered` → READY), ngược lại `WAITING_FOR_ADAPTER`. Việc xác nhận hành vi chặn thật vẫn thuộc Phase 7 (chưa VERIFIED).
+`src/youtube/isolated/registration.ts` cung cấp `syncEngineRegistration(api, enabled)` (idempotent, fail-open, hội tụ trường hợp đăng ký một phần), **đã được gọi** từ worker: `src/background/service-worker.ts` (`applyYouTubeEngineRegistration`) đăng ký/huỷ đăng ký động cả `youtube-main.js` (MAIN) và `youtube-isolated.js` (ISOLATED) theo công tắc module (`createYouTubeModuleSettings().isEnabled()`) VÀ effective config (`loadEffectiveYouTubeConfig()?.enabled`, kill-switch Q6). Vì dùng đăng ký động nên `manifest.json` **không** có `content_scripts` cho engine, và tắt module sẽ gỡ injection mà không cần reload.
+
+**FIX-01 — popup phản ánh trạng thái runtime thật (không còn READY giả):** trước đây popup suy `READY` chỉ từ `isEngineRegistered` → sai khi adapter/hook chưa thực sự hoạt động. Nay:
+
+- `isEngineRegistered(api)` yêu cầu **cả hai** script (`youtube-main` + `youtube-isolated`) đều đã đăng ký.
+- MAIN world (`main/main.ts`) ghi snapshot trạng thái runtime vào attribute `data-wg-yt-status` trên `<html>` (`state/engine-status.ts`: `buildEngineStatus`, `parseEngineStatus` strict, `resolveComponentState`). Snapshot gồm `schemaVersion`, `adapter` (state + `delivered`), và với mỗi hook `ENABLE_JSON_PRUNER`/`ENABLE_FETCH_HOOK`/`ENABLE_XHR_HOOK`: `installed` + `enabled`.
+- Popup probe `chrome.tabs.sendMessage({ type: MSG_YT_ENGINE_STATUS })`; bridge ISOLATED trả raw (`content-entry.ts`), popup parse rồi phân giải 6 mức: `DISABLED | WAITING_FOR_REGISTRATION | WAITING_FOR_ADAPTER | INITIALIZING | READY | ERROR`.
+- Nhóm MAIN hiển thị độc lập cho **từng** thành phần; `WAITING_FOR_ADAPTER` chỉ đúng nghĩa "chưa nhận snapshot hợp lệ", không dùng thay cho READY.
+
+Việc xác nhận hành vi chặn thật vẫn thuộc Phase 7 (chưa VERIFIED trên Chrome thật).

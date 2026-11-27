@@ -1,8 +1,8 @@
 # Tiến độ triển khai — YT Ad Shield (engine trong WALE GUARD)
 
-Cập nhật: 2026-11-27
+Cập nhật: 2026-11-27 (v12 — CHECKPOINT FIX-01)
 
-Trạng thái pha: **Phase 0–6 hoàn tất / TESTED (unit)** (audit, kiến trúc/hợp đồng, interception, phát hiện & điều khiển quảng cáo, bảo vệ playback, vòng đời & tích hợp, tích hợp popup/cấu hình). Phase 7 **PENDING_REAL_CHROME_VALIDATION** — kế hoạch kiểm thử và mẫu ghi kết quả đã bàn giao, đang **chờ người dùng tự chạy trên Chrome thật**; **chưa có kết quả PASS/FAIL nào**. Engine đã **TÍCH HỢP / KÍCH HOẠT** trong extension: seam `isolated/registration.ts` được service worker gọi (đăng ký động MAIN+ISOLATED theo công tắc module), T004 đã chốt (thuộc tính `data-wg-yt-flags`), module YouTube v1 đã retire khỏi production.
+Trạng thái pha: **Phase 0–6 hoàn tất / TESTED (unit)** (audit, kiến trúc/hợp đồng, interception, phát hiện & điều khiển quảng cáo, bảo vệ playback, vòng đời & tích hợp, tích hợp popup/cấu hình) và **CHECKPOINT FIX-01** (kích hoạt engine thật + feature flags + popup status). Phase 7 **PENDING_REAL_CHROME_VALIDATION** — kế hoạch kiểm thử và mẫu ghi kết quả đã bàn giao, đang **chờ người dùng tự chạy trên Chrome thật**; **chưa có kết quả PASS/FAIL nào**. Engine đã **TÍCH HỢP / KÍCH HOẠT** trong extension: seam `isolated/registration.ts` được service worker gọi (đăng ký động MAIN+ISOLATED theo công tắc module), T004 đã chốt (thuộc tính `data-wg-yt-flags`), module YouTube v1 đã retire khỏi production.
 
 ## Bảng tiến độ theo Phase
 
@@ -16,6 +16,7 @@ Trạng thái pha: **Phase 0–6 hoàn tất / TESTED (unit)** (audit, kiến tr
 | 5 | Lifecycle & Integration | DONE (TESTED) | `dom-observer`, `spa-navigation`, `dnr-manager`, `css-hider`, `main/runtime-modules.ts` |
 | 6 | Popup & Configuration Integration | DONE (TESTED) | `config/layers.ts`, `state/messages.ts`, `isolated/settings.ts`, `popup/yt-layers.ts`; popup hiển thị 6 layer + `WAITING_FOR_ADAPTER` |
 | 7 | Regression & Independent Validation | PENDING_REAL_CHROME_VALIDATION | Kế hoạch + mẫu kết quả tại `specs/001-yt-ad-shield/verification/PHASE_7_REAL_CHROME_TEST_PLAN.md` và `PHASE_7_TEST_RESULTS.md`; 24 ca đều `NOT_RUN`; cần Chrome thật |
+| FIX-01 | Engine activation, feature flags & popup status | DONE (TESTED unit) · **PENDING REAL-CHROME VERIFICATION** | Audit `verification/FIX_01_ROOT_CAUSE_AUDIT.md`; checklist `verification/FIX_01_REAL_CHROME_CHECKLIST.md`; 34 test mới (engine-status, popup-yt-layers, registration, messages) |
 
 ## Đã triển khai (Phase 1–6)
 
@@ -26,8 +27,19 @@ Trạng thái pha: **Phase 0–6 hoàn tất / TESTED (unit)** (audit, kiến tr
 - Seam đăng ký: `src/youtube/isolated/registration.ts` — đăng ký/gỡ **cả hai** content script (`youtube-main.js` MAIN + `youtube-isolated.js` ISOLATED), idempotent, fail-open; service worker gọi `applyYouTubeEngineRegistration()` (đã **kích hoạt**).
 - Truyền cờ (T004, phương án A): `adapter/dataset-adapter.ts` ghi/đọc thuộc tính JSON `data-wg-yt-flags` trên `<html>`; ISOLATED publish snapshot, MAIN đọc lần đầu + `MutationObserver` → `FeatureFlags.applyRemote`.
 - Phase 4–5 gắn vào engine qua `main/runtime-modules.ts` (4 module tự-gate theo cờ riêng) và đăng ký trong `main/main.ts`; engine còn nối thêm module `ad-control` (parity skip của module v1).
-- Phase 6: popup chia 6 layer (3 MAIN + 3 ISOLATED) qua `popup/yt-layers.ts`; nhóm MAIN dùng `DatasetAdapter` và `isEngineRegistered` → `READY` khi đã đăng ký, `WAITING_FOR_ADAPTER` khi chưa có snapshot hợp lệ; cờ ISOLATED lưu/nạp qua `chrome.storage.sync` (`isolated/settings.ts`, khóa `youtubeEngineFlags`).
+- Phase 6: popup chia 6 layer (3 MAIN + 3 ISOLATED) qua `popup/yt-layers.ts`; **FIX-01: nhóm MAIN nay phân giải trạng thái runtime 6 mức** (`DISABLED | WAITING_FOR_REGISTRATION | WAITING_FOR_ADAPTER | INITIALIZING | READY | ERROR`) từ handshake `data-wg-yt-status` (`state/engine-status.ts`) — không còn dùng riêng `isEngineRegistered` để suy ra READY; cờ ISOLATED lưu/nạp qua `chrome.storage.sync` (`isolated/settings.ts`, khóa `youtubeEngineFlags`).
 - Module YouTube v1 (`src/background/youtube-*.ts`) đã retire khỏi production — không còn caller `createYouTubeModule`/`runYouTubeModule` trong `src/`.
+
+## CHECKPOINT FIX-01 — Kích hoạt engine thật (feature flags + popup status)
+
+Nguyên nhân gốc và phạm vi: `specs/001-yt-ad-shield/verification/FIX_01_ROOT_CAUSE_AUDIT.md`. Tóm tắt sửa đổi:
+
+- **Thứ tự khởi tạo MAIN (`main/main.ts`):** đổi sang (1) flags ở trạng thái an toàn → (2) `bootAdapter()` nhận/xác thực snapshot → (3) `registry.initAll(ctx)` → (4) `FeatureFlags.subscribe(...)` theo dõi thay đổi suốt vòng đời document. Trước đây `registry.initAll` chạy trước `bootAdapter()` nên module init bằng default A-3.
+- **JSON Pruner (`main/player-response-hook.ts`):** kiểm cờ `ENABLE_JSON_PRUNER` **tại thời điểm xử lý dữ liệu**, gỡ hook (`uninstall`) khi OFF, không prune nếu parse/validate thất bại.
+- **Fetch/XHR Hook (`main/fetch-interceptor.ts`, `main/xhr-interceptor.ts`):** cài một lần, gate theo cờ **mỗi request/response**, size guard `interceptMaxBodyChars`, timeout + fail-open, OFF bảo toàn hành vi gốc (không đổi status/headers/response type/lỗi).
+- **Handshake trạng thái runtime MAIN → ISOLATED → popup:** thêm `state/engine-status.ts` (`ENGINE_STATUS_ATTRIBUTE = 'data-wg-yt-status'`, `buildEngineStatus`, `parseEngineStatus` strict, `resolveComponentState`), `MSG_YT_ENGINE_STATUS` trong `shared/messages.ts`, probe trong `isolated/content-entry.ts`, đọc trong `popup/popup.ts`. Popup **không còn báo READY giả**.
+- **Registration (`isolated/registration.ts`):** `isEngineRegistered` yêu cầu **cả hai** script MAIN+ISOLATED; `syncEngineRegistration` hội tụ trường hợp đăng ký một phần. Không chạy hai engine song song.
+- Hợp đồng: `contracts/popup-state.md` mục 9, `contracts/adapter.md` mục 12. Kiểm thử Chrome thật: `verification/FIX_01_REAL_CHROME_CHECKLIST.md`.
 
 ## File thay đổi (Phase 0–6)
 
@@ -41,17 +53,17 @@ Trạng thái pha: **Phase 0–6 hoàn tất / TESTED (unit)** (audit, kiến tr
 
 | Lệnh | Kết quả |
 |------|---------|
-| `npx vitest run` | 666 passed / 666 |
+| `npx vitest run` | **700 passed / 700** (63 file; baseline trước FIX-01: 666/666) |
 | `npx tsc --noEmit` | pass |
-| `npm run build` | pass, sinh `dist/youtube-main.js` (~58.7 kB) + `dist/youtube-isolated.js` (~8.5 kB) |
-| `npm run package` | pass, zip release chứa **đủ** cả hai bundle engine |
+| `npm run build` | pass, sinh `dist/youtube-main.js` (64.23 kB) + `dist/youtube-isolated.js` (10.04 kB) |
+| `npm run package` | pass, zip release `release/adblock-security-1.2.1.zip` (42 entry, đủ cả hai bundle engine) |
 
 ## Phase 7 — Trạng thái bàn giao (PENDING_REAL_CHROME_VALIDATION)
 
 - **Chưa chạy** bất kỳ ca Phase 7 nào. Đã bàn giao kế hoạch + mẫu kết quả để người dùng tự chạy.
 - Kế hoạch: `specs/001-yt-ad-shield/verification/PHASE_7_REAL_CHROME_TEST_PLAN.md` (24 ca: setup, xác nhận trạng thái engine, ba cờ MAIN truyền/nhận snapshot, bảo toàn playback A/B, regression ngoài YouTube, T066/A-2, T067/A-4). Kế hoạch gốc viết trước khi kích hoạt; khi chạy cần đọc ba cờ MAIN ở trạng thái đã kích hoạt thay vì `WAITING_FOR_ADAPTER` mặc định.
 - Mẫu kết quả: `specs/001-yt-ad-shield/verification/PHASE_7_TEST_RESULTS.md` (tất cả ô = `NOT_RUN`).
-- Artifact đối chiếu (release `v1.2.0`): `dist/manifest.json` SHA-256 `a129f517…d193` (version `1.2.0`); `dist/youtube-main.js` SHA-256 `5cacd7b7…dc9a`; `dist/youtube-isolated.js` SHA-256 `65186805…c99f`. Hash `youtube-main.js` đã đổi so với checkpoint trước kích hoạt (từ `154b4612…3a97`) do engine nay nối thêm DatasetAdapter + ad-control.
+- Artifact đối chiếu (release `v1.2.1`, sau FIX-01): `dist/manifest.json` SHA-256 `5654f307…d97e` (version `1.2.1`); `dist/youtube-main.js` SHA-256 `84c75fb4…37d0`; `dist/youtube-isolated.js` SHA-256 `dcf266a6…3307`; `dist/service-worker.js` SHA-256 `97e4fb05…4a23`; `dist/popup.js` SHA-256 `d9bca250…2898`; zip `release/adblock-security-1.2.1.zip` SHA-256 `b00947cd…d331` (42 entry). Hash `youtube-main.js` lại đổi so với checkpoint kích hoạt (`5cacd7b7…dc9a`) do FIX-01 thêm handshake trạng thái runtime + đổi thứ tự init.
 - **Chưa xác nhận khả năng chặn quảng cáo YouTube trên Chrome thật** — engine đã kích hoạt nhưng chưa có kết quả chạy thật.
 
 ## Chưa triển khai

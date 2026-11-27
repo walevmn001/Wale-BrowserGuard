@@ -1,6 +1,6 @@
 # YT Ad Shield
 
-**Trạng thái:** đặc tả v5 · **checkpoint Phase 7 — validation pending**. Engine Phase 0–6 đã **IMPLEMENTED / TESTED** (unit) trong extension WALE GUARD tại `adblock-spec-kit/src/youtube/**`, đã **TÍCH HỢP / KÍCH HOẠT** trong extension (đăng ký động qua công tắc module), nhưng **chưa VERIFIED** trên YouTube/Chrome thật.
+**Trạng thái:** đặc tả v5 · **checkpoint Phase 7 — validation pending** · **CHECKPOINT FIX-01 (engine activation) — DONE (unit) / PENDING REAL-CHROME VERIFICATION**. Engine Phase 0–6 đã **IMPLEMENTED / TESTED** (unit) trong extension WALE GUARD tại `adblock-spec-kit/src/youtube/**`, đã **TÍCH HỢP / KÍCH HOẠT** trong extension (đăng ký động qua công tắc module), nhưng **chưa VERIFIED** trên YouTube/Chrome thật.
 
 > **Đây là checkpoint bàn giao implementation/validation-preparation, KHÔNG phải bản stable hay production-ready.** Engine đã được **kích hoạt** (seam `isolated/registration.ts` được gọi từ service worker; T004 đã chốt) và thay trọn vai trò module YouTube v1 cũ; ba cờ MAIN truyền được sang trang qua thuộc tính `data-wg-yt-flags`; **chưa xác nhận khả năng chặn quảng cáo trên Chrome thật**. Phase 7 (`PENDING_REAL_CHROME_VALIDATION`) cần người dùng tự chạy theo `specs/001-yt-ad-shield/verification/PHASE_7_REAL_CHROME_TEST_PLAN.md` và điền `PHASE_7_TEST_RESULTS.md`.
 
@@ -14,6 +14,8 @@ Ba hook chạy trong trang (MAIN world) gồm `ENABLE_JSON_PRUNER`, `ENABLE_FETC
 - Cơ chế (phương án A): `youtube-isolated.js` ghi snapshot cờ vào thuộc tính JSON `data-wg-yt-flags` trên `<html>`; `youtube-main.js` đọc lần đầu + theo dõi `MutationObserver` rồi đưa qua `FeatureFlags.applyRemote`.
 - Khi **chưa** có snapshot hợp lệ (ví dụ trang tải trước khi công tắc bật), ba hook chạy theo mặc định: **bật** (A-3), popup hiển thị `WAITING_FOR_ADAPTER`.
 - Khi snapshot đã sẵn sàng và MAIN xác nhận hiệu lực, popup hiển thị `READY` (`ENABLED`/`DISABLED`) theo trạng thái thật; lưu lựa chọn tắt được áp dụng thật.
+
+**FIX-01 — trạng thái runtime thật (không còn READY giả).** MAIN ghi snapshot trạng thái vào thuộc tính thứ hai `data-wg-yt-status` trên `<html>`; popup probe qua `MSG_YT_ENGINE_STATUS` (bridge ISOLATED trả raw) và phân giải **6 mức độc lập cho từng thành phần**: `DISABLED | WAITING_FOR_REGISTRATION | WAITING_FOR_ADAPTER | INITIALIZING | READY | ERROR`. Popup **không** còn dùng riêng `isEngineRegistered` để kết luận cả ba hook READY. Thứ tự khởi tạo MAIN cũng được sửa thành: cấu hình an toàn → nhận/xác thực snapshot → áp dụng flags → init module phụ thuộc → theo dõi thay đổi suốt vòng đời document. JSON Pruner kiểm cờ tại thời điểm xử lý; Fetch/XHR gate theo cờ mỗi request/response. Chi tiết: `docs/ARCHITECTURE.md` §6, `specs/001-yt-ad-shield/contracts/{popup-state.md,adapter.md}`, `specs/001-yt-ad-shield/verification/FIX_01_ROOT_CAUSE_AUDIT.md`.
 
 Các cờ còn lại (ví dụ `ENABLE_DNR`, `ENABLE_RUNTIME_GUARD`, `ENABLE_CSS_HIDER`) chạy ở phần cô lập và áp dụng bình thường qua `chrome.storage`.
 

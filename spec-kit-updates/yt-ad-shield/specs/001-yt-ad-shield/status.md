@@ -435,3 +435,49 @@ Ba quyết định đã chốt và nay đã triển khai:
 ### Còn lại
 
 - Phase 7: chạy trên Chrome/YouTube thật + regression ngoài YouTube (**CHƯA CHẠY**). Kế hoạch gốc viết trước khi kích hoạt; khi chạy cần đọc 3 cờ MAIN ở trạng thái đã kích hoạt thay vì `WAITING_FOR_ADAPTER` mặc định.
+
+---
+
+## 18. Cập nhật v11: CHECKPOINT FIX-01 — engine hoạt động thật + feature flags + popup trung thực (2026-11-27)
+
+**Trạng thái định nghĩa:** **IMPLEMENTED / TESTED (unit)** cho engine; **PENDING REAL-CHROME VERIFICATION** cho kiểm thử Chrome thật.
+
+### Nguyên nhân gốc (Phase A)
+
+Chi tiết ở `verification/FIX_01_ROOT_CAUSE_AUDIT.md`.
+
+1. `main.ts` gọi `registry.initAll()` **trước** khi `bootAdapter()` nhận snapshot → module init trên mặc định A-3 trước khi biết cấu hình; module không reconcile.
+2. `createPlayerHookModule` chỉ đọc cờ lúc `init` → OFF runtime vẫn prune.
+3. `createFetchModule`/`createXhrModule` **chỉ đăng ký khi cờ BẬT lúc boot** → hook không bao giờ cài nếu cờ OFF/muộn.
+4. Popup dùng **duy nhất** `isEngineRegistered()` → set adapter READY/`AVAILABLE` ⇒ **`READY` giả**.
+5. Không có handshake MAIN → ISOLATED báo trạng thái hook thật.
+6. `isEngineRegistered()` chỉ kiểm script MAIN → partial registration đọc nhầm là đã đăng ký.
+
+### Đã sửa (Phase B & C)
+
+| Vấn đề | Sửa |
+|--------|-----|
+| Thứ tự boot | `main.ts`: (1) flags mặc định an toàn → (2) `bootAdapter()` nhận/áp snapshot → (3) init module theo cờ đã áp → (4) theo dõi thay đổi suốt vòng đời (`flags.subscribe`). |
+| JSON Pruner | `player-response-hook` trả `PlayerHookHandle | undefined`; module cài/gỡ theo cờ và **re-check cờ mỗi lần setter**; OFF → `uninstall()` ngừng prune ngay. |
+| Fetch/XHR | Cài **một lần**, interceptor tự gate theo cờ **mỗi request/response**; OFF bảo toàn hành vi gốc; thêm size guard `interceptMaxBodyChars = 5_000_000` + timeout/fail-open. |
+| `READY` giả | Thêm `state/engine-status.ts` (6 trạng thái) + attribute `data-wg-yt-status`; popup đọc trạng thái thật qua handshake; không dùng registration để kết luận READY. |
+| Handshake | `MSG_YT_ENGINE_STATUS` (popup → bridge → đọc attribute); bridge ISOLATED trả `{ok, raw}`. |
+| Registration | `isEngineRegistered()` yêu cầu **cả hai** script; `syncEngineRegistration` hội tụ trạng thái half-registered. |
+
+### Artifact / file thay đổi
+
+- Thêm: `src/youtube/state/engine-status.ts`, `tests/unit/youtube/engine-status.test.ts`.
+- Sửa: `src/youtube/main/main.ts`, `src/youtube/main/player-response-hook.ts`, `src/youtube/main/{fetch,xhr}-interceptor.ts`, `src/youtube/config/tuning.ts` (`TUNING_VERSION` 4→5), `src/youtube/isolated/{content-entry,registration}.ts`, `src/popup/{popup,yt-layers,render}.ts`, `src/shared/messages.ts`, `src/youtube/state/{messages,toggle-state}.ts` + các test tương ứng.
+
+### Bằng chứng kiểm thử (sandbox)
+
+- `npx vitest run` → **700 passed / 700** (63 file); +34 so với baseline 666.
+- `npx tsc --noEmit` → pass.
+- `npm run package` → 3 pass build + zip `release/adblock-security-1.2.1.zip` (42 entry, đủ `manifest.json` + `youtube-main.js` + `youtube-isolated.js` + `service-worker.js` + `popup.js` + rulesets). Hash `dist/youtube-main.js` = `84c75fb4…37d0` (không đổi so với build `1.2.0` FIX-01); zip SHA-256 `b00947cd…d331`; `manifest.json` `5654f307…d97e` (version `1.2.1`).
+- Lint: **6 lỗi tồn tại sẵn** trên HEAD (không do FIX-01) — `null-adapter.ts` (2), `runtime-modules.ts:242`, `runtime-modules.test.ts` (2), `xhr-interceptor.test.ts` (1).
+
+### Còn tồn đọng
+
+- **PENDING REAL-CHROME VERIFICATION** — checklist 10 bước: `verification/FIX_01_REAL_CHROME_CHECKLIST.md`.
+- Chưa xác nhận khả năng **chặn quảng cáo thật**; A-2, A-4 vẫn UNVERIFIED.
+- Git: nhánh làm việc `trae/agent-scTM9F` (không push `main`, không force-push).

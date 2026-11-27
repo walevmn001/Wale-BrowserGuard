@@ -332,3 +332,14 @@ Nếu thay đổi làm vỡ nhiều module, đó là dấu hiệu cần xem lạ
 - Cơ chế truyền từ ISOLATED sang MAIN nằm sau `adapter` (`contracts/adapter.md`). Adapter là phần duy nhất phụ thuộc T004.
 - Thư mục dự kiến: `src/core/feature-flags.js` (logic), `src/adapters/adapter-null.js` (hiện tại), các adapter cụ thể chỉ được thêm sau khi T004 chốt.
 - Test registry và module không dùng adapter thật; dùng `adapter-null` hoặc adapter giả trong test.
+
+## 14. FIX-01 — kích hoạt engine thật (triển khai thực tế)
+
+Các điểm ở mục 3–12 là thiết kế gốc; triển khai thực tế nằm ở `adblock-spec-kit/src/youtube/**` (TS, đăng ký động, không dùng `content_scripts` tĩnh trong manifest). FIX-01 chỉnh hành vi kích hoạt cho đúng thiết kế:
+
+- **Thứ tự khởi tạo MAIN** (`main/main.ts`): `FeatureFlags` mặc định an toàn → `bootAdapter()` nhận/xác thực snapshot (`data-wg-yt-flags`) → `registry.initAll(ctx)` → `FeatureFlags.subscribe(...)` theo dõi thay đổi suốt vòng đời document. Không init module hook bằng mặc định ON trước khi biết cấu hình người dùng.
+- **JSON Pruner**: kiểm `ENABLE_JSON_PRUNER` **tại thời điểm xử lý**; OFF → `uninstall()`; không prune khi parse/validate lỗi.
+- **Fetch/XHR Hook**: cài một lần; gate theo cờ **mỗi request/response**; OFF bảo toàn hành vi request gốc; size guard `interceptMaxBodyChars`, timeout, fail-open.
+- **Trạng thái runtime cho popup**: `state/engine-status.ts` + handshake `data-wg-yt-status` / `MSG_YT_ENGINE_STATUS`; popup phân giải 6 mức độc lập, không suy READY từ registration (chi tiết `contracts/popup-state.md` mục 9, `contracts/adapter.md` mục 12).
+- **Registration**: `isEngineRegistered` yêu cầu cả MAIN+ISOLATED; `syncEngineRegistration` hội tụ half-registered; không chạy hai engine song song.
+- Audit nguyên nhân gốc: `verification/FIX_01_ROOT_CAUSE_AUDIT.md`. Checklist Chrome thật: `verification/FIX_01_REAL_CHROME_CHECKLIST.md` (**PENDING REAL-CHROME VERIFICATION**).

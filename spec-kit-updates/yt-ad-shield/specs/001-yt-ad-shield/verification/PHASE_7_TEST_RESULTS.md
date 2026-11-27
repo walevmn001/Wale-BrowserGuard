@@ -6,8 +6,10 @@
 
 **Người chạy:** ___________  **Ngày chạy:** ___________  **Hệ điều hành:** ___________
 **Phiên bản Chrome:** ___________  **Extension ID (WALE GUARD):** ___________
-**Bản build:** WALE GUARD 1.1.1 · hash `manifest.json`: `c13a64de3a6c2185ea65abc57a76183429dddc381596b5e991d0cf6ef7a47426`
-**Trạng thái engine khi kiểm thử:** ĐÃ KÍCH HOẠT (đăng ký động qua công tắc module; T004 đã chốt). **Ba cờ MAIN kỳ vọng:** READY (ENABLED/DISABLED) khi có snapshot; WAITING_FOR_ADAPTER chỉ khi chưa có snapshot hợp lệ.
+**Bản build:** WALE GUARD 1.2.1 · hash `manifest.json`: `5654f307…d97e` · hash `youtube-main.js`: `84c75fb4…37d0` · ZIP `release/adblock-security-1.2.1.zip` (42 entry)
+**Trạng thái engine khi kiểm thử:** ĐÃ KÍCH HOẠT (đăng ký động qua công tắc module; T004 đã chốt) + **CHECKPOINT FIX-01** (feature flags áp dụng đúng thứ tự, popup dùng handshake trạng thái runtime). **Ba cờ MAIN kỳ vọng:** READY (ENABLED/DISABLED) khi có snapshot; WAITING_FOR_ADAPTER chỉ khi chưa có snapshot hợp lệ.
+
+> **FIX-01:** dùng checklist mới `FIX_01_REAL_CHROME_CHECKLIST.md` cho phần xác minh engine đã kích hoạt (10 bước). File `PHASE_7_TEST_RESULTS.md` này được giữ làm mẫu gốc; phần lớn điều kiện `WAITING_FOR_ADAPTER` vĩnh viễn ở mục C nay **không còn đúng** — đọc kèm banner đầu `PHASE_7_REAL_CHROME_TEST_PLAN.md`.
 
 > **Lưu ý (checkpoint v10):** mẫu kết quả này được soạn khi engine còn INERT; mục B ("Xác nhận engine INERT") nay đổi nghĩa thành "xác nhận engine được đăng ký và chạy" — xem banner đầu `PHASE_7_REAL_CHROME_TEST_PLAN.md`.
 

@@ -132,3 +132,26 @@ Các mệnh đề sau phải giống nhau trong `README.md`, `contracts/adapter.
 4. A-2 và A-4 là UNVERIFIED cho đến khi có kết quả thử nghiệm.
 
 Nếu một trong bốn mệnh đề này thay đổi, phải cập nhật cả ba tài liệu trong cùng thay đổi.
+
+## 12. FIX-01 — Handshake trạng thái runtime MAIN → ISOLATED
+
+Để popup **không** báo `READY` giả (chỉ dựa vào đăng ký script), MAIN engine công bố trạng thái runtime thật lên thuộc tính thứ hai, cùng root element:
+
+```
+[schemaVersion, adapter, delivered, hooks{ENABLE_JSON_PRUNER, ENABLE_FETCH_HOOK, ENABLE_XHR_HOOK}]
+   ═══ [attr data-wg-yt-status trên <html>] ═══►  youtube-isolated.js (đọc khi được hỏi)
+                                                          │
+                                    chrome.tabs.sendMessage({type: MSG_YT_ENGINE_STATUS})
+                                                          │  → {ok, raw}
+                                                          ▼
+                                                        popup (parseEngineStatus)
+```
+
+Quy tắc:
+
+- Chỉ MAIN ghi `data-wg-yt-status` (`src/youtube/state/engine-status.ts`, `ENGINE_STATUS_ATTRIBUTE`). Attribute này **chỉ báo trạng thái**, không mang snapshot cờ; snapshot cờ vẫn chỉ ở `data-wg-yt-flags` (mục 1).
+- Adapter/engine MAIN chỉ ghi thêm attribute này; **không** thêm quyền manifest, **không** gọi `chrome.*` từ MAIN.
+- ISOLATED bridge trả lời probe bằng giá trị thô (`{ok, raw}`), không diễn giải; popup parse strict và coi mọi giá trị không hợp lệ là "chưa xác nhận" (`INITIALIZING`).
+- `isEngineRegistered()` yêu cầu **cả hai** script đã đăng ký; trạng thái một nửa (partial) không được coi là đã đăng ký.
+
+Mô hình 6 trạng thái và bảng suy ra ở `popup-state.md` mục 9.

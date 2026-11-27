@@ -7,6 +7,8 @@
 > - **Ba cờ MAIN** không còn luôn `WAITING_FOR_ADAPTER`: khi đã có snapshot, popup hiển thị `READY` (`ENABLED`/`DISABLED`); chỉ khi chưa có snapshot hợp lệ mới `WAITING_FOR_ADAPTER`.
 > - Các nhóm còn lại (setup, bảo toàn playback A/B, regression ngoài YouTube, A-2/A-4) giữ nguyên giá trị; phần playback càng quan trọng vì engine nay đã chạy thật.
 > - **Ràng buộc gốc** (giữ engine INERT, không `registerContentScripts`) **không còn hiệu lực** — nó thuộc giai đoạn trước kích hoạt.
+>
+> **⚠️ CẬP NHẬT (CHECKPOINT FIX-01):** dùng `FIX_01_REAL_CHROME_CHECKLIST.md` (10 bước) làm checklist chính cho trạng thái engine đã kích hoạt; nó thay thế phần "ba cờ MAIN luôn WAITING_FOR_ADAPTER" và bổ sung handshake trạng thái runtime `data-wg-yt-status`. Bản build hiện hành **1.2.1** (`release/adblock-security-1.2.1.zip`, `youtube-main.js` = `84c75fb4…37d0`). Các mã test P7-* dưới đây vẫn dùng được nhưng cột "điều kiện" có thể viết theo bản 1.1.1 cũ.
 
 Cập nhật: 2026-11-27 · Người soạn kế hoạch: agent (sandbox).
 
