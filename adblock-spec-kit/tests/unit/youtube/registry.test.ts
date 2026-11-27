@@ -23,7 +23,7 @@ function module(name: string, overrides: Partial<YouTubeModule> = {}): YouTubeMo
     name,
     init: vi.fn(),
     dispose: vi.fn(),
-    status: (): ModuleStatus => ({ name, enabled: true, failures: 0, lastError: null }),
+    status: (): ModuleStatus => ({ name, enabled: true, installed: true, failures: 0, lastError: null }),
     ...overrides,
   };
 }
@@ -126,7 +126,7 @@ describe('ModuleRegistry', () => {
     expect(() => {
       statuses = registry.statusAll();
     }).not.toThrow();
-    expect(statuses).toEqual([{ name: 's', enabled: true, failures: 0, lastError: null }]);
+    expect(statuses).toEqual([{ name: 's', enabled: true, installed: false, failures: 0, lastError: null }]);
   });
 });
 

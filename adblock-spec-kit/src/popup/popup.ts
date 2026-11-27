@@ -21,14 +21,19 @@ import { createRulesetManager } from '../background/ruleset-manager';
 import { createSitePreferences } from '../background/site-settings';
 import { createStatsCounter } from '../background/stats';
 import { createWhitelist } from '../background/whitelist';
+import { createYouTubeModuleSettings } from '../background/youtube-settings';
+import { createYtStatusStore } from '../background/youtube-status-store';
 import { scanUrl } from '../background/url-scan';
 import { isMessageKey, t, type MessageKey } from '../shared/i18n';
 import { logger } from '../shared/logger';
 import { MSG_START_PICKER } from '../shared/messages';
 import { TypedStorage } from '../shared/storage';
+import type { AdapterState } from '../youtube/adapter/adapter';
 import type { FlagName } from '../youtube/config/flags';
 import { createChromeScriptingApi, isEngineRegistered } from '../youtube/isolated/registration';
 import { createYouTubeEngineSettings, type YouTubeEngineSettings } from '../youtube/isolated/settings';
+import { isStatusFresh, type YtRuntimeStatus } from '../youtube/state/runtime-status';
+import type { SnapshotState } from '../youtube/state/toggle-state';
 import {
   applyStaticText,
   applyTheme,
@@ -52,18 +57,33 @@ import { findingKey, verdictKey } from './view';
 import { buildYtLayers, type YtLayerRow } from './yt-layers';
 
 /**
- * The engine layer rows with the live adapter health (T004). The MAIN engine is
- * registered as a content script only while the module is on, so "registered"
- * is exactly "the adapter is live": the three MAIN rows then read ENABLED/
- * DISABLED from the saved choice instead of WAITING_FOR_ADAPTER.
+ * The engine layer rows with the live runtime handshake (CHECKPOINT FIX-01,
+ * Phase C). Registration alone only proves the content script was injected, so
+ * it is combined with the MAIN engine's *confirmed* runtime status (relayed back
+ * through the worker and read from the per-tab session store). A MAIN hook reads
+ * READY only when the page confirmed it installed; before any status lands it is
+ * INITIALIZING, and with no registration it is WAITING_FOR_REGISTRATION.
  */
-async function engineLayerRows(engine: YouTubeEngineSettings): Promise<readonly YtLayerRow[]> {
-  const ready = await isEngineRegistered(createChromeScriptingApi());
-  return buildYtLayers(
-    await engine.desiredFlags(),
-    ready ? 'READY' : 'WAITING',
-    ready ? 'AVAILABLE' : 'MISSING',
-  );
+async function engineLayerRows(
+  tabId: number | undefined,
+  engine: YouTubeEngineSettings,
+): Promise<readonly YtLayerRow[]> {
+  const moduleEnabled = await createYouTubeModuleSettings().isEnabled();
+  const registered = moduleEnabled && (await isEngineRegistered(createChromeScriptingApi()));
+  let status: YtRuntimeStatus | null = null;
+  if (registered && tabId !== undefined) {
+    const stored = await createYtStatusStore().read(tabId);
+    if (stored !== undefined && isStatusFresh(stored.status, Date.now())) {
+      status = stored.status;
+    }
+  }
+  const adapter: AdapterState = registered ? 'READY' : 'WAITING';
+  const snapshot: SnapshotState = status !== null ? 'AVAILABLE' : 'MISSING';
+  return buildYtLayers(await engine.desiredFlags(), adapter, snapshot, {
+    moduleEnabled,
+    registered,
+    status,
+  });
 }
 
 /** Reads every piece of state from its owning module in one pass. */
@@ -81,11 +101,11 @@ async function loadState(storage: TypedStorage): Promise<LiveState> {
   const tabId = tab?.id;
   const siteCount = tabId === undefined ? 0 : await counter.forTab(tabId);
   const { total } = await counter.snapshot();
-  // T004: once the engine's scripts are registered the adapter is live (READY),
-  // so the three MAIN layers are shown as applied; before that they stay
-  // WAITING_FOR_ADAPTER and a saved "off" is never claimed as applied.
+  // FIX-01: the three MAIN layers reflect the confirmed runtime handshake, not
+  // registration alone; until the page reports a hook installed they stay
+  // INITIALIZING/WAITING and a saved "off" is never claimed as applied.
   const engine = createYouTubeEngineSettings();
-  const ytLayers = await engineLayerRows(engine);
+  const ytLayers = await engineLayerRows(tabId, engine);
   return {
     locale,
     domain,
@@ -205,8 +225,8 @@ function reportError(error: unknown): void {
 
 /**
  * Saves one YouTube engine layer choice and re-paints the card. The three MAIN
- * layers now reflect the live adapter (T004), so a saved choice shows as applied
- * once the engine's scripts are registered.
+ * layers reflect the confirmed runtime handshake (FIX-01), so a just-saved
+ * choice shows as pending until the page confirms it.
  */
 async function toggleYtLayer(
   elements: Elements,
@@ -219,7 +239,10 @@ async function toggleYtLayer(
   }
   const engine = createYouTubeEngineSettings();
   await engine.setFlag(flag, input.checked);
-  renderYtEngine(elements, state.locale, { ...state, ytLayers: await engineLayerRows(engine) });
+  renderYtEngine(elements, state.locale, {
+    ...state,
+    ytLayers: await engineLayerRows(state.tabId, engine),
+  });
 }
 
 function wireActions(elements: Elements, state: LiveState): void {

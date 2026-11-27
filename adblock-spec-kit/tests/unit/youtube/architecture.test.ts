@@ -37,7 +37,7 @@ describe('architecture — module registry contract', () => {
       name,
       init: vi.fn(),
       dispose,
-      status: (): ModuleStatus => ({ name, enabled: true, failures: 0, lastError: null }),
+      status: (): ModuleStatus => ({ name, enabled: true, installed: true, failures: 0, lastError: null }),
     };
   }
 

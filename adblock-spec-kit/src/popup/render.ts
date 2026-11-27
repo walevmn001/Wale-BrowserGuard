@@ -105,7 +105,9 @@ function chipTone(state: DisplayState): string {
     case 'ENABLED':
       return '';
     case 'RECONCILING':
+    case 'INITIALIZING':
       return 'blue';
+    case 'WAITING_FOR_REGISTRATION':
     case 'WAITING_FOR_ADAPTER':
       return 'warn';
     case 'ERROR':

@@ -18,6 +18,8 @@ export const MSG_TRUST_SITE = 'wg:trust-site';
 export const MSG_START_PICKER = 'wg:start-picker';
 /** The YouTube health monitor reports a playback fault (US-15.4, T066). */
 export const MSG_YOUTUBE_FAULT = 'wg:youtube-fault';
+/** The ISOLATED bridge forwards the MAIN engine's runtime status (FIX-01, Phase C). */
+export const MSG_YT_STATUS = 'wg:youtube-status';
 
 export interface HideElementMessage {
   readonly type: typeof MSG_HIDE_ELEMENT;
@@ -37,6 +39,12 @@ export interface StartPickerMessage {
 export interface YouTubeFaultMessage {
   readonly type: typeof MSG_YOUTUBE_FAULT;
   readonly kind: string;
+}
+
+/** The MAIN engine's runtime status, relayed by the ISOLATED bridge (FIX-01). */
+export interface YouTubeStatusMessage {
+  readonly type: typeof MSG_YT_STATUS;
+  readonly status: unknown;
 }
 
 export type BridgeMessage = HideElementMessage | TrustSiteMessage | StartPickerMessage;
@@ -77,4 +85,13 @@ export function isBridgeMessage(value: unknown): value is BridgeMessage {
 /** Runtime guard for the page-side playback-fault report (Q5). */
 export function isYouTubeFaultMessage(value: unknown): value is YouTubeFaultMessage {
   return isRecord(value) && value['type'] === MSG_YOUTUBE_FAULT && typeof value['kind'] === 'string';
+}
+
+/**
+ * Runtime guard for the relayed runtime-status report. The payload itself is
+ * validated with `isYtRuntimeStatus` where it is consumed (the worker), which
+ * keeps this shared module free of engine imports.
+ */
+export function isYouTubeStatusMessage(value: unknown): value is YouTubeStatusMessage {
+  return isRecord(value) && value['type'] === MSG_YT_STATUS && isRecord(value['status']);
 }

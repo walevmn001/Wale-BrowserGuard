@@ -31,7 +31,8 @@ import { skipButtonSelectors, type SelectorRegistry } from '../registry/selector
 import { playerHasAdClass, readPlayer, readVideo } from './runtime-modules';
 
 function statusOf(name: string, enabled: boolean): ModuleStatus {
-  return { name, enabled, failures: 0, lastError: null };
+  // These lifecycle modules have no distinct install step: active === installed.
+  return { name, enabled, installed: enabled, failures: 0, lastError: null };
 }
 
 export function createAdControlModule(

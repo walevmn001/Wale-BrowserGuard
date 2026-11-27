@@ -10,6 +10,7 @@
 import type { ModuleContext, ModuleStatus, YouTubeModule } from './module';
 
 interface ModuleRecord {
+  /** False once the module's `init` threw; the record only tracks failures. */
   enabled: boolean;
   failures: number;
   lastError: string | null;
@@ -79,23 +80,33 @@ export class ModuleRegistry {
     }
   }
 
-  /** A status snapshot per module, with registry-recorded failures overlaid. */
+  /**
+   * A status snapshot per module. The module's own `status()` is authoritative
+   * for `enabled`/`installed` (it alone knows whether its hook is actually in
+   * place); the registry only overrides them to `false` when `init` threw, and
+   * always overlays the failure count and last error. A module whose `status()`
+   * throws degrades to its registry record (never breaking the batch).
+   */
   statusAll(): readonly ModuleStatus[] {
     const statuses: ModuleStatus[] = [];
     for (const module of this.modules.values()) {
-      let base: ModuleStatus;
-      try {
-        base = module.status();
-      } catch {
-        base = { name: module.name, enabled: false, failures: 0, lastError: null };
-      }
       const record = this.records.get(module.name);
-      statuses.push({
-        name: module.name,
-        enabled: record !== undefined ? record.enabled : base.enabled,
-        failures: record !== undefined ? record.failures : base.failures,
-        lastError: record !== undefined ? record.lastError : base.lastError,
-      });
+      const initFailed = record !== undefined && !record.enabled;
+      let enabled = record?.enabled ?? true;
+      let installed: boolean;
+      let failures = record?.failures ?? 0;
+      let lastError = record?.lastError ?? null;
+      try {
+        const base = module.status();
+        enabled = initFailed ? false : base.enabled;
+        installed = initFailed ? false : base.installed;
+        failures = record !== undefined ? record.failures : base.failures;
+        lastError = record !== undefined ? record.lastError : base.lastError;
+      } catch {
+        // A throwing status() degrades to the registry record (installed unknown).
+        installed = false;
+      }
+      statuses.push({ name: module.name, enabled, installed, failures, lastError });
     }
     return statuses;
   }

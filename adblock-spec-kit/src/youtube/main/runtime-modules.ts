@@ -34,7 +34,8 @@ import type { SelectorRegistry } from '../registry/selectors';
 
 /** A status helper shared by these modules (single failure counter). */
 function statusOf(name: string, enabled: boolean): ModuleStatus {
-  return { name, enabled, failures: 0, lastError: null };
+  // These lifecycle modules have no distinct install step: active === installed.
+  return { name, enabled, installed: enabled, failures: 0, lastError: null };
 }
 
 /** Reads `#movie_player`, or undefined when it is not (yet) in the DOM. */

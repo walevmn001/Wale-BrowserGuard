@@ -39,13 +39,15 @@ import { createYouTubeConfigUpdater } from './youtube-config-updater';
 import { isYouTubeHost, loadEffectiveYouTubeConfig } from './youtube-module';
 import { createHealthStorage, recordHealthFault } from './youtube-health';
 import { createYouTubeModuleSettings } from './youtube-settings';
+import { createYtStatusStore } from './youtube-status-store';
 import { createChromeScriptingApi, syncEngineRegistration } from '../youtube/isolated/registration';
+import { isYtRuntimeStatus } from '../youtube/state/runtime-status';
 import { workerLocale } from './locale';
 import { createFingerprintSettings } from './security/fingerprint-settings';
 import { createPrivacySettings } from './security/privacy-settings';
 import { t } from '../shared/i18n';
 import { YOUTUBE_RULESET_ID } from '../shared/constants';
-import { isYouTubeFaultMessage } from '../shared/messages';
+import { isYouTubeFaultMessage, isYouTubeStatusMessage } from '../shared/messages';
 import { logger } from '../shared/logger';
 
 async function guard(label: string, run: () => Promise<unknown>): Promise<void> {
@@ -318,12 +320,53 @@ function registerYouTubeHealth(): void {
   });
 }
 
+/**
+ * CHECKPOINT FIX-01 (Phase C): stores the MAIN engine's runtime status the
+ * ISOLATED bridge relayed. The host is derived from the sender tab (never
+ * trusted from the payload) and the record itself is re-validated here, so a
+ * page cannot inject a bogus "everything is working" status. Kept per tab in
+ * session storage; the popup reads it to show the *real* hook state.
+ */
+function registerYouTubeStatus(): void {
+  chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
+    if (!isYouTubeStatusMessage(message)) {
+      return false;
+    }
+    const tab = sender.tab;
+    const host = pageHost(tab?.url);
+    if (tab?.id === undefined || host === undefined || !isYouTubeHost(host)) {
+      sendResponse({ ok: false });
+      return false;
+    }
+    if (!isYtRuntimeStatus(message.status)) {
+      sendResponse({ ok: false });
+      return false;
+    }
+    const tabId = tab.id;
+    const status = message.status;
+    void (async () => {
+      try {
+        await createYtStatusStore().save(tabId, status, Date.now());
+      } catch (error) {
+        logger.error('failed to store a YouTube runtime status', error);
+      } finally {
+        sendResponse({ ok: true });
+      }
+    })();
+    return true;
+  });
+}
+
 // Injected page components (element picker, security banner) talk to the
 // worker through this bridge; it validates and persists what they send.
 registerBridge();
 
 // The YouTube health monitor reports playback faults the same way.
 registerYouTubeHealth();
+
+// The ISOLATED bridge relays the MAIN engine's runtime status here; the popup
+// reads it back so it never fakes READY from registration alone.
+registerYouTubeStatus();
 
 /** Keyboard commands (Phase 9 §10); the browser owns the shortcut bindings. */
 chrome.commands.onCommand.addListener((command) => {
@@ -417,6 +460,12 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     void injectAntiFingerprint(tabId, tab.url);
     void guard('inject the security banner', () => injectBanner(tabId, tab.url));
   }
+});
+
+// Drop a closed tab's YouTube runtime status so a reused tab id cannot inherit
+// a stale "READY" record (FIX-01, Phase C).
+chrome.tabs.onRemoved.addListener((tabId) => {
+  void createYtStatusStore().clear(tabId);
 });
 
 applyStoredState();
