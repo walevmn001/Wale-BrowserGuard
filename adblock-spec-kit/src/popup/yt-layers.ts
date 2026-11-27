@@ -1,24 +1,29 @@
 /**
  * YouTube engine layer rows for the popup (Phase 6 — T017 / T071).
  *
- * Pure mapping from the stored desired state plus the adapter/snapshot health
- * to the six rows the popup paints. It is deliberately free of DOM and storage
- * so it can be unit-tested directly. The three MAIN rows always resolve through
- * the fixed priority table (`resolveDisplay`), so while the flag adapter is
- * WAITING they show WAITING_FOR_ADAPTER — never "off" (contract §3, §7). The
- * three ISOLATED rows reflect the effective state the ISOLATED module reports,
- * which for now is simply the stored choice.
+ * Pure mapping from the stored desired state, the module switch, the script
+ * registration and the MAIN engine's runtime status to the six rows the popup
+ * paints. It is deliberately free of DOM and storage so it can be unit-tested
+ * directly.
+ *
+ * The three MAIN rows no longer assume "registered ⇒ applied" (the FIX-01 bug):
+ * each resolves through the six-state runtime model (`resolveComponentState`),
+ * so a hook only reads `ENABLED`/`DISABLED` once the MAIN engine has *confirmed*
+ * it is installed and matches the saved choice. The three ISOLATED rows reflect
+ * the stored choice directly, since they are applied from the extension's own
+ * storage and need no adapter.
  */
 
-import type { AdapterState } from '../youtube/adapter/adapter';
 import type { FlagName } from '../youtube/config/flags';
 import { ISOLATED_LAYERS, MAIN_LAYERS, type LayerWorld } from '../youtube/config/layers';
-import { displayMessage } from '../youtube/state/messages';
 import {
-  resolveDisplay,
-  type DisplayState,
-  type SnapshotState,
-} from '../youtube/state/toggle-state';
+  resolveComponentState,
+  type ComponentRuntimeState,
+  type EngineRuntimeStatus,
+  type MainHookFlagName,
+} from '../youtube/state/engine-status';
+import { displayMessage } from '../youtube/state/messages';
+import type { DisplayState } from '../youtube/state/toggle-state';
 import type { MessageKey } from '../shared/i18n';
 
 /** One switch row the popup renders. */
@@ -32,6 +37,18 @@ export interface YtLayerRow {
   readonly message: string;
   /** True when a saved choice differs from the still-effective default. */
   readonly savedNotApplied: boolean;
+}
+
+/** Everything the six rows depend on, gathered by the popup page script. */
+export interface YtLayerInputs {
+  /** The saved per-layer choice. */
+  readonly desired: Readonly<Record<FlagName, boolean>>;
+  /** The YouTube module switch (master on/off for the engine). */
+  readonly moduleEnabled: boolean;
+  /** True when both engine content scripts are registered for the tab. */
+  readonly registered: boolean;
+  /** The MAIN engine's confirmed runtime status, or `undefined` when silent. */
+  readonly status: EngineRuntimeStatus | undefined;
 }
 
 /** Localised label per user-facing layer; unknown flags fall back to generic. */
@@ -48,22 +65,50 @@ function labelKeyFor(flag: FlagName): MessageKey {
   return LAYER_LABELS[flag] ?? 'gUnknown';
 }
 
-/** Builds the six rows, MAIN first, from the desired flags and adapter health. */
-export function buildYtLayers(
-  desired: Readonly<Record<FlagName, boolean>>,
-  adapter: AdapterState,
-  snapshot: SnapshotState,
-): readonly YtLayerRow[] {
+/** Maps a six-state component runtime to the popup's display state. */
+function componentDisplayState(state: ComponentRuntimeState, desiredOn: boolean): DisplayState {
+  switch (state) {
+    case 'READY':
+      return desiredOn ? 'ENABLED' : 'DISABLED';
+    case 'DISABLED':
+      return 'DISABLED';
+    case 'WAITING_FOR_REGISTRATION':
+      return 'WAITING_FOR_REGISTRATION';
+    case 'WAITING_FOR_ADAPTER':
+      return 'WAITING_FOR_ADAPTER';
+    case 'INITIALIZING':
+      return 'INITIALIZING';
+    case 'ERROR':
+      return 'ERROR';
+  }
+}
+
+/** True for a display state that means "not confirmed applied yet". */
+function isTransient(state: DisplayState): boolean {
+  return (
+    state === 'WAITING_FOR_REGISTRATION' ||
+    state === 'WAITING_FOR_ADAPTER' ||
+    state === 'INITIALIZING' ||
+    state === 'RECONCILING'
+  );
+}
+
+/** Builds the six rows, MAIN first, from the desired flags and live status. */
+export function buildYtLayers(input: YtLayerInputs): readonly YtLayerRow[] {
   const rows: YtLayerRow[] = [];
 
   for (const layer of MAIN_LAYERS) {
-    const on = desired[layer.flag];
-    const state = resolveDisplay({
-      desired: on ? 'ON' : 'OFF',
-      effective: on ? 'ENABLED' : 'DISABLED',
-      adapter,
-      snapshot,
-    }).state;
+    const on = input.desired[layer.flag];
+    const state = componentDisplayState(
+      resolveComponentState({
+        moduleEnabled: input.moduleEnabled,
+        registered: input.registered,
+        status: input.status,
+        flag: layer.flag as MainHookFlagName,
+        desiredOn: on,
+      }),
+      on,
+    );
     rows.push({
       flag: layer.flag,
       labelKey: labelKeyFor(layer.flag),
@@ -71,13 +116,13 @@ export function buildYtLayers(
       desired: on,
       state,
       message: displayMessage(state),
-      savedNotApplied: state === 'WAITING_FOR_ADAPTER' && !on,
+      savedNotApplied: isTransient(state) && !on,
     });
   }
 
   for (const layer of ISOLATED_LAYERS) {
-    const on = desired[layer.flag];
-    const state: DisplayState = on ? 'ENABLED' : 'DISABLED';
+    const on = input.desired[layer.flag];
+    const state: DisplayState = !input.moduleEnabled ? 'DISABLED' : on ? 'ENABLED' : 'DISABLED';
     rows.push({
       flag: layer.flag,
       labelKey: labelKeyFor(layer.flag),

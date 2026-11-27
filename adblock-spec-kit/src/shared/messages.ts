@@ -39,6 +39,24 @@ export interface YouTubeFaultMessage {
   readonly kind: string;
 }
 
+/**
+ * The popup asks the ISOLATED YouTube bridge for the MAIN engine's runtime
+ * status (FIX-01 handshake). The bridge answers with the raw `data-wg-yt-status`
+ * attribute value; the popup parses it with `parseEngineStatus`, so this layer
+ * carries no engine types of its own.
+ */
+export const MSG_YT_ENGINE_STATUS = 'wg:yt-engine-status';
+
+export interface YtEngineStatusMessage {
+  readonly type: typeof MSG_YT_ENGINE_STATUS;
+}
+
+/** The bridge's answer: the raw status attribute, or absent when silent. */
+export interface YtEngineStatusReply {
+  readonly ok: boolean;
+  readonly raw?: string;
+}
+
 export type BridgeMessage = HideElementMessage | TrustSiteMessage | StartPickerMessage;
 
 /** What the worker answers; `reason` is a stable code the UI localises. */
@@ -77,4 +95,9 @@ export function isBridgeMessage(value: unknown): value is BridgeMessage {
 /** Runtime guard for the page-side playback-fault report (Q5). */
 export function isYouTubeFaultMessage(value: unknown): value is YouTubeFaultMessage {
   return isRecord(value) && value['type'] === MSG_YOUTUBE_FAULT && typeof value['kind'] === 'string';
+}
+
+/** Runtime guard for the popup's runtime-status probe (FIX-01 handshake). */
+export function isYtEngineStatusMessage(value: unknown): value is YtEngineStatusMessage {
+  return isRecord(value) && value['type'] === MSG_YT_ENGINE_STATUS;
 }

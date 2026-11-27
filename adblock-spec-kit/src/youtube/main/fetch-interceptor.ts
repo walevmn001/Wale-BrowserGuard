@@ -74,8 +74,17 @@ async function maybeRewrite(
 }
 
 async function inspect(deps: FetchInterceptorDeps, response: Response): Promise<Response | null> {
+  // Size guard: never read (let alone rewrite) a body larger than the cap, so a
+  // huge payload cannot stall playback through the hook.
+  const declared = Number(response.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > TUNING.interceptMaxBodyChars) {
+    return null;
+  }
   // Read the body EXACTLY once, from a clone; the original is never consumed.
   const rawText = await response.clone().text();
+  if (rawText.length > TUNING.interceptMaxBodyChars) {
+    return null;
+  }
   if (!deps.isAdFieldPresent(rawText)) {
     return null;
   }

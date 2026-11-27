@@ -13,7 +13,9 @@ import type { DisplayState } from '../../../src/youtube/state/toggle-state';
 const STATES: readonly DisplayState[] = [
   'ENABLED',
   'DISABLED',
+  'WAITING_FOR_REGISTRATION',
   'WAITING_FOR_ADAPTER',
+  'INITIALIZING',
   'RECONCILING',
   'ERROR',
   'UNKNOWN',

@@ -18,7 +18,9 @@ export type SnapshotState = 'AVAILABLE' | 'MISSING' | 'INVALID' | 'STALE';
 export type DisplayState =
   | 'ENABLED'
   | 'DISABLED'
+  | 'WAITING_FOR_REGISTRATION'
   | 'WAITING_FOR_ADAPTER'
+  | 'INITIALIZING'
   | 'RECONCILING'
   | 'ERROR'
   | 'UNKNOWN';

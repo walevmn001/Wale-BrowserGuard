@@ -17,7 +17,9 @@ import type { DisplayState } from './toggle-state';
 export const DISPLAY_LABELS: Readonly<Record<DisplayState, string>> = {
   ENABLED: 'Đang bật',
   DISABLED: 'Đã tắt',
+  WAITING_FOR_REGISTRATION: 'Chờ đăng ký',
   WAITING_FOR_ADAPTER: 'Chờ adapter',
+  INITIALIZING: 'Đang khởi tạo',
   RECONCILING: 'Đang áp dụng',
   ERROR: 'Lỗi',
   UNKNOWN: 'Chưa rõ',
@@ -34,8 +36,12 @@ export function displayMessage(state: DisplayState, reason?: string): string {
       return 'Đang hoạt động trong trang.';
     case 'DISABLED':
       return 'Đã tắt trong trang.';
+    case 'WAITING_FOR_REGISTRATION':
+      return 'Module YouTube chưa được đăng ký cho tab này, nên lựa chọn của bạn chưa được áp dụng.';
     case 'WAITING_FOR_ADAPTER':
       return 'Hook đang chạy theo mặc định: bật. Cơ chế truyền cờ chưa hoàn tất, nên lựa chọn tắt/bật của bạn chưa được áp dụng.';
+    case 'INITIALIZING':
+      return 'Trang đang khởi tạo hook. Chưa có xác nhận từ trang cho lớp này.';
     case 'RECONCILING':
       return 'Đã gửi cấu hình mới sang trang. Đang chờ xác nhận.';
     case 'ERROR':

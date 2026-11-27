@@ -15,6 +15,7 @@
 
 import type { FeatureFlags } from '../config/flags';
 import type { DebugLogger } from '../core/debug-logger';
+import { TUNING } from '../config/tuning';
 
 export interface XhrLike {
   open(...args: unknown[]): void;
@@ -136,7 +137,7 @@ function applyXhrRewrite(
       return;
     }
     const text = safeStringify(current);
-    if (text === null || !deps.isAdFieldPresent(text)) {
+    if (text === null || text.length > TUNING.interceptMaxBodyChars || !deps.isAdFieldPresent(text)) {
       return;
     }
     const pruned = deps.pruneAdFields(text);
@@ -152,7 +153,7 @@ function applyXhrRewrite(
   }
 
   const raw = readResponseText(xhr);
-  if (raw === null || !deps.isAdFieldPresent(raw)) {
+  if (raw === null || raw.length > TUNING.interceptMaxBodyChars || !deps.isAdFieldPresent(raw)) {
     return;
   }
   const pruned = deps.pruneAdFields(raw);

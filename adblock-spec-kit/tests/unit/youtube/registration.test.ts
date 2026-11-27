@@ -116,16 +116,46 @@ describe('syncEngineRegistration', () => {
 });
 
 describe('isEngineRegistered', () => {
-  it('is true only once the engine MAIN script is registered', async () => {
+  it('is true only once both engine scripts are registered', async () => {
     const api = new FakeScripting();
     expect(await isEngineRegistered(api)).toBe(false);
     await syncEngineRegistration(api, true);
     expect(await isEngineRegistered(api)).toBe(true);
   });
 
+  it('is false when only one of the two scripts is registered', async () => {
+    const api = new FakeScripting();
+    api.ids.add(ENGINE_SCRIPT_ID);
+    expect(await isEngineRegistered(api)).toBe(false);
+
+    const api2 = new FakeScripting();
+    api2.ids.add(BRIDGE_SCRIPT_ID);
+    expect(await isEngineRegistered(api2)).toBe(false);
+  });
+
   it('is false (never throws) when the scripting API throws', async () => {
     const api = new FakeScripting();
     api.getFails = true;
     await expect(isEngineRegistered(api)).resolves.toBe(false);
+  });
+});
+
+describe('syncEngineRegistration — partial state', () => {
+  it('converges a half-registered module by registering only the missing script', async () => {
+    const api = new FakeScripting();
+    api.ids.add(ENGINE_SCRIPT_ID);
+    const result = await syncEngineRegistration(api, true);
+    expect(result).toEqual({ ok: true });
+    expect(api.ids.has(BRIDGE_SCRIPT_ID)).toBe(true);
+    expect(api.ids.has(ENGINE_SCRIPT_ID)).toBe(true);
+  });
+
+  it('unregisters both scripts when disabling from a partial state', async () => {
+    const api = new FakeScripting();
+    api.ids.add(ENGINE_SCRIPT_ID);
+    const result = await syncEngineRegistration(api, false);
+    expect(result).toEqual({ ok: true });
+    expect(api.ids.has(ENGINE_SCRIPT_ID)).toBe(false);
+    expect(api.ids.has(BRIDGE_SCRIPT_ID)).toBe(false);
   });
 });

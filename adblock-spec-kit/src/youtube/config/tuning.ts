@@ -9,13 +9,19 @@
  * Bump `TUNING_VERSION` whenever a value changes.
  */
 
-export const TUNING_VERSION = 4;
+export const TUNING_VERSION = 5;
 
 export const TUNING = {
   /** Deepest level the JSON prune walk descends before it stops. */
   pruneMaxDepth: 6,
   /** Most members the JSON prune walk may visit in one pass (size guard). */
   pruneMaxKeys: 100_000,
+  /**
+   * Largest response body the fetch/XHR hooks will read and rewrite. Anything
+   * larger is left untouched (fail-open) so a huge payload can never stall
+   * playback through the interceptor.
+   */
+  interceptMaxBodyChars: 5_000_000,
   /** Deadline for reading and rewriting a fetch response body. */
   fetchInterceptTimeoutMs: 2_000,
   /** Deadline for rewriting an XHR response body. */

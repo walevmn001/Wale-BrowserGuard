@@ -85,15 +85,21 @@ function registrations(): ContentScriptRegistration[] {
   return [engineRegistration(), bridgeRegistration()];
 }
 
-async function isRegistered(api: ScriptingApi): Promise<boolean> {
-  const scripts = await api.getRegisteredContentScripts({ ids: [ENGINE_SCRIPT_ID] });
-  return scripts.some((script) => script.id === ENGINE_SCRIPT_ID);
+/** The ids the API currently reports as registered, as a set for fast lookup. */
+async function registeredIds(api: ScriptingApi): Promise<ReadonlySet<string>> {
+  const scripts = await api.getRegisteredContentScripts({ ids: [...ENGINE_SCRIPT_IDS] });
+  return new Set(scripts.map((script) => script.id));
 }
 
-/** True when the engine's MAIN script is registered (used by the popup). */
+/**
+ * True when *both* of the engine's content scripts are registered (used by the
+ * popup). Checking both is what stops a half-registered module to read as live:
+ * the MAIN engine is useless without the ISOLATED bridge that feeds it flags.
+ */
 export async function isEngineRegistered(api: ScriptingApi): Promise<boolean> {
   try {
-    return await isRegistered(api);
+    const ids = await registeredIds(api);
+    return ENGINE_SCRIPT_IDS.every((id) => ids.has(id));
   } catch {
     return false;
   }
@@ -101,17 +107,22 @@ export async function isEngineRegistered(api: ScriptingApi): Promise<boolean> {
 
 /**
  * Brings both engine registrations in line with `enabled`. Idempotent: enabling
- * when already registered (and disabling when already absent) is a no-op.
+ * when already registered (and disabling when already absent) is a no-op. A
+ * partial state (only one of the two scripts present) is converged by
+ * registering just the missing one, so a failed half can never be left behind.
  */
 export async function syncEngineRegistration(
   api: ScriptingApi,
   enabled: boolean,
 ): Promise<SyncResult> {
   try {
-    const registered = await isRegistered(api);
-    if (enabled && !registered) {
-      await api.registerContentScripts(registrations());
-    } else if (!enabled && registered) {
+    const ids = await registeredIds(api);
+    if (enabled) {
+      const missing = registrations().filter((script) => !ids.has(script.id));
+      if (missing.length > 0) {
+        await api.registerContentScripts(missing);
+      }
+    } else if (ids.has(ENGINE_SCRIPT_ID) || ids.has(BRIDGE_SCRIPT_ID)) {
       await api.unregisterContentScripts({ ids: [...ENGINE_SCRIPT_IDS] });
     }
     return { ok: true };

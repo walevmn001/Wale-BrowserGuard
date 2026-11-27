@@ -16,6 +16,12 @@
  *
  * It re-publishes whenever the stored layer map changes, so toggling a layer in
  * the popup updates the live page without a reload.
+ *
+ * FIX-01 adds the other half of the handshake: the popup can probe this bridge
+ * (via `chrome.tabs.sendMessage`) for the MAIN engine's runtime status, and the
+ * bridge answers with the raw `data-wg-yt-status` attribute the MAIN engine
+ * wrote. That is what lets the popup show a real `READY` instead of trusting
+ * the mere registration of the content script.
  */
 
 import {
@@ -24,6 +30,11 @@ import {
   type AttributeTarget,
 } from '../adapter/dataset-adapter';
 import { FLAG_SCHEMA_VERSION, type FlagName, type FlagSnapshot } from '../config/flags';
+import { ENGINE_STATUS_ATTRIBUTE } from '../state/engine-status';
+import {
+  isYtEngineStatusMessage,
+  type YtEngineStatusReply,
+} from '../../shared/messages';
 import { createYouTubeEngineSettings, ENGINE_FLAGS_KEY } from './settings';
 
 /** Guard so a double injection cannot install the bridge twice. */
@@ -86,6 +97,37 @@ function publishSnapshot(): void {
   });
 }
 
+/** Answers the popup's status probe with the live `data-wg-yt-status` value. */
+function reportEngineStatus(): YtEngineStatusReply {
+  try {
+    const raw = rootOrNull()?.getAttribute(ENGINE_STATUS_ATTRIBUTE);
+    return raw === null || raw === undefined ? { ok: true } : { ok: true, raw };
+  } catch {
+    return { ok: false };
+  }
+}
+
+/** Serves the popup's runtime-status probes; the reply is synchronous. */
+function listenForStatusProbes(): void {
+  try {
+    chrome.runtime.onMessage.addListener(
+      (
+        message: unknown,
+        _sender: chrome.runtime.MessageSender,
+        sendResponse: (reply: YtEngineStatusReply) => void,
+      ): boolean => {
+        if (!isYtEngineStatusMessage(message)) {
+          return false;
+        }
+        sendResponse(reportEngineStatus());
+        return false;
+      },
+    );
+  } catch {
+    // fail-open: the bridge still publishes the snapshot without status probes.
+  }
+}
+
 function boot(): void {
   const scope = window as unknown as Record<string, unknown>;
   if (scope[BRIDGE_GUARD] === true) {
@@ -93,6 +135,7 @@ function boot(): void {
   }
   scope[BRIDGE_GUARD] = true;
 
+  listenForStatusProbes();
   publishSnapshot();
   try {
     chrome.storage.onChanged.addListener((changes, area) => {

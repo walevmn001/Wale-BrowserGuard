@@ -6,10 +6,12 @@ import { installYouTubeHealth } from '../../src/content/youtube/health';
 import {
   isBridgeMessage,
   isYouTubeFaultMessage,
+  isYtEngineStatusMessage,
   MSG_HIDE_ELEMENT,
   MSG_START_PICKER,
   MSG_TRUST_SITE,
   MSG_YOUTUBE_FAULT,
+  MSG_YT_ENGINE_STATUS,
 } from '../../src/shared/messages';
 
 /**
@@ -78,5 +80,19 @@ describe('isYouTubeFaultMessage', () => {
     expect(isYouTubeFaultMessage({ type: MSG_TRUST_SITE })).toBe(false);
     expect(isYouTubeFaultMessage(null)).toBe(false);
     expect(isYouTubeFaultMessage('wg:youtube-fault')).toBe(false);
+  });
+});
+
+describe('isYtEngineStatusMessage — the FIX-01 status probe', () => {
+  it('accepts the popup status-probe message and nothing else', () => {
+    expect(isYtEngineStatusMessage({ type: MSG_YT_ENGINE_STATUS })).toBe(true);
+    expect(isYtEngineStatusMessage({ type: MSG_TRUST_SITE })).toBe(false);
+    expect(isYtEngineStatusMessage({ type: MSG_YT_ENGINE_STATUS, extra: 1 })).toBe(true);
+  });
+
+  it('rejects arrays, null and non-objects', () => {
+    expect(isYtEngineStatusMessage([])).toBe(false);
+    expect(isYtEngineStatusMessage(null)).toBe(false);
+    expect(isYtEngineStatusMessage('wg:yt-engine-status')).toBe(false);
   });
 });

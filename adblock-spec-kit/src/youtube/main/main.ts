@@ -9,13 +9,24 @@
  * XHR hook — plus the Phase 4–5 runtime modules: playback watchdog (+ recovery),
  * DOM observer, SPA navigation and the cosmetic CSS hider.
  *
+ * FIX-01 boot order. The engine used to init every module against the A-3
+ * defaults *before* the T004 snapshot arrived, and the hook modules never
+ * reconsidered. Boot now follows the mandated order:
+ *   1. build the flags in the safe default state;
+ *   2. start the dataset adapter so it can receive and validate the snapshot;
+ *   3. apply the validated flags (via `applyRemote`);
+ *   4. initialise the flag-dependent modules;
+ *   5. keep watching flag changes for the whole document lifetime.
+ * The hook modules subscribe to the flags themselves, so a deferred snapshot
+ * (root not parsed yet) still reconciles them the moment it lands.
+ *
  * It is idempotent (a guard on `win`) and absolutely fail-open: the whole boot
  * runs inside a try/catch and never throws into the page. The engine starts on
- * the A-3 default (all ON) and then applies the snapshot the ISOLATED bridge
- * publishes onto the shared root attribute (the T004 dataset transport), so a
+ * the A-3 default (all ON) until the ISOLATED bridge publishes a snapshot, so a
  * saved "off" takes effect on the live page without a reload.
  */
 
+import { adapterStateOf } from '../adapter/adapter';
 import { DatasetAdapter, type AttributeObserver, type AttributeTarget } from '../adapter/dataset-adapter';
 import { FeatureFlags } from '../config/flags';
 import { TUNING } from '../config/tuning';
@@ -26,10 +37,20 @@ import { pruneJson } from '../core/json-pruner';
 import { createEndpointRegistry } from '../registry/endpoints';
 import { createSelectorRegistry } from '../registry/selectors';
 import type { ModuleContext, ModuleStatus, YouTubeModule } from '../core/module';
+import {
+  ENGINE_STATUS_ATTRIBUTE,
+  buildEngineStatus,
+  type EngineComponentStatus,
+  type MainHookFlagName,
+} from '../state/engine-status';
 import { createAdControlModule } from './ad-control-module';
 import { createFetchInterceptor, type FetchLike } from './fetch-interceptor';
 import { createXhrInterceptor, type XhrConstructor } from './xhr-interceptor';
-import { installPlayerResponseHook, type PlayerHookTarget } from './player-response-hook';
+import {
+  installPlayerResponseHook,
+  type PlayerHookHandle,
+  type PlayerHookTarget,
+} from './player-response-hook';
 import {
   createCssModule,
   createObserverModule,
@@ -46,6 +67,13 @@ const ENGINE_GUARD = '__wgYtEngine';
  */
 const AD_FIELD_KEYS: readonly string[] = ['adPlacements', 'playerAds', 'adSlots'];
 
+/** Module name (registry) per MAIN hook flag, so the status writer can find it. */
+const HOOK_MODULE_NAMES: Readonly<Record<MainHookFlagName, string>> = {
+  ENABLE_JSON_PRUNER: 'json-pruner',
+  ENABLE_FETCH_HOOK: 'fetch-interceptor',
+  ENABLE_XHR_HOOK: 'xhr-interceptor',
+};
+
 interface EngineHandle {
   status(): unknown;
   dispose(): void;
@@ -61,6 +89,7 @@ export function bootYouTubeEngine(win: Window = window): { dispose(): void } | u
       return { dispose: () => existing.dispose() };
     }
 
+    // 1. Safe start state: every flag on its A-3 default until a snapshot lands.
     const flags = new FeatureFlags();
     const logger = new DebugLogger();
     const lifecycle = new LifecycleManager();
@@ -95,13 +124,11 @@ export function bootYouTubeEngine(win: Window = window): { dispose(): void } | u
     const prunePlayerValue = (value: unknown): unknown =>
       pruneJson(value, AD_FIELD_KEYS, limits).value;
 
+    // Every module is registered up front; each self-gates on its own flag and
+    // reconciles on change, so turning a hook on after boot needs no reload.
     registry.register(createPlayerHookModule(win, flags, logger, prunePlayerValue));
-    if (flags.get('ENABLE_FETCH_HOOK')) {
-      registry.register(createFetchModule(win, flags, logger, pruneAdFields, isAdFieldPresent));
-    }
-    if (flags.get('ENABLE_XHR_HOOK')) {
-      registry.register(createXhrModule(win, flags, logger, pruneAdFields, isAdFieldPresent));
-    }
+    registry.register(createFetchModule(win, flags, logger, pruneAdFields, isAdFieldPresent));
+    registry.register(createXhrModule(win, flags, logger, pruneAdFields, isAdFieldPresent));
 
     // Phase 4–5 runtime modules. Each is self-gated by its own flag as well.
     registry.register(createWatchdogModule(win, flags, logger, selectors));
@@ -113,12 +140,44 @@ export function bootYouTubeEngine(win: Window = window): { dispose(): void } | u
     registry.register(createAdControlModule(win, flags, logger, selectors));
 
     const ctx: ModuleContext = { flags, logger, lifecycle, selectors, endpoints };
-    void registry.initAll(ctx);
 
-    // T004: apply the ISOLATED bridge's flag snapshot from the shared root
-    // attribute. Booted once the root exists; until then the A-3 defaults hold.
+    // The MAIN → ISOLATED handshake: publish a small runtime status the popup
+    // reads back (via the ISOLATED bridge) so it never fakes READY.
     let adapter: DatasetAdapter | undefined;
     let adapterWaiter: MutationObserver | undefined;
+
+    const hookStatus = (flag: MainHookFlagName): EngineComponentStatus => {
+      const status = registry.get(HOOK_MODULE_NAMES[flag])?.status();
+      return { ready: status?.enabled === true, enabled: flags.get(flag) };
+    };
+
+    const writeStatus = (): void => {
+      try {
+        const root = win.document.documentElement as HTMLElement | null;
+        if (root === null) {
+          return;
+        }
+        const adapterStatus = adapter?.status();
+        const status = buildEngineStatus({
+          adapter: adapterStatus === undefined ? 'WAITING' : adapterStateOf(adapterStatus),
+          delivered: adapterStatus?.deliveredCount ?? 0,
+          hooks: {
+            ENABLE_JSON_PRUNER: hookStatus('ENABLE_JSON_PRUNER'),
+            ENABLE_FETCH_HOOK: hookStatus('ENABLE_FETCH_HOOK'),
+            ENABLE_XHR_HOOK: hookStatus('ENABLE_XHR_HOOK'),
+          },
+        });
+        root.setAttribute(ENGINE_STATUS_ATTRIBUTE, JSON.stringify(status));
+      } catch {
+        // fail-open: a status write must never break the page.
+      }
+    };
+
+    // 5. Watch config changes for the whole document lifetime: the adapter hands
+    // raw snapshots in, the flags notify their subscribers, and we re-publish.
+    const unsubscribeStatus = flags.subscribe(() => writeStatus());
+
+    // 2. Receive and validate the snapshot before the modules initialise.
     const bootAdapter = (): void => {
       try {
         const root = win.document.documentElement as HTMLElement | null;
@@ -144,21 +203,33 @@ export function bootYouTubeEngine(win: Window = window): { dispose(): void } | u
         });
         adapter.onReceive((raw) => {
           try {
+            // 3. Apply the validated flags; a bad snapshot keeps the defaults.
             flags.applyRemote(raw);
           } catch {
-            // fail-open: a bad snapshot can only leave the defaults in place.
+            // fail-open
           }
+          writeStatus();
         });
         adapter.start();
+        writeStatus();
       } catch {
         // fail-open
       }
     };
     bootAdapter();
 
+    // 4. Initialise the modules against the (now applied) flags.
+    void registry.initAll(ctx).then(() => writeStatus());
+    writeStatus();
+
     const handle: EngineHandle = {
       status: () => registry.statusAll(),
       dispose: () => {
+        try {
+          unsubscribeStatus();
+        } catch {
+          // fail-open
+        }
         try {
           void registry.disposeAll();
         } catch {
@@ -172,6 +243,11 @@ export function bootYouTubeEngine(win: Window = window): { dispose(): void } | u
         try {
           adapter?.dispose();
           adapterWaiter?.disconnect();
+        } catch {
+          // fail-open
+        }
+        try {
+          flags.dispose();
         } catch {
           // fail-open
         }
@@ -207,32 +283,60 @@ function isEngineHandle(value: unknown): value is EngineHandle {
   );
 }
 
+/**
+ * JSON-pruner hook module. Installs/uninstalls the `ytInitialPlayerResponse`
+ * accessor as the flag flips, and reports "settled" when the installed state
+ * matches the flag. The accessor itself re-checks the flag per assignment, so an
+ * OFF is honoured even between reconciliations.
+ */
 function createPlayerHookModule(
   win: Window,
   flags: FeatureFlags,
   logger: DebugLogger,
   pruner: (value: unknown) => unknown,
 ): YouTubeModule {
-  let enabled = false;
-  const name = 'json-pruner';
+  const name = HOOK_MODULE_NAMES.ENABLE_JSON_PRUNER;
+  let installed = false;
+  let handle: PlayerHookHandle | undefined;
+  let unsubscribe: (() => void) | undefined;
+
+  const apply = (): void => {
+    const on = flags.get('ENABLE_JSON_PRUNER');
+    if (on && !installed) {
+      handle = installPlayerResponseHook(win as unknown as PlayerHookTarget, { flags, logger, pruner });
+      installed = handle !== undefined;
+    } else if (!on && installed) {
+      handle?.uninstall();
+      handle = undefined;
+      installed = false;
+    }
+  };
+
   return {
     name,
     init(): void {
-      enabled = flags.get('ENABLE_JSON_PRUNER');
-      if (!enabled) {
-        return;
-      }
-      installPlayerResponseHook(win as unknown as PlayerHookTarget, { flags, logger, pruner });
+      unsubscribe = flags.subscribe(apply);
+      apply();
     },
     dispose(): void {
-      enabled = false;
+      unsubscribe?.();
+      unsubscribe = undefined;
+      handle?.uninstall();
+      handle = undefined;
+      installed = false;
     },
     status(): ModuleStatus {
-      return { name, enabled, failures: 0, lastError: null };
+      // "ready" = the page is in the state the current flag asks for.
+      return { name, enabled: installed === flags.get('ENABLE_JSON_PRUNER'), failures: 0, lastError: null };
     },
   };
 }
 
+/**
+ * Fetch-hook module. The wrapper is installed once (so a runtime OFF→ON needs no
+ * reinstall) and the interceptor gates every call by the flag, which preserves
+ * the original request behaviour exactly when the hook is off.
+ */
 function createFetchModule(
   win: Window,
   flags: FeatureFlags,
@@ -240,42 +344,48 @@ function createFetchModule(
   pruneAdFields: PruneAdFields,
   isAdFieldPresent: (rawText: string) => boolean,
 ): YouTubeModule {
-  let enabled = false;
+  const name = HOOK_MODULE_NAMES.ENABLE_FETCH_HOOK;
+  let installed = false;
   let original: FetchLike | undefined;
-  const name = 'fetch-interceptor';
+  let unsubscribe: (() => void) | undefined;
+
   return {
     name,
     init(): void {
-      enabled = flags.get('ENABLE_FETCH_HOOK');
-      if (!enabled) {
-        return;
-      }
       const target = win as unknown as { fetch?: FetchLike };
       const nativeFetch = target.fetch;
-      if (typeof nativeFetch !== 'function') {
-        return;
+      if (typeof nativeFetch === 'function') {
+        original = nativeFetch;
+        const interceptor = createFetchInterceptor({ flags, logger, pruneAdFields, isAdFieldPresent });
+        // Keep the native `this` (window): the original fetch can be illegal when
+        // called unbound.
+        const bound: FetchLike = (input, init) => nativeFetch.call(win, input, init);
+        target.fetch = interceptor.wrap(bound);
+        installed = true;
       }
-      original = nativeFetch;
-      const interceptor = createFetchInterceptor({ flags, logger, pruneAdFields, isAdFieldPresent });
-      // Keep the native `this` (window): the original fetch can be illegal when
-      // called unbound.
-      const bound: FetchLike = (input, init) => nativeFetch.call(win, input, init);
-      target.fetch = interceptor.wrap(bound);
+      unsubscribe = flags.subscribe(() => undefined);
     },
     dispose(): void {
+      unsubscribe?.();
+      unsubscribe = undefined;
       const target = win as unknown as { fetch?: FetchLike };
       if (original !== undefined) {
         target.fetch = original;
       }
       original = undefined;
-      enabled = false;
+      installed = false;
     },
     status(): ModuleStatus {
-      return { name, enabled, failures: 0, lastError: null };
+      return { name, enabled: installed, failures: 0, lastError: null };
     },
   };
 }
 
+/**
+ * XHR-hook module. As with fetch, the subclass is installed once and the
+ * per-request rewrite is gated by the flag inside the interceptor, so the off
+ * state keeps the native XHR behaviour untouched.
+ */
 function createXhrModule(
   win: Window,
   flags: FeatureFlags,
@@ -283,35 +393,36 @@ function createXhrModule(
   pruneAdFields: PruneAdFields,
   isAdFieldPresent: (rawText: string) => boolean,
 ): YouTubeModule {
-  let enabled = false;
+  const name = HOOK_MODULE_NAMES.ENABLE_XHR_HOOK;
+  let installed = false;
   let original: XhrConstructor | undefined;
-  const name = 'xhr-interceptor';
+  let unsubscribe: (() => void) | undefined;
+
   return {
     name,
     init(): void {
-      enabled = flags.get('ENABLE_XHR_HOOK');
-      if (!enabled) {
-        return;
-      }
       const target = win as unknown as { XMLHttpRequest?: XhrConstructor };
       const nativeXhr = target.XMLHttpRequest;
-      if (typeof nativeXhr !== 'function') {
-        return;
+      if (typeof nativeXhr === 'function') {
+        original = nativeXhr;
+        const interceptor = createXhrInterceptor({ flags, logger, pruneAdFields, isAdFieldPresent });
+        target.XMLHttpRequest = interceptor.wrap(nativeXhr);
+        installed = true;
       }
-      original = nativeXhr;
-      const interceptor = createXhrInterceptor({ flags, logger, pruneAdFields, isAdFieldPresent });
-      target.XMLHttpRequest = interceptor.wrap(nativeXhr);
+      unsubscribe = flags.subscribe(() => undefined);
     },
     dispose(): void {
+      unsubscribe?.();
+      unsubscribe = undefined;
       const target = win as unknown as { XMLHttpRequest?: XhrConstructor };
       if (original !== undefined) {
         target.XMLHttpRequest = original;
       }
       original = undefined;
-      enabled = false;
+      installed = false;
     },
     status(): ModuleStatus {
-      return { name, enabled, failures: 0, lastError: null };
+      return { name, enabled: installed, failures: 0, lastError: null };
     },
   };
 }

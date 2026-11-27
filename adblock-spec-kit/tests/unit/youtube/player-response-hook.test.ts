@@ -133,4 +133,68 @@ describe('installPlayerResponseHook', () => {
 
     expect(scopeOf(target)['__customGuard']).toBe(true);
   });
+
+  it('returns a handle on success and undefined when the flag is off', () => {
+    const on: PlayerHookTarget = {};
+    const handle = installPlayerResponseHook(on, {
+      flags: makeFlags(),
+      logger: new DebugLogger(),
+      pruner: stripAds,
+    });
+    expect(typeof handle?.uninstall).toBe('function');
+
+    const off: PlayerHookTarget = {};
+    const none = installPlayerResponseHook(off, {
+      flags: makeFlags({ ENABLE_JSON_PRUNER: false }),
+      logger: new DebugLogger(),
+      pruner: stripAds,
+    });
+    expect(none).toBeUndefined();
+  });
+
+  it('stops pruning the moment the flag flips off, and resumes when it flips on', () => {
+    const flags = makeFlags();
+    const target: PlayerHookTarget = {};
+    installPlayerResponseHook(target, { flags, logger: new DebugLogger(), pruner: stripAds });
+
+    // Flag ON: a future assignment is pruned.
+    scopeOf(target)[RESPONSE_KEY] = { adPlacements: [1], keep: true };
+    expect(scopeOf(target)[RESPONSE_KEY]).toEqual({ keep: true });
+
+    // Flag OFF at runtime: the very next assignment must pass through untouched.
+    flags.applyRemote({
+      schemaVersion: 1,
+      flags: { ...DEFAULT_FLAGS, ENABLE_JSON_PRUNER: false },
+    });
+    const raw = { adPlacements: [2], keep: false };
+    scopeOf(target)[RESPONSE_KEY] = raw;
+    expect(scopeOf(target)[RESPONSE_KEY]).toBe(raw);
+
+    // Flag back ON: pruning resumes on the next assignment.
+    flags.applyRemote({ schemaVersion: 1, flags: { ...DEFAULT_FLAGS } });
+    scopeOf(target)[RESPONSE_KEY] = { adPlacements: [3], keep: true };
+    expect(scopeOf(target)[RESPONSE_KEY]).toEqual({ keep: true });
+  });
+
+  it('uninstall restores a plain, writable data property', () => {
+    const target: PlayerHookTarget = {};
+    const handle = installPlayerResponseHook(target, {
+      flags: makeFlags(),
+      logger: new DebugLogger(),
+      pruner: stripAds,
+    });
+
+    scopeOf(target)[RESPONSE_KEY] = { adPlacements: [1], keep: true };
+    handle?.uninstall();
+
+    const descriptor = Object.getOwnPropertyDescriptor(target, RESPONSE_KEY);
+    expect(descriptor?.set).toBeUndefined();
+    expect(descriptor?.writable).toBe(true);
+    expect(scopeOf(target)[DEFAULT_PLAYER_HOOK_GUARD]).toBeUndefined();
+
+    // The page can still assign without the accessor in the way.
+    const raw = { keep: 'untouched' };
+    scopeOf(target)[RESPONSE_KEY] = raw;
+    expect(scopeOf(target)[RESPONSE_KEY]).toBe(raw);
+  });
 });
