@@ -24,7 +24,7 @@ Schema sự kiện, mỗi bản ghi:
 { seq, world: "MAIN" | "ISOLATED", event, t: performance.now(), readyState, navigationType }
 ```
 
-S�� kiện cần ghi:
+Sự kiện cần ghi:
 
 - `script_start`: đầu file script của world.
 - `hook_installed_fetch`, `hook_installed_initialresponse`: trong MAIN.

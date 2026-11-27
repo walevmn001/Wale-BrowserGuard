@@ -260,9 +260,11 @@ Với **mỗi** test P7-PLAY-01…05, chạy hai lượt (A: extension **đang b
 ## 8. Nhóm F — T066: Thí nghiệm A-2 (MAIN có đọc được `chrome.storage`?) 🔴
 
 > **Cần một extension thử nghiệm RIÊNG** (không phải WALE GUARD production), theo đúng quy trình tại `verification/A-2-main-storage-access.md` mục 3–5. **Không** chèn mã thử nghiệm vào build production.
+>
+> **Đã dựng sẵn:** `verification/experiments/a2-storage-probe/` (Load unpacked thư mục này). Hướng dẫn đọc kết quả: `verification/experiments/README.md`.
 
 ### P7-A2-01 — Chạy thí nghiệm A-2
-- **Điều kiện:** có extension thử nghiệm tối thiểu (một content script MAIN + một ISOLATED, `run_at: document_start`, quyền `storage`); Chrome thật.
+- **Điều kiện:** extension thử nghiệm đã dựng sẵn tại `verification/experiments/a2-storage-probe/` (một content script MAIN + một ISOLATED, `run_at: document_start`, quyền `storage`); Chrome thật.
 - **Các bước:** theo `A-2-main-storage-access.md` mục 4 (đặt giá trị trong `chrome.storage.sync` từ ISOLATED; mở YouTube mới ≥3 lần; đọc `window.__a2Probe`; lặp 1 lần qua SPA).
 - **Kết quả mong đợi:** ghi lại `typeof chrome` / `typeof chrome.storage` / lỗi gọi storage trong MAIN. **Không phán đoán trước.**
 - **Điền kết quả vào:** mục 5 (bảng) và mục 7 (kết luận) của `A-2-main-storage-access.md`, và dòng P7-A2-01 trong `PHASE_7_TEST_RESULTS.md`.
@@ -273,9 +275,11 @@ Với **mỗi** test P7-PLAY-01…05, chạy hai lượt (A: extension **đang b
 ## 9. Nhóm G — T067: Instrumentation A-4 (thứ tự chạy MAIN/ISOLATED) 🔴
 
 > **Cần instrumentation riêng** theo `verification/A-4-document-start-order.md` mục 3–5. Không tích hợp vào production.
+>
+> **Đã dựng sẵn:** `verification/experiments/a4-start-order/` (Load unpacked thư mục này). Bật/tắt "snapshot" và cách đọc `window.__a4Log`: `verification/experiments/README.md`.
 
 ### P7-A4-01 — Chạy instrumentation A-4
-- **Điều kiện:** extension thử nghiệm hai world ghi log theo schema ở `A-4-document-start-order.md` mục 3; Chrome thật.
+- **Điều kiện:** instrumentation đã dựng sẵn tại `verification/experiments/a4-start-order/` (hai world ghi log theo schema ở `A-4-document-start-order.md` mục 3); Chrome thật.
 - **Các bước:** theo `A-4-document-start-order.md` mục 4: ≥20 điều hướng mới + ≥20 chuyển video SPA; chạy cả có snapshot và không snapshot.
 - **Kết quả mong đợi:** thu được bảng thứ tự tại mục 5 của file đó; ghi rõ số lần MAIN trước / ISOLATED trước / không xác định.
 - **Điền kết quả vào:** mục 5 + mục 7 của `A-4-document-start-order.md`, và dòng P7-A4-01 trong `PHASE_7_TEST_RESULTS.md`.

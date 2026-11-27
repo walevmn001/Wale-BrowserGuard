@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "A-2 Probe — MAIN chrome.storage access (verification only)",
+  "version": "0.1.0",
+  "description": "Standalone probe for verification A-2 (T066). NOT part of WALE GUARD production; the production engine stays INERT.",
+  "permissions": ["storage"],
+  "host_permissions": ["*://*.youtube.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["isolated.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED",
+      "all_frames": false
+    },
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["main.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": false
+    }
+  ]
+}

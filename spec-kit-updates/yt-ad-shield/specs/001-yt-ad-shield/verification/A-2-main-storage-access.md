@@ -19,6 +19,8 @@ Xác định một content script có `world: "MAIN"` có truy cập được `c
 
 Chỉ dùng để kiểm thử, không phải code sản phẩm.
 
+> **Đã dựng sẵn:** `experiments/a2-storage-probe/` (Load unpacked đúng thư mục này). Mô tả dưới đây ứng với extension đó; cách đọc kết quả ở `experiments/README.md`.
+
 - `manifest.json`: một content script MAIN và một content script ISOLATED, cùng `matches` `*://*.youtube.com/*`, `run_at: "document_start"`, quyền `storage`.
 - Script MAIN: ghi kết quả của các phép thử sau vào `window.__a2Probe`:
   - `typeof chrome` (trong MAIN).
