@@ -10,11 +10,13 @@
  * DOM observer, SPA navigation and the cosmetic CSS hider.
  *
  * It is idempotent (a guard on `win`) and absolutely fail-open: the whole boot
- * runs inside a try/catch and never throws into the page. The engine ships with
- * all flags ON because there is no adapter wiring yet (T004 is still open): the
- * adapter is a `NullAdapter` and the A-3 default effective state is ON.
+ * runs inside a try/catch and never throws into the page. The engine starts on
+ * the A-3 default (all ON) and then applies the snapshot the ISOLATED bridge
+ * publishes onto the shared root attribute (the T004 dataset transport), so a
+ * saved "off" takes effect on the live page without a reload.
  */
 
+import { DatasetAdapter, type AttributeObserver, type AttributeTarget } from '../adapter/dataset-adapter';
 import { FeatureFlags } from '../config/flags';
 import { TUNING } from '../config/tuning';
 import { DebugLogger } from '../core/debug-logger';
@@ -24,6 +26,7 @@ import { pruneJson } from '../core/json-pruner';
 import { createEndpointRegistry } from '../registry/endpoints';
 import { createSelectorRegistry } from '../registry/selectors';
 import type { ModuleContext, ModuleStatus, YouTubeModule } from '../core/module';
+import { createAdControlModule } from './ad-control-module';
 import { createFetchInterceptor, type FetchLike } from './fetch-interceptor';
 import { createXhrInterceptor, type XhrConstructor } from './xhr-interceptor';
 import { installPlayerResponseHook, type PlayerHookTarget } from './player-response-hook';
@@ -106,8 +109,52 @@ export function bootYouTubeEngine(win: Window = window): { dispose(): void } | u
     registry.register(createSpaModule(win, flags, logger, selectors));
     registry.register(createCssModule(win, flags, logger, selectors));
 
+    // Phase 1–3 ad control (skip / fast-forward parity with the retired module).
+    registry.register(createAdControlModule(win, flags, logger, selectors));
+
     const ctx: ModuleContext = { flags, logger, lifecycle, selectors, endpoints };
     void registry.initAll(ctx);
+
+    // T004: apply the ISOLATED bridge's flag snapshot from the shared root
+    // attribute. Booted once the root exists; until then the A-3 defaults hold.
+    let adapter: DatasetAdapter | undefined;
+    let adapterWaiter: MutationObserver | undefined;
+    const bootAdapter = (): void => {
+      try {
+        const root = win.document.documentElement as HTMLElement | null;
+        const Ctor = (win as unknown as {
+          MutationObserver: new (cb: () => void) => MutationObserver;
+        }).MutationObserver;
+        if (root === null) {
+          const localWaiter = new Ctor(() => {
+            if ((win.document.documentElement as HTMLElement | null) !== null) {
+              localWaiter.disconnect();
+              adapterWaiter = undefined;
+              bootAdapter();
+            }
+          });
+          adapterWaiter = localWaiter;
+          localWaiter.observe(win.document, { childList: true });
+          return;
+        }
+        const target: AttributeTarget = root;
+        adapter = new DatasetAdapter({
+          target,
+          createObserver: (callback): AttributeObserver => new Ctor(callback),
+        });
+        adapter.onReceive((raw) => {
+          try {
+            flags.applyRemote(raw);
+          } catch {
+            // fail-open: a bad snapshot can only leave the defaults in place.
+          }
+        });
+        adapter.start();
+      } catch {
+        // fail-open
+      }
+    };
+    bootAdapter();
 
     const handle: EngineHandle = {
       status: () => registry.statusAll(),
@@ -119,6 +166,12 @@ export function bootYouTubeEngine(win: Window = window): { dispose(): void } | u
         }
         try {
           lifecycle.disposeAll();
+        } catch {
+          // fail-open
+        }
+        try {
+          adapter?.dispose();
+          adapterWaiter?.disconnect();
         } catch {
           // fail-open
         }

@@ -389,3 +389,49 @@ Các mục 5, 10–13, 15 nay **IMPLEMENTED / TESTED (unit)**; 17/17 trách nhi�
 - Checkpoint commit: `chore(release): checkpoint YouTube validation pending` (push `origin main`; hash xem `git log` và release notes).
 - Tag/Release: `phase-P7-pending` (prerelease — checkpoint, **không** kèm binary).
 - Không xóa tag/release/artifact cũ.
+
+---
+
+## 17. Cập nhật v10: engine TÍCH HỢP / KÍCH HOẠT, T004 chốt (2026-11-27)
+
+**Trạng thái định nghĩa:** SPECIFIED cho Phase 7 (chưa chạy); **IMPLEMENTED / TESTED (unit)** cho Phase 0–6; engine **đã kích hoạt** trong extension; **chưa VERIFIED** trên Chrome/YouTube thật.
+
+Ba quyết định đã chốt và nay đã triển khai:
+
+1. **Đăng ký động qua seam** — service worker gọi `applyYouTubeEngineRegistration()` → `syncEngineRegistration` đăng ký/gỡ **hai** content script qua `chrome.scripting.registerContentScripts` (`youtube-main.js` `world:'MAIN'`, `youtube-isolated.js` `world:'ISOLATED'`, `runAt:'document_start'`), bật/tắt theo công tắc module, idempotent. `manifest.json` **vẫn không** có `content_scripts` tĩnh cho engine.
+2. **Thay thế hẳn bằng engine mới** — đường `executeScript` prune/skip/health của module YouTube v1 đã **retire**; không còn caller `createYouTubeModule`/`runYouTubeModule` trong `src/`.
+3. **Cơ chế dataset (T004)** — **CLOSED, chọn phương án A**: `DatasetAdapter` ghi/đọc thuộc tính JSON `data-wg-yt-flags` trên `<html>`; ISOLATED publish snapshot, MAIN đọc lần đầu + `MutationObserver` → `FeatureFlags.applyRemote`. Popup nối 3 cờ MAIN theo trạng thái thật (`isEngineRegistered` → `READY`).
+
+### Artifact mới có bằng chứng
+
+| Thành phần | File | Test |
+|-----------|------|------|
+| Adapter dataset (T004) | `src/youtube/adapter/dataset-adapter.ts` | `dataset-adapter.test.ts` |
+| Entry ISOLATED | `src/youtube/isolated/content-entry.ts` (publish + `chrome.storage.onChanged`) | `registration.test.ts` |
+| Module ad-control (parity skip v1) | `src/youtube/main/ad-control-module.ts` | (gián tiếp) |
+| Đăng ký MAIN+ISOLATED | `src/youtube/isolated/registration.ts` (`syncEngineRegistration`, `isEngineRegistered`, `bridgeRegistration`) | `registration.test.ts` |
+| Nối worker | `src/background/service-worker.ts` (`applyYouTubeEngineRegistration` trong `applyStoredState` + nhánh `youtubeModule`) | — |
+| Popup phản ánh trạng thái thật | `src/popup/popup.ts` (`engineLayerRows` dùng `isEngineRegistered`) | — |
+| Nối MAIN | `src/youtube/main/main.ts` (boot `DatasetAdapter` + module ad-control) | — |
+
+### Build / đóng gói
+
+- `npm run build` → 3 pass: web chính + `dist/youtube-main.js` (~58.7 kB) + `dist/youtube-isolated.js` (~8.5 kB), đều IIFE.
+- `npm run package` → zip release chứa **đủ** cả hai bundle engine. Sửa bug thứ tự: release plugin chuyển sang **pass cuối** (isolated) để zip tạo sau khi cả hai bundle đã sinh.
+
+### Bằng chứng kiểm thử
+
+- `npx vitest run` → **666 passed / 666** (thêm `dataset-adapter.test.ts`; mở rộng `registration.test.ts`).
+- `npx tsc --noEmit` → pass.
+- Lint: 6 lỗi tồn tại sẵn trên HEAD (`null-adapter.ts`, `runtime-modules.ts:242`, test cũ) — **không** do thay đổi này; đã đối chiếu bằng `git stash`.
+
+### Bất biến cập nhật (thay thế mục 16)
+
+- Engine đã **KÍCH HOẠT**; seam `isolated/registration.ts` **được gọi** từ service worker.
+- Ba cờ MAIN truyền được sang trang qua `data-wg-yt-flags`; popup phản ánh `READY` khi đã đăng ký (lưu tắt/bật được áp dụng thật).
+- **T004 = CLOSED** (phương án A). A-2, A-4 vẫn **UNVERIFIED** (chờ Phase 7).
+- Logic dùng chung (`core/`, `config/`, `registry/`, `adapter/`, `state/`) không chạm `window`/`document`/`chrome` — kiểm bằng `architecture.test.ts`.
+
+### Còn lại
+
+- Phase 7: chạy trên Chrome/YouTube thật + regression ngoài YouTube (**CHƯA CHẠY**). Kế hoạch gốc viết trước khi kích hoạt; khi chạy cần đọc 3 cờ MAIN ở trạng thái đã kích hoạt thay vì `WAITING_FOR_ADAPTER` mặc định.

@@ -9,7 +9,7 @@
  * Bump `TUNING_VERSION` whenever a value changes.
  */
 
-export const TUNING_VERSION = 3;
+export const TUNING_VERSION = 4;
 
 export const TUNING = {
   /** Deepest level the JSON prune walk descends before it stops. */
@@ -24,6 +24,10 @@ export const TUNING = {
   adDetectThrottleMs: 200,
   /** Tries per ad before any further action is abandoned (no infinite loop). */
   skipMaxAttempts: 3,
+  /** Playback rate forced while fast-forwarding an ad (no skip button). */
+  skipRate: 16,
+  /** Seek to `duration - skipEpsilon` so an ad finishes immediately. */
+  skipEpsilon: 0.1,
   /** Minimum gap between recovery attempts. */
   recoveryCooldownMs: 5_000,
   /** Level-1 grace: how long a stall is observed before any recovery touch. */

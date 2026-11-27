@@ -26,10 +26,9 @@ import { isMessageKey, t, type MessageKey } from '../shared/i18n';
 import { logger } from '../shared/logger';
 import { MSG_START_PICKER } from '../shared/messages';
 import { TypedStorage } from '../shared/storage';
-import { adapterStateOf } from '../youtube/adapter/adapter';
-import { NullAdapter } from '../youtube/adapter/null-adapter';
 import type { FlagName } from '../youtube/config/flags';
-import { createYouTubeEngineSettings } from '../youtube/isolated/settings';
+import { createChromeScriptingApi, isEngineRegistered } from '../youtube/isolated/registration';
+import { createYouTubeEngineSettings, type YouTubeEngineSettings } from '../youtube/isolated/settings';
 import {
   applyStaticText,
   applyTheme,
@@ -50,7 +49,22 @@ import {
 } from './render';
 import { domainFromUrl } from './url';
 import { findingKey, verdictKey } from './view';
-import { buildYtLayers } from './yt-layers';
+import { buildYtLayers, type YtLayerRow } from './yt-layers';
+
+/**
+ * The engine layer rows with the live adapter health (T004). The MAIN engine is
+ * registered as a content script only while the module is on, so "registered"
+ * is exactly "the adapter is live": the three MAIN rows then read ENABLED/
+ * DISABLED from the saved choice instead of WAITING_FOR_ADAPTER.
+ */
+async function engineLayerRows(engine: YouTubeEngineSettings): Promise<readonly YtLayerRow[]> {
+  const ready = await isEngineRegistered(createChromeScriptingApi());
+  return buildYtLayers(
+    await engine.desiredFlags(),
+    ready ? 'READY' : 'WAITING',
+    ready ? 'AVAILABLE' : 'MISSING',
+  );
+}
 
 /** Reads every piece of state from its owning module in one pass. */
 async function loadState(storage: TypedStorage): Promise<LiveState> {
@@ -67,14 +81,11 @@ async function loadState(storage: TypedStorage): Promise<LiveState> {
   const tabId = tab?.id;
   const siteCount = tabId === undefined ? 0 : await counter.forTab(tabId);
   const { total } = await counter.snapshot();
-  // The engine ships with a NullAdapter, so the three MAIN layers can only ever
-  // read WAITING_FOR_ADAPTER — a saved "off" is never shown as applied (T004).
+  // T004: once the engine's scripts are registered the adapter is live (READY),
+  // so the three MAIN layers are shown as applied; before that they stay
+  // WAITING_FOR_ADAPTER and a saved "off" is never claimed as applied.
   const engine = createYouTubeEngineSettings();
-  const ytLayers = buildYtLayers(
-    await engine.desiredFlags(),
-    adapterStateOf(new NullAdapter().status()),
-    'MISSING',
-  );
+  const ytLayers = await engineLayerRows(engine);
   return {
     locale,
     domain,
@@ -194,8 +205,8 @@ function reportError(error: unknown): void {
 
 /**
  * Saves one YouTube engine layer choice and re-paints the card. The three MAIN
- * layers keep showing WAITING_FOR_ADAPTER: the switch stores the desire, but the
- * contract forbids claiming it was applied before the adapter confirms (§5.1).
+ * layers now reflect the live adapter (T004), so a saved choice shows as applied
+ * once the engine's scripts are registered.
  */
 async function toggleYtLayer(
   elements: Elements,
@@ -208,12 +219,7 @@ async function toggleYtLayer(
   }
   const engine = createYouTubeEngineSettings();
   await engine.setFlag(flag, input.checked);
-  const ytLayers = buildYtLayers(
-    await engine.desiredFlags(),
-    adapterStateOf(new NullAdapter().status()),
-    'MISSING',
-  );
-  renderYtEngine(elements, state.locale, { ...state, ytLayers });
+  renderYtEngine(elements, state.locale, { ...state, ytLayers: await engineLayerRows(engine) });
 }
 
 function wireActions(elements: Elements, state: LiveState): void {

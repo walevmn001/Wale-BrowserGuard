@@ -31,10 +31,7 @@ export interface AttributeTarget {
 
 /** The observer the MAIN side drives; injected so tests avoid a real one. */
 export interface AttributeObserver {
-  observe(
-    target: AttributeTarget,
-    options: { readonly attributes: true; readonly attributeFilter: readonly string[] },
-  ): void;
+  observe(target: Node, options: MutationObserverInit): void;
   disconnect(): void;
 }
 
@@ -94,7 +91,7 @@ export class DatasetAdapter implements FlagAdapter {
     this.deliver();
     try {
       const observer = this.env.createObserver(() => this.deliver());
-      observer.observe(this.env.target, {
+      observer.observe(this.env.target as unknown as Node, {
         attributes: true,
         attributeFilter: [FLAG_DATASET_ATTRIBUTE],
       });

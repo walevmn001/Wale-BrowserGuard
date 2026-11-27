@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  BRIDGE_SCRIPT_FILE,
+  BRIDGE_SCRIPT_ID,
   ENGINE_SCRIPT_FILE,
   ENGINE_SCRIPT_ID,
+  bridgeRegistration,
   engineRegistration,
+  isEngineRegistered,
   syncEngineRegistration,
   type ContentScriptRegistration,
   type ScriptingApi,
@@ -52,12 +56,24 @@ describe('engineRegistration', () => {
   });
 });
 
+describe('bridgeRegistration', () => {
+  it('targets the ISOLATED world at document_start on youtube.com', () => {
+    const registration = bridgeRegistration();
+    expect(registration.id).toBe(BRIDGE_SCRIPT_ID);
+    expect(registration.js).toEqual([BRIDGE_SCRIPT_FILE]);
+    expect(registration.runAt).toBe('document_start');
+    expect(registration.world).toBe('ISOLATED');
+    expect(registration.matches).toEqual(['*://*.youtube.com/*']);
+  });
+});
+
 describe('syncEngineRegistration', () => {
-  it('registers the engine when enabled and absent', async () => {
+  it('registers both engine scripts when enabled and absent', async () => {
     const api = new FakeScripting();
     const result = await syncEngineRegistration(api, true);
     expect(result).toEqual({ ok: true });
     expect(api.ids.has(ENGINE_SCRIPT_ID)).toBe(true);
+    expect(api.ids.has(BRIDGE_SCRIPT_ID)).toBe(true);
   });
 
   it('is idempotent: a second enable does not register again', async () => {
@@ -67,12 +83,13 @@ describe('syncEngineRegistration', () => {
     expect(api.calls.filter((call) => call === 'register')).toHaveLength(1);
   });
 
-  it('unregisters when disabled and present', async () => {
+  it('unregisters both engine scripts when disabled and present', async () => {
     const api = new FakeScripting();
     await syncEngineRegistration(api, true);
     const result = await syncEngineRegistration(api, false);
     expect(result).toEqual({ ok: true });
     expect(api.ids.has(ENGINE_SCRIPT_ID)).toBe(false);
+    expect(api.ids.has(BRIDGE_SCRIPT_ID)).toBe(false);
   });
 
   it('is a no-op when disabling and already absent', async () => {
@@ -95,5 +112,20 @@ describe('syncEngineRegistration', () => {
     const api = new FakeScripting();
     api.registerFails = true;
     await expect(syncEngineRegistration(api, true)).resolves.toMatchObject({ ok: false });
+  });
+});
+
+describe('isEngineRegistered', () => {
+  it('is true only once the engine MAIN script is registered', async () => {
+    const api = new FakeScripting();
+    expect(await isEngineRegistered(api)).toBe(false);
+    await syncEngineRegistration(api, true);
+    expect(await isEngineRegistered(api)).toBe(true);
+  });
+
+  it('is false (never throws) when the scripting API throws', async () => {
+    const api = new FakeScripting();
+    api.getFails = true;
+    await expect(isEngineRegistered(api)).resolves.toBe(false);
   });
 });

@@ -61,7 +61,7 @@ yt-ad-shield/
 
 Thay vào đó, một giải pháp an toàn hơn là MAIN world luôn bật, và isolated world tắt hook bằng cách gỡ bỏ function đã bọc khi cờ tắt. Chọn một trong hai và ghi quyết định vào README.
 
-**Trạng thái:** T004 OPEN, không chặn registry và module. Ràng buộc chi tiết nằm ở `contracts/feature-flags.md` và `contracts/adapter.md`. Chỉ ảnh hưởng ba cờ MAIN (ENABLE_JSON_PRUNER, ENABLE_FETCH_HOOK, ENABLE_XHR_HOOK). Module ISOLATED đọc `chrome.storage` trực tiếp, không cần adapter.
+**Trạng thái:** T004 **CLOSED** (chọn phương án A — thuộc tính `data-wg-yt-flags` trên `<html>`; xem `contracts/adapter.md`). Ràng buộc chi tiết nằm ở `contracts/feature-flags.md` và `contracts/adapter.md`. Chỉ ảnh hưởng ba cờ MAIN (ENABLE_JSON_PRUNER, ENABLE_FETCH_HOOK, ENABLE_XHR_HOOK). Module ISOLATED đọc `chrome.storage` trực tiếp, không cần adapter.
 
 ## 5. Thiết kế lớp lọc dữ liệu
 

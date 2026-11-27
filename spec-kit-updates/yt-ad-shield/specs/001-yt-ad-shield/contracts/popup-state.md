@@ -1,6 +1,6 @@
 # Contract: Trạng thái popup và mô hình trạng thái cờ
 
-**Trạng thái:** SPECIFIED. Không phụ thuộc T004 cho phần mô hình và cách hiển thị. Phần reconcile khi adapter sẵn sàng là phụ thuộc T004.
+**Trạng thái:** IMPLEMENTED. Mô hình trạng thái và cách hiển thị đã được cài trong `src/youtube/popup/yt-layers.ts` + `src/popup/popup.ts`. Adapter đang hoạt động là `DatasetAdapter` (T004 đã chốt, phương án A) nên phần reconcile đã có đường chạy thật; nhánh `WAITING_FOR_ADAPTER` giữ lại cho trường hợp chưa có snapshot hợp lệ.
 
 ## 1. Mục đích
 
@@ -22,8 +22,8 @@ Popup không được giả định một lựa chọn đã được áp dụng 
 - `STALE`: `desiredState` đã đổi sau snapshot `AVAILABLE` gần nhất và snapshot mới chưa được gửi hay xác nhận.
 
 Định nghĩa `adapterState`:
-- `READY`: adapter đã được chọn và `status().started` là true, có xác nhận hai chiều.
-- `WAITING`: adapter là NullAdapter hoặc chưa được chọn (trạng thái hiện tại cho T004 OPEN).
+- `READY`: adapter đã được chọn và `status().started` là true, có xác nhận hai chiều. Với `DatasetAdapter`, `READY` tương ứng trạng thái đã đăng ký (`isEngineRegistered`) và có snapshot đã ghi/đọc được.
+- `WAITING`: adapter là NullAdapter hoặc chưa có snapshot hợp lệ (giữ lại cho trường hợp trang tải trước khi công tắc module bật).
 - `ERROR`: adapter báo `lastError` hoặc `rejectedCount` tăng liên tục.
 
 ## 3. Trạng thái hiển thị
@@ -101,9 +101,9 @@ Nội dung **không được** dùng các cụm sau cho ba cờ MAIN khi trạng
 - Khi `desiredState` = OFF và `adapterState` = `WAITING`, popup không hiển thị "Đã tắt".
 - Khi adapter chuyển sang READY và xác nhận khớp, popup hiển thị trạng thái thực tế và không dùng thông báo cũ.
 - Mọi trạng thái trong mục 3 có ít nhất một test (unit cho bảng suy ra, integration thủ công cho hiển thị).
-- Trạng thái: SPECIFIED.
+- Trạng thái: IMPLEMENTED (unit). Phần hiển thị trên popup thật chờ Phase 7.
 
 ## 8. Phụ thuộc
 
-- Bảng suy ra (mục 3) và các acceptance mục 7 không phụ thuộc T004: có thể kiểm thử bằng `adapter-null` và adapter giả.
-- Reconcile thực tế (mục 5.2) phụ thuộc T004.
+- Bảng suy ra (mục 3) và các acceptance mục 7 không phụ thuộc T004: vẫn có thể kiểm thử bằng `adapter-null` và adapter giả.
+- Reconcile thực tế (mục 5.2): T004 **đã chốt** (phương án A), `DatasetAdapter` đã có đường chạy; phần xác minh trên Chrome thật thuộc Phase 7.

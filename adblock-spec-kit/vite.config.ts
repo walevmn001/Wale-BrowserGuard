@@ -5,7 +5,6 @@ import { defineConfig, type Plugin } from 'vite';
 
 import { buildCosmeticAssets, buildStaticRuleSets } from './scripts/build-rulesets.ts';
 import { createManifest } from './manifest.config.ts';
-import { packageRelease } from './scripts/package-release.ts';
 import { UI_ASSETS, readUiAsset } from './scripts/ui-assets.ts';
 import { YOUTUBE_CONFIG_PATH } from './src/shared/youtube-config.ts';
 
@@ -60,20 +59,6 @@ function rulesPlugin(): Plugin {
 }
 
 /**
- * Writes the release ZIP from the freshly written `dist/` (T043). Gated on
- * `--mode release` (see `npm run package`) so ordinary builds stay shell-only.
- */
-function releasePlugin(): Plugin {
-  return {
-    name: 'adblock-emit-release',
-    apply: 'build',
-    closeBundle() {
-      console.info(`[adblock] release -> ${packageRelease()}`);
-    },
-  };
-}
-
-/**
  * Copies the shared UI assets (design tokens, component stylesheet, icon SVG
  * and the rasterised PNG icons) into `dist/` at fixed, unhashed paths (T070).
  * Pages link them relatively and the manifest references the PNGs, so the
@@ -110,7 +95,7 @@ function youTubeConfigPlugin(): Plugin {
   };
 }
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig(() => ({
   // Relative asset URLs are required for pages loaded from chrome-extension://.
   base: './',
   build: {
@@ -131,11 +116,5 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-  plugins: [
-    manifestPlugin(),
-    rulesPlugin(),
-    uiAssetsPlugin(),
-    youTubeConfigPlugin(),
-    ...(mode === 'release' ? [releasePlugin()] : []),
-  ],
+  plugins: [manifestPlugin(), rulesPlugin(), uiAssetsPlugin(), youTubeConfigPlugin()],
 }));

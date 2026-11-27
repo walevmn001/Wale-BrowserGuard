@@ -8,12 +8,18 @@
  * are used. Dates are pinned to 1980-01-01 and entries are sorted, so the same
  * `dist/` always yields a byte-for-byte identical archive.
  *
- * Wired into the build as a Vite plugin, active only under `--mode release`
- * (`npm run package`), so a plain `npm run build` stays unchanged.
+ * Wired into the build as a Vite plugin (`releasePlugin`), active only under
+ * `--mode release` (`npm run package`), so a plain `npm run build` stays
+ * unchanged. The plugin is applied on the *last* build pass (the ISOLATED engine
+ * bundle) so the ZIP is always written after every pass has emitted into
+ * `dist/` — packaging on an earlier pass would ship a ZIP missing the engine
+ * bundles that later passes add.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { deflateRawSync } from 'node:zlib';
+
+import type { Plugin } from 'vite';
 
 export interface ZipEntryInput {
   readonly name: string;
@@ -187,4 +193,19 @@ export function packageRelease(options: PackageOptions = {}): string {
   const output = join(releaseDir, `adblock-security-${version}.zip`);
   writeFileSync(output, zip);
   return output;
+}
+
+/**
+ * Vite plugin that zips `dist/` once a build pass finishes. Applied only on the
+ * final build pass under `--mode release`, so every earlier pass's output is
+ * already on disk when the archive is written.
+ */
+export function releasePlugin(): Plugin {
+  return {
+    name: 'adblock-emit-release',
+    apply: 'build',
+    closeBundle() {
+      console.info(`[adblock] release -> ${packageRelease()}`);
+    },
+  };
 }

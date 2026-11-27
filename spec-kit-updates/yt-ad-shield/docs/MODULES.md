@@ -37,8 +37,8 @@ Vị trí trong extension: `adblock-spec-kit/src/youtube/`.
 | — | Lưu cấu hình layer (ISOLATED) | `isolated/settings.ts` | `YouTubeEngineSettings` (khóa `youtubeEngineFlags`) | — | TESTED |
 | — | Dựng row cho popup | `popup/yt-layers.ts` | `buildYtLayers(desired, adapter, snapshot)`, `mainGroupState(rows)` | — | TESTED |
 
-17 trách nhiệm logic được giữ nguyên ranh giới; cả 17 đã IMPLEMENTED/TESTED (unit) từ Phase 1–5. Cấu hình/tuning tập trung ở `config/tuning.ts` (`TUNING_VERSION = 3`). Các module Phase 4–5 được nối vào engine ở `main/runtime-modules.ts` và đăng ký trong `main/main.ts`; mỗi module tự-gate theo cờ riêng. Phase 6 nối popup: `popup/yt-layers.ts` dựng 6 row (3 MAIN + 3 ISOLATED); nhóm MAIN đi qua bảng ưu tiên `resolveDisplay` nên với `NullAdapter` luôn là `WAITING_FOR_ADAPTER`; lựa chọn lưu ở `chrome.storage.sync` qua `isolated/settings.ts`.
+17 trách nhiệm logic được giữ nguyên ranh giới; cả 17 đã IMPLEMENTED/TESTED (unit) từ Phase 1–5. Cấu hình/tuning tập trung ở `config/tuning.ts` (`TUNING_VERSION = 4`). Các module Phase 4–5 được nối vào engine ở `main/runtime-modules.ts` và đăng ký trong `main/main.ts`; mỗi module tự-gate theo cờ riêng; engine còn nối thêm module `ad-control` (`main/ad-control-module.ts`). Phase 6 nối popup: `popup/yt-layers.ts` dựng 6 row (3 MAIN + 3 ISOLATED); nhóm MAIN đi qua bảng ưu tiên `resolveDisplay` với `DatasetAdapter` → `READY` khi engine đã đăng ký, `WAITING_FOR_ADAPTER` khi chưa có snapshot hợp lệ; lựa chọn lưu ở `chrome.storage.sync` qua `isolated/settings.ts`.
 
-## Module YouTube cũ (vẫn giữ, KHÔNG xóa)
+## Module YouTube cũ (đã retire khỏi production, KHÔNG xóa)
 
-`src/background/youtube-*.ts` (Q1–Q6), `src/content/youtube/*`, `scripts/youtube-*.ts`, `data/youtube-config.json`. Vẫn là đường chạy hiện hành cho tới khi engine mới được VERIFIED.
+`src/background/youtube-*.ts` (Q1–Q6), `src/content/youtube/*`, `scripts/youtube-*.ts`, `data/youtube-config.json`. Không còn là đường chạy production: engine mới đăng ký động qua `chrome.scripting.registerContentScripts` và thay trọn vai trò; đường `executeScript` prune/skip/health của v1 đã ngừng gọi (không còn caller `createYouTubeModule`/`runYouTubeModule` trong `src/`). File được giữ lại cùng unit test cũ.

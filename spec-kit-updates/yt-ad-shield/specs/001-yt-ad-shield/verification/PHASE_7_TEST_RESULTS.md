@@ -7,7 +7,9 @@
 **Người chạy:** ___________  **Ngày chạy:** ___________  **Hệ điều hành:** ___________
 **Phiên bản Chrome:** ___________  **Extension ID (WALE GUARD):** ___________
 **Bản build:** WALE GUARD 1.1.1 · hash `manifest.json`: `c13a64de3a6c2185ea65abc57a76183429dddc381596b5e991d0cf6ef7a47426`
-**Trạng thái engine khi kiểm thử:** INERT (chưa kích hoạt). **Ba cờ MAIN kỳ vọng:** WAITING_FOR_ADAPTER.
+**Trạng thái engine khi kiểm thử:** ĐÃ KÍCH HOẠT (đăng ký động qua công tắc module; T004 đã chốt). **Ba cờ MAIN kỳ vọng:** READY (ENABLED/DISABLED) khi có snapshot; WAITING_FOR_ADAPTER chỉ khi chưa có snapshot hợp lệ.
+
+> **Lưu ý (checkpoint v10):** mẫu kết quả này được soạn khi engine còn INERT; mục B ("Xác nhận engine INERT") nay đổi nghĩa thành "xác nhận engine được đăng ký và chạy" — xem banner đầu `PHASE_7_REAL_CHROME_TEST_PLAN.md`.
 
 Trạng thái hợp lệ cho cột "Kết quả": `PASS` · `FAIL` · `BLOCKED` · `NOT_RUN`.
 

@@ -2,7 +2,11 @@
 
 > **Trạng thái Phase 7:** `PENDING_REAL_CHROME_VALIDATION` — HƯỚNG DẪN THỰC THI đã bàn giao, **chưa có kết quả nào được ghi**. Mọi kết quả PASS/FAIL phải do người chạy điền vào `PHASE_7_TEST_RESULTS.md`.
 >
-> **Ràng buộc bất biến (không được vi phạm khi chạy Phase 7):** engine YouTube đang **INERT** (chưa kích hoạt). Phase 7 **chỉ đo lường và xác minh**, **không** được kích hoạt engine, không gọi `chrome.scripting.registerContentScripts`, không bật bất kỳ hook MAIN nào, không đổi `manifest.json`, không đổi ba cờ MAIN khỏi `WAITING_FOR_ADAPTER`.
+> **⚠️ CẬP NHẬT (checkpoint v10):** kế hoạch dưới đây được soạn khi engine còn **INERT**. Nay engine **ĐÃ KÍCH HOẠT** (đăng ký động qua công tắc module; T004 đã chốt — xem `../../docs/PROGRESS.md` và `../status.md` mục 17). Vì vậy:
+> - **Nhóm B (mục 4 "Xác nhận engine vẫn INERT")** đổi nghĩa: thay vì kỳ vọng engine vắng mặt, cần **xác nhận engine được đăng ký và chạy** khi công tắc bật (`getRegisteredContentScripts()` trả về `youtube-main` + `youtube-isolated`, guard `__wgYtEngine` tồn tại trong MAIN world).
+> - **Ba cờ MAIN** không còn luôn `WAITING_FOR_ADAPTER`: khi đã có snapshot, popup hiển thị `READY` (`ENABLED`/`DISABLED`); chỉ khi chưa có snapshot hợp lệ mới `WAITING_FOR_ADAPTER`.
+> - Các nhóm còn lại (setup, bảo toàn playback A/B, regression ngoài YouTube, A-2/A-4) giữ nguyên giá trị; phần playback càng quan trọng vì engine nay đã chạy thật.
+> - **Ràng buộc gốc** (giữ engine INERT, không `registerContentScripts`) **không còn hiệu lực** — nó thuộc giai đoạn trước kích hoạt.
 
 Cập nhật: 2026-11-27 · Người soạn kế hoạch: agent (sandbox).
 

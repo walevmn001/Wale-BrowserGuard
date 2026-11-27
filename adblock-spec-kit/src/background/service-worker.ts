@@ -36,14 +36,10 @@ import { categoryForRuleset, createStatsCounter } from './stats';
 import { createTempException, TEMP_EXCEPTION_ALARM } from './temp-exception';
 import { createWhitelist } from './whitelist';
 import { createYouTubeConfigUpdater } from './youtube-config-updater';
-import {
-  createYouTubeModule,
-  isYouTubeHost,
-  loadEffectiveYouTubeConfig,
-  type YouTubePhase,
-} from './youtube-module';
+import { isYouTubeHost, loadEffectiveYouTubeConfig } from './youtube-module';
 import { createHealthStorage, recordHealthFault } from './youtube-health';
 import { createYouTubeModuleSettings } from './youtube-settings';
+import { createChromeScriptingApi, syncEngineRegistration } from '../youtube/isolated/registration';
 import { workerLocale } from './locale';
 import { createFingerprintSettings } from './security/fingerprint-settings';
 import { createPrivacySettings } from './security/privacy-settings';
@@ -199,6 +195,7 @@ function applyStoredState(): void {
   void applyStoredReferer();
   void applyStoredPrivacy();
   void applyYouTubeModuleRuleSet();
+  void applyYouTubeEngineRegistration();
   void pollStats();
   void scheduleFilterUpdates();
 }
@@ -269,22 +266,23 @@ async function injectAntiFingerprint(tabId: number, url: string | undefined): Pr
 }
 
 /**
- * Runs the opt-in YouTube module. The host is checked synchronously first so a
- * non-YouTube navigation never pays for the storage/config reads, and the
- * module itself is fail-open (a fault must not affect normal blocking). The
- * phase lets Q2 inject early while Q3's CSS waits for a stable document.
+ * Keeps the rebuilt YouTube engine's content-script registration in step with
+ * the module switch (AC-15.1) and the effective config (the Q6 kill-switch).
+ * This is the activation seam: the engine's MAIN and ISOLATED scripts are
+ * registered dynamically — main.ts runs the json-pruner/fetch/xhr hooks, the
+ * ad-control module and the runtime modules, and the ISOLATED bridge publishes
+ * the flag snapshot (T004). Registering dynamically (not in the manifest) is
+ * what lets the module be turned off without a reload. Fail-open: the seam
+ * returns a result and never throws, so a scripting fault cannot take down the
+ * worker.
  */
-function runYouTubeModule(
-  tabId: number,
-  url: string | undefined,
-  phase: YouTubePhase,
-): void {
-  const host = pageHost(url);
-  if (host === undefined || !isYouTubeHost(host)) {
-    return;
-  }
-  void guard('run the YouTube module', () => createYouTubeModule().handleTab(tabId, url, phase));
-}
+const applyYouTubeEngineRegistration = (): Promise<void> =>
+  guard('apply the YouTube engine registration', async () => {
+    const on =
+      (await createYouTubeModuleSettings().isEnabled()) &&
+      (await loadEffectiveYouTubeConfig())?.enabled === true;
+    await syncEngineRegistration(createChromeScriptingApi(), on);
+  });
 
 /**
  * Q5 (US-15.4): records a playback fault the page-side monitor reported and
@@ -388,6 +386,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
   if (changes['youtubeModule'] !== undefined) {
     void applyYouTubeModuleRuleSet();
+    void applyYouTubeEngineRegistration();
   }
   if (Object.keys(changes).some(isSyncedKey)) {
     void publishSettingsToSync(Date.now());
@@ -409,18 +408,14 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  // Q2 prunes the player response before YouTube reads it, so the module gets
-  // the earliest navigation signal (a `document_start`-like injection) and the
-  // `complete` pass as a fallback; the install is idempotent.
-  if (changeInfo.status === 'loading') {
-    runYouTubeModule(tabId, changeInfo.url ?? tab.url, 'loading');
-  }
+  // The rebuilt engine is a dynamically-registered content script, so Chrome
+  // re-injects it at `document_start` on every YouTube navigation — there is no
+  // per-tab injection to schedule here (the old executeScript path is retired).
   if (changeInfo.status === 'complete') {
     void pollStats();
     void injectCosmetic(tabId, tab.url);
     void injectAntiFingerprint(tabId, tab.url);
     void guard('inject the security banner', () => injectBanner(tabId, tab.url));
-    runYouTubeModule(tabId, tab.url, 'complete');
   }
 });
 

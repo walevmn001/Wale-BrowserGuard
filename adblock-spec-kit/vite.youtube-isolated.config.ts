@@ -2,8 +2,10 @@ import { resolve } from 'node:path';
 
 import { defineConfig } from 'vite';
 
+import { releasePlugin } from './scripts/package-release.ts';
+
 /**
- * Third build pass that emits the ISOLATED-world companion of the rebuilt
+ * Third (final) build pass: emits the ISOLATED-world companion of the rebuilt
  * YouTube engine as a single self-contained IIFE at `dist/youtube-isolated.js`.
  *
  * Its only job is to bridge the extension's sync settings to the page: it reads
@@ -13,9 +15,11 @@ import { defineConfig } from 'vite';
  * script cannot use ESM `import` at `document_start`.
  *
  * `emptyOutDir` is false so this pass appends to the `dist/` the two earlier
- * passes produced; it is run last (see `build` in `package.json`).
+ * passes produced; it is run last (see `build` in `package.json`). Because it is
+ * the last pass, the release ZIP plugin is attached here (under `--mode release`)
+ * so the archive is written only after every pass has emitted its output.
  */
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   build: {
     outDir: 'dist',
     emptyOutDir: false,
@@ -30,4 +34,5 @@ export default defineConfig({
       },
     },
   },
-});
+  plugins: mode === 'release' ? [releasePlugin()] : [],
+}));

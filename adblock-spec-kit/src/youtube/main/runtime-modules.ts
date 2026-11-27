@@ -38,7 +38,7 @@ function statusOf(name: string, enabled: boolean): ModuleStatus {
 }
 
 /** Reads `#movie_player`, or undefined when it is not (yet) in the DOM. */
-function readPlayer(doc: Document | undefined, selectors: SelectorRegistry): HTMLElement | undefined {
+export function readPlayer(doc: Document | undefined, selectors: SelectorRegistry): HTMLElement | undefined {
   if (doc === undefined) {
     return undefined;
   }
@@ -54,7 +54,7 @@ function readPlayer(doc: Document | undefined, selectors: SelectorRegistry): HTM
 }
 
 /** Reads the current `video` element, or undefined when absent. */
-function readVideo(doc: Document | undefined, selectors: SelectorRegistry): HTMLVideoElement | undefined {
+export function readVideo(doc: Document | undefined, selectors: SelectorRegistry): HTMLVideoElement | undefined {
   if (doc === undefined) {
     return undefined;
   }
@@ -70,7 +70,7 @@ function readVideo(doc: Document | undefined, selectors: SelectorRegistry): HTML
 }
 
 /** True when the player carries the configured ad-showing class. */
-function playerHasAdClass(player: HTMLElement | undefined, selectors: SelectorRegistry): boolean {
+export function playerHasAdClass(player: HTMLElement | undefined, selectors: SelectorRegistry): boolean {
   if (player === undefined) {
     return false;
   }

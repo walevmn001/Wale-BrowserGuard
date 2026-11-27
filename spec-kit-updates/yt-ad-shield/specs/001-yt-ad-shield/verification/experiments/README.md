@@ -7,7 +7,7 @@ Hai extension **tách biệt** phục vụ các thí nghiệm cần Chrome thậ
 | `a2-storage-probe/` | P7-A2-01 (T066) | `../../A-2-main-storage-access.md` |
 | `a4-start-order/` | P7-A4-01 (T067) | `../../A-4-document-start-order.md` |
 
-> **Không** phải code sản phẩm và **không** đụng tới build WALE GUARD. Engine production vẫn **INERT**. Hai extension này chỉ **đo lường**; chúng không kích hoạt engine, không chặn quảng cáo, không sửa `registration.ts` và không đổi `WAITING_FOR_ADAPTER`.
+> **Không** phải code sản phẩm và **không** đụng tới build WALE GUARD. Hai extension này **độc lập** với engine trong WALE GUARD và chỉ **đo lường** A-2/A-4; chúng không chặn quảng cáo và không sửa `registration.ts` của WALE GUARD. Lưu ý: engine trong WALE GUARD **đã được kích hoạt** từ checkpoint v10 (`status.md` mục 17) — việc đó **không** ảnh hưởng tới hai extension thí nghiệm dưới đây.
 
 Cả hai extension dùng chung cấu trúc: một content script `world: "ISOLATED"` + một content script `world: "MAIN"`, `matches: *://*.youtube.com/*`, `run_at: document_start`, quyền `storage`. Không có service worker, không có quyền mạng.
 
@@ -114,7 +114,7 @@ Ghi rõ **có dùng DevTools mở hay không** — DevTools có thể làm lệc
 
 ## Ràng buộc (không được vi phạm)
 
-- Không kích hoạt engine, không sửa `registration.ts`, không đổi `manifest.json` của WALE GUARD, giữ ba cờ MAIN ở `WAITING_FOR_ADAPTER`.
+- Hai extension thí nghiệm là **độc lập** với WALE GUARD: không sửa `registration.ts`, không đổi `manifest.json`/build của WALE GUARD, không trộn mã thử nghiệm vào production. (Trạng thái kích hoạt engine của WALE GUARD do checkpoint v10 quyết định, không liên quan tới các extension này.)
 - Không trộn mã thử nghiệm vào build production.
 - Instrumentation không được gọi `fetch` thật, không đổi thứ tự cài hook, không chờ đồng bộ làm lệch thời điểm sự kiện.
 - Mọi kết quả PASS/FAIL chỉ ghi sau khi **thực sự chạy và quan sát**.

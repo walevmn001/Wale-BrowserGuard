@@ -1,5 +1,14 @@
 # Changelog
 
+## [Chưa phát hành] — 2026-11-27 — engine TÍCH HỢP / KÍCH HOẠT + T004 chốt (IMPLEMENTED / TESTED, chưa VERIFIED)
+- Loại: **tích hợp** engine tái triển khai vào extension WALE GUARD — engine **không còn INERT**.
+- Module thay đổi: thêm `src/youtube/adapter/dataset-adapter.ts`, `src/youtube/isolated/content-entry.ts`, `src/youtube/main/ad-control-module.ts`; sửa `src/youtube/isolated/registration.ts` (đăng ký **cả** MAIN+ISOLATED, `isEngineRegistered`, `bridgeRegistration`), `src/youtube/main/main.ts` (boot `DatasetAdapter` + module ad-control), `src/youtube/main/runtime-modules.ts`, `src/youtube/config/tuning.ts` (`TUNING_VERSION` 3→4), `src/background/service-worker.ts` (retire module v1; `applyYouTubeEngineRegistration()`), `src/popup/popup.ts` (phản ánh trạng thái thật), `vite.config.ts` + `vite.youtube-isolated.config.ts` + `scripts/package-release.ts` + `package.json` (3 pass build + release plugin ở pass cuối).
+- **T004 = CLOSED** — chọn phương án A: thuộc tính JSON `data-wg-yt-flags` trên `<html>`; ISOLATED publish snapshot, MAIN đọc lần đầu + `MutationObserver` → `FeatureFlags.applyRemote`. Ba cờ MAIN nay bật/tắt được qua popup (`READY` khi đã đăng ký).
+- Nguyên nhân: hoàn tất chuỗi tích hợp (đăng ký động qua seam, thay trọn module YouTube v1, chốt cơ chế dataset).
+- Tác động playback: engine **đã chạy** trong trang YouTube → cần theo dõi trong Phase 7; đường `executeScript` prune/skip/health của v1 đã retire.
+- Kiểm thử (sandbox): unit **666 pass / 666** (62 file, 26 file `tests/unit/youtube/*`); `tsc --noEmit` pass. Hash: `dist/manifest.json` = `c13a64de…7426`, `dist/youtube-main.js` = `5cacd7b7…dc9a`, `dist/youtube-isolated.js` = `65186805…c99f`.
+- **Chưa xác minh (UNVERIFIED):** chặn quảng cáo YouTube trên Chrome thật, bảo toàn playback thật, A-2, A-4.
+
 ## [Chưa phát hành] — 2026-11-27 — checkpoint Phase 7 (validation pending) (IMPLEMENTED / TESTED, chưa VERIFIED)
 - Loại: **bàn giao implementation/validation-preparation**. **Không** phải bản stable hay production-ready.
 - Module thay đổi: **không có code** — chỉ tài liệu và kế hoạch kiểm thử (checkpoint Git + release). Engine vẫn **INERT**; seam `isolated/registration.ts` **chưa được gọi**; ba cờ MAIN (`ENABLE_JSON_PRUNER`, `ENABLE_FETCH_HOOK`, `ENABLE_XHR_HOOK`) vẫn `WAITING_FOR_ADAPTER`.
