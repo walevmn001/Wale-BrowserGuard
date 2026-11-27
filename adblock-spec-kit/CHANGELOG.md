@@ -4,16 +4,33 @@ All notable changes to WALE GUARD (AdBlock Security) are recorded here. The
 format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.2.0] — 2026-11-27
+
+### Added
+
+- YouTube ad-shield engine (spec-kit `yt-ad-shield`) is now **integrated and
+  activated** in WALE GUARD. Phase 0–6 implemented and unit-tested; the engine
+  registers its MAIN + ISOLATED content scripts dynamically via
+  `chrome.scripting.registerContentScripts`, toggled by the module switch.
+- `DatasetAdapter` (T004, option A): the ISOLATED world publishes the flag
+  snapshot into the `data-wg-yt-flags` attribute on `<html>`; the MAIN world
+  reads it once and via `MutationObserver`. The three MAIN flags
+  (`ENABLE_JSON_PRUNER`, `ENABLE_FETCH_HOOK`, `ENABLE_XHR_HOOK`) can now be
+  toggled from the popup (`READY` once registered).
+
+### Changed
+
+- The legacy YouTube module (v1, `src/background/youtube-*.ts`) is retired from
+  production: the prune/skip/health `executeScript` path is no longer called.
+  The source and its unit tests are kept.
+- Build now runs three Vite passes, adding `dist/youtube-isolated.js` next to
+  `dist/youtube-main.js`; `npm run package` zips both engine bundles (release
+  plugin moved to the final pass so the ZIP is complete).
 
 ### Notes
 
-- YouTube ad-shield engine (spec-kit `yt-ad-shield`): Phase 0–6 implemented and
-  unit-tested in the sandbox. The engine remains **inert** — the registration
-  seam is not called, the three MAIN flags stay `WAITING_FOR_ADAPTER` — so this
-  adds **no behavior change** and ships **no release binary**. Real-Chrome
-  validation (Phase 7) is **pending**. This is a validation-preparation
-  checkpoint only, not a stable/production release. Details:
+- Real-Chrome validation (Phase 7) is still **pending** — ad-blocking behaviour
+  is **not yet VERIFIED** on real YouTube/Chrome. Details:
   `spec-kit-updates/yt-ad-shield/docs/CHANGELOG.md`.
 
 ## [1.1.1] — 2026-11-22
