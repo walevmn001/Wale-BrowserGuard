@@ -1,6 +1,6 @@
 # Phase 7 — Kế hoạch kiểm thử trên Chrome thật (YouTube thật)
 
-> **Trạng thái:** HUỚNG DẪN THỰC THI. Chưa có kết quả nào được ghi. Mọi kết quả PASS/FAIL phải do người chạy điền vào `PHASE_7_TEST_RESULTS.md`.
+> **Trạng thái Phase 7:** `PENDING_REAL_CHROME_VALIDATION` — HƯỚNG DẪN THỰC THI đã bàn giao, **chưa có kết quả nào được ghi**. Mọi kết quả PASS/FAIL phải do người chạy điền vào `PHASE_7_TEST_RESULTS.md`.
 >
 > **Ràng buộc bất biến (không được vi phạm khi chạy Phase 7):** engine YouTube đang **INERT** (chưa kích hoạt). Phase 7 **chỉ đo lường và xác minh**, **không** được kích hoạt engine, không gọi `chrome.scripting.registerContentScripts`, không bật bất kỳ hook MAIN nào, không đổi `manifest.json`, không đổi ba cờ MAIN khỏi `WAITING_FOR_ADAPTER`.
 

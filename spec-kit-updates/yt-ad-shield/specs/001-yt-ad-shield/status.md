@@ -357,3 +357,35 @@ Các mục 5, 10–13, 15 nay **IMPLEMENTED / TESTED (unit)**; 17/17 trách nhi�
 ### Git
 
 - Commit Phase 6: `2c60594` (22 file, +916/−74); push `origin main` **thành công** (`f7ced95..2c60594`).
+
+---
+
+## 16. Cập nhật v9: checkpoint Phase 7 — PENDING_REAL_CHROME_VALIDATION (2026-11-27)
+
+**Trạng thái định nghĩa:** SPECIFIED cho Phase 7 (chưa chạy); **IMPLEMENTED / TESTED (unit)** cho Phase 0–6; **chưa VERIFIED** trên Chrome/YouTube thật.
+
+**Đây là checkpoint bàn giao implementation/validation-preparation — KHÔNG phải bản stable/production-ready.**
+
+### Trạng thái Phase 7
+
+| Hạng mục | Trạng thái |
+|----------|-----------|
+| Kế hoạch kiểm thử Chrome thật (`PHASE_7_REAL_CHROME_TEST_PLAN.md`, 24 ca) | ĐÃ BÀN GIAO |
+| Mẫu ghi kết quả (`PHASE_7_TEST_RESULTS.md`) | ĐÃ BÀN GIAO (mọi ô = `NOT_RUN`) |
+| Chạy thực tế trên Chrome/YouTube thật | **CHƯA CHẠY** — chờ người dùng tự chạy |
+| Kết quả PASS/FAIL | **KHÔNG CÓ** |
+| Xác nhận khả năng chặn quảng cáo thật | **CHƯA XÁC NHẬN** |
+
+### Bất biến kỹ thuật đã giữ (đối chiếu lại khi đóng gói checkpoint)
+
+- Engine **INERT**; seam `isolated/registration.ts` **chưa được gọi** (không có caller trong `src/`).
+- `manifest.json` (build) **không** có `content_scripts`; `service-worker.js` **không** chứa `registerContentScripts`/`youtube-main`.
+- Ba cờ MAIN (`ENABLE_JSON_PRUNER`, `ENABLE_FETCH_HOOK`, `ENABLE_XHR_HOOK`) vẫn `WAITING_FOR_ADAPTER`.
+- **T004 = OPEN.** A-2, A-4 = **UNVERIFIED**. T016b, T061–T065, T073–T074 = **BLOCKED**.
+- Hash khớp kế hoạch: `dist/manifest.json` = `c13a64de…7426`, `dist/youtube-main.js` = `154b4612…3a97`.
+
+### Git
+
+- Checkpoint commit: `chore(release): checkpoint YouTube validation pending` (push `origin main`; hash xem `git log` và release notes).
+- Tag/Release: `phase-P7-pending` (prerelease — checkpoint, **không** kèm binary).
+- Không xóa tag/release/artifact cũ.

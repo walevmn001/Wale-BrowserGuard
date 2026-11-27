@@ -1,5 +1,16 @@
 # Changelog
 
+## [Chưa phát hành] — 2026-11-27 — checkpoint Phase 7 (validation pending) (IMPLEMENTED / TESTED, chưa VERIFIED)
+- Loại: **bàn giao implementation/validation-preparation**. **Không** phải bản stable hay production-ready.
+- Module thay đổi: **không có code** — chỉ tài liệu và kế hoạch kiểm thử (checkpoint Git + release). Engine vẫn **INERT**; seam `isolated/registration.ts` **chưa được gọi**; ba cờ MAIN (`ENABLE_JSON_PRUNER`, `ENABLE_FETCH_HOOK`, `ENABLE_XHR_HOOK`) vẫn `WAITING_FOR_ADAPTER`.
+- Nguyên nhân: chốt Git checkpoint + phát hành release cho trạng thái hiện tại sau khi Phase 0–6 hoàn tất / TESTED (unit); Phase 7 cần Chrome thật.
+- Tác động playback: **không đổi** (engine chưa kích hoạt → zero regression; cũng chưa có giá trị chặn thực tế).
+- Registry: `SELECTORS_VERSION` chưa đặt (selectors vẫn UNVERIFIED), `ENDPOINTS_VERSION` chưa đặt, `RULES_VERSION` chưa đặt.
+- Kiểm thử (sandbox, Node + vitest): unit **652 pass / 652** (61 file, 25 file `tests/unit/youtube/*`); `tsc --noEmit` pass; `npm run build` pass, sinh `dist/youtube-main.js` (48.80 kB, IIFE). Hash `dist/manifest.json` = `c13a64de3a6c2185ea65abc57a76183429dddc381596b5e991d0cf6ef7a47426` (khớp kế hoạch Phase 7).
+- **Chưa xác minh (UNVERIFIED):** chặn quảng cáo YouTube trên Chrome thật, bảo toàn playback thật, A-2 (MAIN đọc `chrome.storage`), A-4 (thứ tự `document_start`), T004 (cơ chế truyền cờ MAIN/ISOLATED — vẫn **OPEN**).
+- Kế hoạch Phase 7: `specs/001-yt-ad-shield/verification/PHASE_7_REAL_CHROME_TEST_PLAN.md`; mẫu kết quả: `PHASE_7_TEST_RESULTS.md` (tất cả `NOT_RUN`).
+- Git: checkpoint commit `chore(release): checkpoint YouTube validation pending`; tag/Release `phase-P7-pending` (prerelease, **không** kèm binary).
+
 ## [Chưa phát hành] — 2026-11-27 — engine Phase 6 (tích hợp popup/cấu hình) (IMPLEMENTED / TESTED)
 - Module thay đổi: thêm `src/youtube/config/layers.ts`, `src/youtube/state/messages.ts`, `src/youtube/isolated/settings.ts`, `src/popup/yt-layers.ts`; sửa `src/youtube/state/toggle-state.ts` (chuyển `displayMessage` sang `state/messages.ts`), `src/popup/{elements,render,popup}.ts`, `src/popup/index.html`, `src/shared/i18n/{vi,en}.ts` (thêm 9 khóa). **Engine vẫn chưa kích hoạt** trong worker (seam `registration.ts` vẫn inert).
 - Nguyên nhân: hoàn tất Phase 6 (tích hợp popup & cấu hình) của speckit `yt-ad-shield`.

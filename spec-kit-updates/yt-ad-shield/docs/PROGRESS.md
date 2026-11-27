@@ -2,7 +2,7 @@
 
 Cập nhật: 2026-11-27
 
-Trạng thái pha: **Phase 0–6 hoàn tất** (audit, kiến trúc/hợp đồng, interception, phát hiện & điều khiển quảng cáo, bảo vệ playback, vòng đời & tích hợp, tích hợp popup/cấu hình). Phase 7 **chưa bắt đầu**.
+Trạng thái pha: **Phase 0–6 hoàn tất / TESTED (unit)** (audit, kiến trúc/hợp đồng, interception, phát hiện & điều khiển quảng cáo, bảo vệ playback, vòng đời & tích hợp, tích hợp popup/cấu hình). Phase 7 **PENDING_REAL_CHROME_VALIDATION** — kế hoạch kiểm thử và mẫu ghi kết quả đã bàn giao, đang **chờ người dùng tự chạy trên Chrome thật**; **chưa có kết quả PASS/FAIL nào**. Engine vẫn **INERT**.
 
 ## Bảng tiến độ theo Phase
 
@@ -15,7 +15,7 @@ Trạng thái pha: **Phase 0–6 hoàn tất** (audit, kiến trúc/hợp đồn
 | 4 | Playback Protection | DONE (TESTED) | `playback-watchdog`, `playback-recovery`, `core/timers` |
 | 5 | Lifecycle & Integration | DONE (TESTED) | `dom-observer`, `spa-navigation`, `dnr-manager`, `css-hider`, `main/runtime-modules.ts` |
 | 6 | Popup & Configuration Integration | DONE (TESTED) | `config/layers.ts`, `state/messages.ts`, `isolated/settings.ts`, `popup/yt-layers.ts`; popup hiển thị 6 layer + `WAITING_FOR_ADAPTER` |
-| 7 | Regression & Independent Validation | CHƯA BẮT ĐẦU | Cần Chrome thật |
+| 7 | Regression & Independent Validation | PENDING_REAL_CHROME_VALIDATION | Kế hoạch + mẫu kết quả tại `specs/001-yt-ad-shield/verification/PHASE_7_REAL_CHROME_TEST_PLAN.md` và `PHASE_7_TEST_RESULTS.md`; 24 ca đều `NOT_RUN`; cần Chrome thật |
 
 ## Đã triển khai (Phase 1–6)
 
@@ -42,9 +42,17 @@ Trạng thái pha: **Phase 0–6 hoàn tất** (audit, kiến trúc/hợp đồn
 | `npx tsc --noEmit` | pass |
 | `npm run build` | pass, sinh `dist/youtube-main.js` (48.80 kB) |
 
+## Phase 7 — Trạng thái bàn giao (PENDING_REAL_CHROME_VALIDATION)
+
+- **Chưa chạy** bất kỳ ca Phase 7 nào. Đã bàn giao kế hoạch + mẫu kết quả để người dùng tự chạy.
+- Kế hoạch: `specs/001-yt-ad-shield/verification/PHASE_7_REAL_CHROME_TEST_PLAN.md` (24 ca: setup, xác nhận engine INERT, ba cờ MAIN `WAITING_FOR_ADAPTER`, bảo toàn playback A/B, regression ngoài YouTube, T066/A-2, T067/A-4).
+- Mẫu kết quả: `specs/001-yt-ad-shield/verification/PHASE_7_TEST_RESULTS.md` (tất cả ô = `NOT_RUN`).
+- Artifact đối chiếu: `dist/manifest.json` SHA-256 `c13a64de…7426`, `dist/youtube-main.js` SHA-256 `154b4612…3a97` (khớp giá trị ghi trong kế hoạch).
+- **Chưa xác nhận khả năng chặn quảng cáo YouTube trên Chrome thật** — engine vẫn chưa được kích hoạt.
+
 ## Chưa triển khai
 
-- Phase 7: Kiểm thử Chrome thật + regression ngoài YouTube.
+- Phase 7: Kiểm thử Chrome thật + regression ngoài YouTube (PENDING_REAL_CHROME_VALIDATION).
 - Các task phụ thuộc T004 (T016b, T061–T065, T073–T074) vẫn **BLOCKED**.
 
 ## Giả định chưa xác minh
@@ -68,4 +76,5 @@ Trạng thái pha: **Phase 0–6 hoàn tất** (audit, kiến trúc/hợp đồn
 - Push lên `origin main`: **thành công** (`f7b3c3a..60d9bc4 HEAD -> main`).
 - Commit Phase 6: `2c60594` (22 file, +916/−74).
 - Push lên `origin main`: **thành công** (`f7ced95..2c60594 HEAD -> main`).
+- Commit checkpoint Phase 7 (validation pending): `chore(release): checkpoint YouTube validation pending` → tag/Release `phase-P7-pending` (hash ghi trong release notes và `git log`).
 - Remote: `https://github.com/walevmn001/Wale-BrowserGuard`.

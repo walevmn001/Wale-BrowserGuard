@@ -1,5 +1,7 @@
 # Phase 7 — Mẫu ghi kết quả kiểm thử trên Chrome thật
 
+> **Trạng thái Phase 7:** `PENDING_REAL_CHROME_VALIDATION` — chưa chạy ca nào, mọi ô = `NOT_RUN`.
+
 > **Cách dùng:** sau khi chạy từng test trong `PHASE_7_REAL_CHROME_TEST_PLAN.md`, điền `PASS`/`FAIL`/`BLOCKED`/`NOT_RUN` và dán bằng chứng vào bảng tương ứng. **Không** điền `PASS` khi chưa thực sự chạy và quan sát. Gửi lại file này (đã điền) để tiếp tục xử lý.
 
 **Người chạy:** ___________  **Ngày chạy:** ___________  **Hệ điều hành:** ___________

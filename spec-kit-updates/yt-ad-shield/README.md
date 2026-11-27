@@ -1,6 +1,8 @@
 # YT Ad Shield
 
-**Trạng thái:** đặc tả v5. Engine Phase 1–3 đã **IMPLEMENTED / TESTED** (unit) trong extension WALE GUARD tại `adblock-spec-kit/src/youtube/**`, nhưng **chưa kích hoạt** và **chưa VERIFIED** trên YouTube/Chrome thật.
+**Trạng thái:** đặc tả v5 · **checkpoint Phase 7 — validation pending**. Engine Phase 0–6 đã **IMPLEMENTED / TESTED** (unit) trong extension WALE GUARD tại `adblock-spec-kit/src/youtube/**`, nhưng **chưa kích hoạt** và **chưa VERIFIED** trên YouTube/Chrome thật.
+
+> **Đây là checkpoint bàn giao implementation/validation-preparation, KHÔNG phải bản stable hay production-ready.** Engine vẫn **INERT** (seam `isolated/registration.ts` chưa được gọi); ba cờ MAIN vẫn `WAITING_FOR_ADAPTER`; **chưa xác nhận khả năng chặn quảng cáo trên Chrome thật**. Phase 7 (`PENDING_REAL_CHROME_VALIDATION`) cần người dùng tự chạy theo `specs/001-yt-ad-shield/verification/PHASE_7_REAL_CHROME_TEST_PLAN.md` và điền `PHASE_7_TEST_RESULTS.md`.
 
 - Engine mới chạy song song, đăng ký qua `chrome.scripting.registerContentScripts` (`world: 'MAIN'`, `runAt: 'document_start'`) nhưng **seam chưa được gọi** từ worker → hành vi hiện tại của extension không đổi.
 - Module YouTube cũ (`src/background/youtube-*.ts`, Q1–Q6) vẫn là đường chạy hiện hành.

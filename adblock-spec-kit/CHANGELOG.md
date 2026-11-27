@@ -6,6 +6,16 @@ project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Notes
+
+- YouTube ad-shield engine (spec-kit `yt-ad-shield`): Phase 0–6 implemented and
+  unit-tested in the sandbox. The engine remains **inert** — the registration
+  seam is not called, the three MAIN flags stay `WAITING_FOR_ADAPTER` — so this
+  adds **no behavior change** and ships **no release binary**. Real-Chrome
+  validation (Phase 7) is **pending**. This is a validation-preparation
+  checkpoint only, not a stable/production release. Details:
+  `spec-kit-updates/yt-ad-shield/docs/CHANGELOG.md`.
+
 ## [1.1.1] — 2026-11-22
 
 ### Fixed
