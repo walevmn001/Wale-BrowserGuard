@@ -1,6 +1,6 @@
 # Kiến trúc YT Ad Shield (engine tái triển khai trong WALE GUARD)
 
-Trạng thái: **IMPLEMENTED / TESTED** cho Phase 1–3. Chưa **VERIFIED** trên Chrome thật.
+Trạng thái: **IMPLEMENTED / TESTED** cho Phase 1–5. Chưa **VERIFIED** trên Chrome thật.
 
 ## 1. Quyết định phạm vi (đã chốt với người dùng)
 
@@ -39,8 +39,16 @@ content-entry.ts → bootYouTubeEngine(win)
      json-pruner        → installPlayerResponseHook  (ENABLE_JSON_PRUNER)
      fetch-interceptor  → wrap(win.fetch)            (ENABLE_FETCH_HOOK)
      xhr-interceptor    → wrap(win.XMLHttpRequest)   (ENABLE_XHR_HOOK)
+     playback-watchdog  → sample video mỗi 1s (+ recovery) (ENABLE_PLAYBACK_WATCHDOG / ENABLE_RECOVERY)
+     dom-observer       → MutationObserver player, debounce    (ENABLE_DOM_OBSERVER)
+     spa-navigation     → yt-navigate-finish / popstate, debounce (ENABLE_SPA_NAVIGATION)
+     css-hider          → 1 <style> ẩn ad chrome                (ENABLE_CSS_HIDER)
    lifecycle/registry dispose gỡ mọi hook (idempotent)
 ```
+
+- Quyết định logic thuần ở `core/`: `playback-watchdog` (phát hiện stall), `playback-recovery` (chọn cấp tối thiểu), `dom-observer` (debounce), `spa-navigation` (debounce + phát hiện đổi tham chiếu), `dnr-manager` (planner + rollback), `css-hider` (builder chuỗi CSS).
+- `main/runtime-modules.ts` là **nơi duy nhất** module Phase 4–5 chạm trang: nó đọc `#movie_player`/`video`, gắn timer/observer và thực hiện hai ghi được phép (nudge `currentTime = currentTime` khi recovery NUDGE; chèn `<style>`).
+- Time seam (`core/timers.ts`, `TimerApi`) cho phép debounce dùng đồng hồ giả khi test → world-independent.
 
 ## 4. Ranh giới cờ MAIN/ISOLATED (T004 vẫn OPEN)
 
@@ -56,7 +64,11 @@ content-entry.ts → bootYouTubeEngine(win)
 - XHR không đổi `responseType`/`status`; chỉ sửa `responseText`/`response` cho player endpoint.
 - JSON pruner **không bao giờ xóa** khóa playback (`streamingData`, `videoDetails`, `captions`, `playabilityStatus`, `playerConfig`) và tôn trọng `maxDepth`/`maxKeys`.
 - Ad Action Controller chỉ seek khi `duration` hữu hạn và > 0, tôn trọng `maxAttempts`, ưu tiên skip; Audio State Manager chỉ đổi `muted` (không đổi `volume`) và chỉ khôi phục khi chính nó đã mute.
+- Playback Watchdog **chỉ đọc** `currentTime`/`readyState`/`error`; không bao giờ tự seek/reload; listener dùng `WeakSet` chống trùng; stall/error được latch chỉ báo một lần.
+- Playback Recovery chọn cấp **tối thiểu**: ad đang chạy / pause / end / media-error → không chạm media; buffering / thiếu buffer → WAIT; chỉ stall thật mới RESYNC (cấp 2) rồi NUDGE một lần (cấp 3, `currentTime = currentTime`, có cooldown); nghi ngờ lỗi engine (FR-036) → không chạm media và khuyến nghị DISABLED.
+- DOM Observer và SPA Navigation gộp burst mutation/navigation bằng debounce và **không** mutate DOM mà nó quan sát; `disconnect`/`dispose` idempotent.
+- DNR Manager kiểm id trùng, chặn rule quá trần (`dnrMaxRules`), từ chối rule chứa endpoint được bảo vệ, và **rollback** về rule cũ nếu áp dụng thất bại.
 
 ## 6. Kích hoạt (chưa bật)
 
-`src/youtube/isolated/registration.ts` cung cấp `syncEngineRegistration(api, enabled)` (idempotent, fail-open) nhưng **chưa được gọi** từ worker. Việc bật engine là bước Phase 5–6, chỉ sau khi Phase 4–7 hoàn tất và có bằng chứng Chrome thật. Khi chưa bật, **không thay đổi hành vi hiện tại của extension**.
+`src/youtube/isolated/registration.ts` cung cấp `syncEngineRegistration(api, enabled)` (idempotent, fail-open) nhưng **chưa được gọi** từ worker. Việc bật engine là bước Phase 6, chỉ sau khi Phase 7 có bằng chứng Chrome thật. Khi chưa bật, **không thay đổi hành vi hiện tại của extension**.

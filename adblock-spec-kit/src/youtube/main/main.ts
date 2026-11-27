@@ -1,12 +1,13 @@
 /**
- * MAIN-world entry for the rebuilt YouTube engine (Phase 1–3).
+ * MAIN-world entry for the rebuilt YouTube engine (Phase 1–5).
  *
  * `bootYouTubeEngine` is the single world-aware entry point: it is the only
  * file in the engine that reads page globals, and it accepts an injected `win`
  * so it can be driven in tests. Everything it builds (flags, logger, lifecycle,
  * registries, module registry) is pure logic; the modules it registers are the
- * three Phase 1–3 hooks — the JSON-pruner player hook, the fetch hook and the
- * XHR hook.
+ * Phase 1–3 data hooks — the JSON-pruner player hook, the fetch hook and the
+ * XHR hook — plus the Phase 4–5 runtime modules: playback watchdog (+ recovery),
+ * DOM observer, SPA navigation and the cosmetic CSS hider.
  *
  * It is idempotent (a guard on `win`) and absolutely fail-open: the whole boot
  * runs inside a try/catch and never throws into the page. The engine ships with
@@ -26,6 +27,12 @@ import type { ModuleContext, ModuleStatus, YouTubeModule } from '../core/module'
 import { createFetchInterceptor, type FetchLike } from './fetch-interceptor';
 import { createXhrInterceptor, type XhrConstructor } from './xhr-interceptor';
 import { installPlayerResponseHook, type PlayerHookTarget } from './player-response-hook';
+import {
+  createCssModule,
+  createObserverModule,
+  createSpaModule,
+  createWatchdogModule,
+} from './runtime-modules';
 
 /** Guard key on the window that makes boot idempotent. */
 const ENGINE_GUARD = '__wgYtEngine';
@@ -92,6 +99,12 @@ export function bootYouTubeEngine(win: Window = window): { dispose(): void } | u
     if (flags.get('ENABLE_XHR_HOOK')) {
       registry.register(createXhrModule(win, flags, logger, pruneAdFields, isAdFieldPresent));
     }
+
+    // Phase 4–5 runtime modules. Each is self-gated by its own flag as well.
+    registry.register(createWatchdogModule(win, flags, logger, selectors));
+    registry.register(createObserverModule(win, flags, logger, selectors));
+    registry.register(createSpaModule(win, flags, logger, selectors));
+    registry.register(createCssModule(win, flags, logger, selectors));
 
     const ctx: ModuleContext = { flags, logger, lifecycle, selectors, endpoints };
     void registry.initAll(ctx);

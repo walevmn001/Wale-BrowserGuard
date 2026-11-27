@@ -249,3 +249,60 @@
 - Ngưỡng `TUNING` là đề xuất, chưa hiệu chỉnh.
 - Chưa có bằng chứng engine mới ở world MAIN không gây màn hình đen (đây chính là mục tiêu Phase 4 + 7).
 - Việc kích hoạt engine (Phase 5–6) là thay đổi có rủi ro playback → phải sau khi có bằng chứng Chrome thật.
+
+---
+
+## 14. Cập nhật v7: engine Phase 4–5 IMPLEMENTED / TESTED (2026-11-27)
+
+**Trạng thái định nghĩa:** SPECIFIED cho Phase 6–7; **IMPLEMENTED / TESTED (unit)** cho Phase 1–5; **chưa VERIFIED** trên Chrome/YouTube thật.
+
+**Vị trí code:** `adblock-spec-kit/src/youtube/**`.
+
+### Hạng mục Phase 4–5 có bằng chứng
+
+| # | Trách nhiệm | File | Interface | Test |
+|---|-------------|------|-----------|------|
+| 5 | DNR Manager | `core/dnr-manager.ts` | `buildDnrPlan(groups, isProtected, max?)`, `applyDnrPlan(api, next, prev?)` | `dnr-manager.test.ts` |
+| 10 | Playback Watchdog | `core/playback-watchdog.ts` | `PlaybackWatchdog.attach/sample/stalledForMs` | `playback-watchdog.test.ts` |
+| 11 | Playback Recovery | `core/playback-recovery.ts` | `PlaybackRecovery.diagnose(input, now)` | `playback-recovery.test.ts` |
+| 12 | DOM Observer | `core/dom-observer.ts` | `DomObserver.observe/isObserving/disconnect` | `dom-observer.test.ts` |
+| 13 | SPA Navigation | `core/spa-navigation.ts` | `SpaNavigationManager.notify/flush/lastTargets` | `spa-navigation.test.ts` |
+| 15 | CSS Hider | `core/css-hider.ts` | `buildHideCss(selectors)`, `hideSelectors(reg)` | `css-hider.test.ts` |
+| — | Timer seam | `core/timers.ts` | `TimerApi`, `realTimers` | (dùng trong test debounce) |
+| — | Runtime wiring | `main/runtime-modules.ts` + đăng ký trong `main/main.ts` | `createWatchdogModule/ObserverModule/SpaModule/CssModule` | `runtime-modules.test.ts` |
+
+Các mục 5, 10–13, 15 nay **IMPLEMENTED / TESTED (unit)**; 17/17 trách nhiệm logic đã có code + test.
+
+### Bằng chứng kiểm thử
+
+- `npx vitest run` → **620 passed / 57 file** (21 file `tests/unit/youtube/*` thuộc engine mới).
+- `npx tsc --noEmit` → pass.
+- `npm run build` → pass, sinh `dist/youtube-main.js` (48.80 kB, IIFE).
+- **Chưa có** bằng chứng trên Chrome/YouTube thật → mọi mục playback vẫn UNVERIFIED.
+
+### Quyết định thiết kế Phase 4–5
+
+- `TUNING_VERSION` 2→3: thêm `recoveryL1Ms` (grace cấp 1) và `dnrMaxRules` (trần rule DNR).
+- Watchdog: `WeakSet` chống listener trùng; stall/error latch chỉ báo một lần; `readyState` tăng được coi là tiến triển.
+- Recovery 4 cấp: WAIT → RESYNC → NUDGE (một lần, `currentTime = currentTime`, cooldown) → DISABLED; không bao giờ seek mù hay reload; nhánh SUSPECT_EXTENSION không chạm media.
+- DNR Manager: plan bị từ chối toàn bộ khi trùng id hoặc vượt trần; apply thất bại → rollback về rule cũ.
+- Debounce dùng `TimerApi` (`core/timers.ts`) → test bằng `FakeTimers` (harness), world-independent.
+
+### Chưa triển khai (Phase 6–7)
+
+| Trách nhiệm | Trạng thái |
+|-------------|------------|
+| Tích hợp worker (gọi `syncEngineRegistration`) | SPECIFIED (Phase 5–6) |
+| Popup 3 cờ MAIN + `WAITING_FOR_ADAPTER` | SPECIFIED (Phase 6) |
+| Kiểm thử Chrome thật + regression ngoài YouTube | SPECIFIED (Phase 7) |
+
+### Ràng buộc đã giữ (không đổi so với v6)
+
+- Engine **chưa được kích hoạt** (seam inert) → không đổi hành vi hiện tại.
+- Module YouTube cũ **không bị xóa/sửa**.
+- T004 vẫn **OPEN**. A-2, A-4 vẫn **UNVERIFIED**.
+- Logic dùng chung (`core/`, `config/`, `registry/`, `adapter/`, `state/`) không chạm `window`/`document`/`chrome` — kiểm bằng `architecture.test.ts` (đã sửa 2 comment của `dom-observer`/`dnr-manager` để không chứa token bị quét).
+
+### Git
+
+- Commit Phase 4–5: (điền hash sau khi push lên `origin main`).

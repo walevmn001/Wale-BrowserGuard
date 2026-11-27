@@ -3,9 +3,12 @@
  *
  * These stand-ins let the world-aware `main/` hooks be driven in Node without a
  * browser: a fake window with `fetch`/`XMLHttpRequest` stand-ins and a scratch
- * space, a real `Response` builder (Node 20 has a global `Response`), and a
- * `Headers` helper. Nothing here imports a test framework or the engine.
+ * space, a real `Response` builder (Node 20 has a global `Response`), a
+ * `Headers` helper and a deterministic clock. Nothing here imports a test
+ * framework or the engine.
  */
+
+import type { TimerApi, TimerHandle } from '../core/timers';
 
 export interface ResponseOptions {
   readonly status?: number;
@@ -98,3 +101,43 @@ export function makeFakeWindow(): FakeWindow {
     scratch: {},
   };
 }
+
+/**
+ * A deterministic `TimerApi` driven by `advance(ms)`. Timers fire in due order,
+ * so the debounce logic in `SpaNavigationManager`/`DomObserver` is fully
+ * reproducible without relying on real wall-clock timing.
+ */
+export class FakeTimers implements TimerApi {
+  private seq = 0;
+  private now = 0;
+  private readonly tasks = new Map<number, { readonly fn: () => void; readonly at: number }>();
+
+  setTimeout(fn: () => void, ms: number): TimerHandle {
+    const id = (this.seq += 1);
+    this.tasks.set(id, { fn, at: this.now + ms });
+    return id as unknown as TimerHandle;
+  }
+
+  clearTimeout(handle: TimerHandle): void {
+    this.tasks.delete(handle as unknown as number);
+  }
+
+  /** Advances the clock by `ms` and runs every timer that becomes due. */
+  advance(ms: number): void {
+    this.now += ms;
+    const due = [...this.tasks.entries()]
+      .filter(([, task]) => task.at <= this.now)
+      .sort((a, b) => a[1].at - b[1].at);
+    for (const [id, task] of due) {
+      if (this.tasks.delete(id)) {
+        task.fn();
+      }
+    }
+  }
+
+  /** Number of timers still pending (not yet fired or cleared). */
+  pending(): number {
+    return this.tasks.size;
+  }
+}
+

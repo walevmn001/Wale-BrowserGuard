@@ -9,7 +9,7 @@
  * Bump `TUNING_VERSION` whenever a value changes.
  */
 
-export const TUNING_VERSION = 1;
+export const TUNING_VERSION = 3;
 
 export const TUNING = {
   /** Deepest level the JSON prune walk descends before it stops. */
@@ -26,14 +26,30 @@ export const TUNING = {
   skipMaxAttempts: 3,
   /** Minimum gap between recovery attempts. */
   recoveryCooldownMs: 5_000,
+  /** Level-1 grace: how long a stall is observed before any recovery touch. */
+  recoveryL1Ms: 5_000,
   /** Most recovery attempts before the engine gives up. */
   recoveryMaxRetries: 2,
+  /** Most recovery attempts (all levels) before the engine disables itself. */
+  recoveryMaxAttempts: 3,
+  /** Hard cap on generated DNR rules in one plan (guard before applying). */
+  dnrMaxRules: 200,
   /** How often the playback watchdog samples the player. */
   watchdogPollMs: 1_000,
   /** A non-ad video that stops advancing this long is treated as a stall. */
   stallMs: 8_000,
   /** Deadline for restoring the user's audio state after forcing a mute. */
   audioRestoreTimeoutMs: 1_000,
+  /** How many consecutive ad-positive ticks confirm an ad (debounce). */
+  confirmTicks: 2,
+  /** How many consecutive ad-negative ticks confirm the ad ended. */
+  clearTicks: 2,
+  /** Minimum gap between two skip-button clicks. */
+  clickCooldownMs: 1_000,
+  /** Debounce window for SPA navigation events. */
+  navDebounceMs: 300,
+  /** Debounce window for DOM observer notifications. */
+  observerDebounceMs: 150,
 } as const;
 
 export type Tuning = typeof TUNING;

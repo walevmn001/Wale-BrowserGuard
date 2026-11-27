@@ -2,7 +2,7 @@
 
 Cập nhật: 2026-11-27
 
-Trạng thái pha: **Phase 0–3 hoàn tất** (audit, kiến trúc/hợp đồng, interception, phát hiện & điều khiển quảng cáo, một phần bảo vệ playback). Phase 4–7 **chưa bắt đầu**.
+Trạng thái pha: **Phase 0–5 hoàn tất** (audit, kiến trúc/hợp đồng, interception, phát hiện & điều khiển quảng cáo, bảo vệ playback, vòng đời & tích hợp). Phase 6–7 **chưa bắt đầu**.
 
 ## Bảng tiến độ theo Phase
 
@@ -12,19 +12,20 @@ Trạng thái pha: **Phase 0–3 hoàn tất** (audit, kiến trúc/hợp đồn
 | 1 | Architecture & Contracts | DONE (TESTED) | `src/youtube/config|core|registry|adapter|state`, `architecture.test.ts` |
 | 2 | Core Interception | DONE (TESTED) | `json-pruner`, `player-response-hook`, `fetch-interceptor`, `xhr-interceptor` |
 | 3 | Ad Detection & Control | DONE (TESTED) | `ad-detector`, `ad-state-machine`, `ad-action-controller`, `audio-state-manager` |
-| 4 | Playback Protection | CHƯA BẮT ĐẦU | Watchdog/Recovery mới là stub đặc tả |
-| 5 | Lifecycle & Integration | CHƯA BẮT ĐẦU | DOM Observer, SPA Nav, DNR Manager, CSS Hider |
+| 4 | Playback Protection | DONE (TESTED) | `playback-watchdog`, `playback-recovery`, `core/timers` |
+| 5 | Lifecycle & Integration | DONE (TESTED) | `dom-observer`, `spa-navigation`, `dnr-manager`, `css-hider`, `main/runtime-modules.ts` |
 | 6 | Popup & Configuration Integration | CHƯA BẮT ĐẦU | 3 cờ MAIN + `WAITING_FOR_ADAPTER` |
 | 7 | Regression & Independent Validation | CHƯA BẮT ĐẦU | Cần Chrome thật |
 
-## Đã triển khai (Phase 1–3)
+## Đã triển khai (Phase 1–5)
 
-- Engine TS ở `adblock-spec-kit/src/youtube/**` — 22 file nguồn.
-- 14 file test ở `adblock-spec-kit/tests/unit/youtube/**`.
-- Build pass thứ hai: `vite.youtube.config.ts` → `dist/youtube-main.js` (IIFE, 25.08 kB).
+- Engine TS ở `adblock-spec-kit/src/youtube/**` — 32 file nguồn.
+- 21 file test ở `adblock-spec-kit/tests/unit/youtube/**`.
+- Build pass thứ hai: `vite.youtube.config.ts` → `dist/youtube-main.js` (IIFE, 48.80 kB).
 - Seam đăng ký MAIN: `src/youtube/isolated/registration.ts` (idempotent, fail-open, **chưa gọi**).
+- Phase 4–5 gắn vào engine qua `main/runtime-modules.ts` (4 module tự-gate theo cờ riêng) và đăng ký trong `main/main.ts`.
 
-## File thay đổi (Phase 0–3)
+## File thay đổi (Phase 0–5)
 
 - Thêm mới: `adblock-spec-kit/src/youtube/**`, `adblock-spec-kit/tests/unit/youtube/**`, `adblock-spec-kit/vite.youtube.config.ts`.
 - Sửa (SHARED tối thiểu): `adblock-spec-kit/package.json` (thêm build pass thứ hai vào `build` và `package`).
@@ -34,14 +35,12 @@ Trạng thái pha: **Phase 0–3 hoàn tất** (audit, kiến trúc/hợp đồn
 
 | Lệnh | Kết quả |
 |------|---------|
-| `npx vitest run` | 563 passed / 563 (50 file) |
+| `npx vitest run` | 620 passed / 620 (57 file) |
 | `npx tsc --noEmit` | pass |
-| `npm run build` | pass, sinh `dist/youtube-main.js` |
+| `npm run build` | pass, sinh `dist/youtube-main.js` (48.80 kB) |
 
 ## Chưa triển khai
 
-- Phase 4: Playback Watchdog, Playback Recovery (chẩn đoán, timeout/cooldown/retry).
-- Phase 5: DOM Observer, SPA Navigation, DNR Manager (áp dụng/rollback), CSS Hider.
 - Phase 6: Tích hợp worker + popup 3 cờ MAIN.
 - Phase 7: Kiểm thử Chrome thật + regression ngoài YouTube.
 
@@ -62,4 +61,5 @@ Trạng thái pha: **Phase 0–3 hoàn tất** (audit, kiến trúc/hợp đồn
 
 - Commit Phase 0–3: `bad64af` (51 file, +4323/−42).
 - Push lên `origin main`: **thành công** (`7bfdbde..bad64af main -> main`).
+- Commit Phase 4–5: (xem `specs/001-yt-ad-shield/status.md` mục 14 — điền hash sau khi push).
 - Remote: `https://github.com/walevmn001/Wale-BrowserGuard`.

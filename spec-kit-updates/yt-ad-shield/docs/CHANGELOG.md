@@ -1,5 +1,13 @@
 # Changelog
 
+## [Chưa phát hành] — 2026-11-27 — engine Phase 4–5 (IMPLEMENTED / TESTED)
+- Module thay đổi: thêm `core/timers.ts`, `core/playback-watchdog.ts`, `core/playback-recovery.ts`, `core/dom-observer.ts`, `core/spa-navigation.ts`, `core/css-hider.ts`, `core/dnr-manager.ts`, `main/runtime-modules.ts`; sửa `main/main.ts` (đăng ký 4 module runtime), `config/tuning.ts` (`TUNING_VERSION` 2→3, thêm `recoveryL1Ms`, `dnrMaxRules`), `testing/harness.ts` (thêm `FakeTimers`). **Engine vẫn chưa kích hoạt** trong worker.
+- Nguyên nhân: hoàn tất Phase 4 (bảo vệ playback) và Phase 5 (vòng đời & tích hợp) của speckit `yt-ad-shield`.
+- Tác động playback: mọi thành phần fail-open; watchdog **chỉ đọc**, không tự seek/reload; recovery chọn cấp tối thiểu (waits → resync → nudge một lần có cooldown); nghi ngờ lỗi engine thì không chạm media. Vì engine chưa được nạp nên **không** thay đổi hành vi hiện tại.
+- Registry: `SELECTORS_VERSION` chưa đặt (selectors vẫn UNVERIFIED), `ENDPOINTS_VERSION` chưa đặt, `RULES_VERSION` chưa đặt.
+- Kiểm thử: unit **620 pass / 620** (57 file, gồm 21 file `tests/unit/youtube/*`); `tsc --noEmit` pass; `npm run build` pass, sinh `dist/youtube-main.js` (48.80 kB, IIFE).
+- Git tag: chưa tạo.
+
 ## [Chưa phát hành] — 2026-11-27 — engine Phase 1–3 (IMPLEMENTED / TESTED)
 - Module thay đổi: engine YouTube mới ở `adblock-spec-kit/src/youtube/**` (config, registry, core, adapter, state, main, isolated, testing). **Chưa kích hoạt** trong worker.
 - Nguyên nhân: bắt đầu tái triển khai module YouTube theo speckit `yt-ad-shield` (Phase 0–3).
