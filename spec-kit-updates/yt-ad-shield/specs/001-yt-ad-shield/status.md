@@ -435,3 +435,51 @@ Ba quyết định đã chốt và nay đã triển khai:
 ### Còn lại
 
 - Phase 7: chạy trên Chrome/YouTube thật + regression ngoài YouTube (**CHƯA CHẠY**). Kế hoạch gốc viết trước khi kích hoạt; khi chạy cần đọc 3 cờ MAIN ở trạng thái đã kích hoạt thay vì `WAITING_FOR_ADAPTER` mặc định.
+
+---
+
+## 18. Cập nhật v11: CHECKPOINT FIX-01 — engine hoạt động thực sự (2026-11-27)
+
+**Trạng thái định nghĩa:** **IMPLEMENTED / TESTED (unit)** cho activation + handshake; **chưa VERIFIED** trên Chrome/YouTube thật (**PENDING REAL-CHROME VERIFICATION**).
+
+Sau khi tích hợp (v10), kiểm tra thực tế phát hiện engine mới **build được nhưng chưa chạy thật**: ba công tắc MAIN (JSON Pruner / Fetch Hook / XHR Hook) đứng ở `WAITING_FOR_ADAPTER` vô thời hạn và popup có nguy cơ báo `READY` giả. FIX-01 sửa bốn nguyên nhân gốc:
+
+| # | Nguyên nhân gốc | Sửa |
+|---|-----------------|-----|
+| 1 | `main.ts` gọi `registry.initAll(ctx)` **trước** khi `DatasetAdapter` nhận snapshot → hook init với mặc định ON rồi không cập nhật | Đảo thứ tự: cấu hình an toàn → nhận/xác thực snapshot → `initAll` |
+| 2 | Hook chỉ đọc flag **một lần**, không theo dõi thay đổi | `flags.subscribe()` + per-call flag gate (bật/tắt có hiệu lực suốt vòng đời document) |
+| 3 | `ModuleStatus` **không có** fact `installed` → không phân biệt "flag bật" với "hook đã cài" | Thêm `installed` vào `ModuleStatus`; `registry.statusAll()` giữ đúng fact |
+| 4 | Popup suy `READY` thuần từ `isEngineRegistered()` (registration ≠ hook hoạt động) | Handshake MAIN→ISOLATED→worker→popup: `data-wg-yt-status` → `MSG_YT_STATUS` → `storage.session` → popup đọc per-tab |
+
+### Artifact mới / đổi (FIX-01)
+
+| Thành phần | File | Test |
+|-----------|------|------|
+| Model + guard trạng thái runtime | `src/youtube/state/runtime-status.ts` (mới) | `runtime-status.test.ts` |
+| Publisher status (MAIN) | `src/youtube/main/status-publisher.ts` (mới) | `status-publisher.test.ts` |
+| Relay status (ISOLATED) | `src/youtube/isolated/content-entry.ts` | `registration.test.ts` |
+| Lưu status per-tab (worker) | `src/background/youtube-status-store.ts` (mới), `src/background/service-worker.ts` | `youtube-status-store.test.ts` |
+| Điều khiển hiển thị layer | `src/youtube/state/toggle-state.ts` (`resolveLayerDisplay`, `isPendingState`) | `toggle-state.test.ts` |
+| Popup trung thực | `src/popup/yt-layers.ts`, `src/popup/popup.ts`, `src/popup/render.ts`, `src/youtube/state/messages.ts` | `popup-yt-layers.test.ts`, `messages.test.ts` |
+| Thứ tự khởi tạo + reactive | `src/youtube/main/main.ts`, `main/player-response-hook.ts`, `main/runtime-modules.ts`, `main/ad-control-module.ts` | (gián tiếp) |
+| Fact `installed` | `src/youtube/core/module.ts`, `src/youtube/core/registry.ts` | `registry.test.ts` |
+
+### Trạng thái hiển thị popup (mở rộng v11)
+
+`DisplayState` nay gồm 8 giá trị: `ENABLED` (READY), `DISABLED`, `WAITING_FOR_REGISTRATION`, `WAITING_FOR_ADAPTER`, `INITIALIZING`, `RECONCILING`, `ERROR`, `UNKNOWN`. `READY`/`ENABLED` chỉ khi trang **xác nhận** hook `enabled && installed`; registration đơn thuần chỉ cho `WAITING_FOR_REGISTRATION`/`INITIALIZING`. Chi tiết bảng ưu tiên ở `contracts/popup-state.md` §3.
+
+### Bằng chứng kiểm thử (sandbox)
+
+- `npx vitest run` → **708 passed / 708** (65 file).
+- `npx tsc --noEmit` → pass.
+- `npm run build` → pass; `npm run package` → ZIP đủ cả hai bundle.
+- Lint: 6 lỗi tồn tại sẵn (không đổi); 1 lỗi mới do FIX-01 đã sửa (`registry.ts` no-useless-assignment).
+- **Chưa có** bằng chứng trên Chrome/YouTube thật → mọi mục playback + chặn quảng cáo vẫn **UNVERIFIED**.
+
+### Git (FIX-01)
+
+- Commit Phase B+C: `5ac4299`; commit Phase D: `9a8e523`; nhánh `trae/agent-scTM9F` (không push `main`).
+
+### Còn lại
+
+- **PENDING REAL-CHROME VERIFICATION**: chạy `verification/FIX-01_REAL_CHROME_CHECKLIST.md` (36 mục) trên Chrome thật. Không kết luận chặn quảng cáo nếu chưa có bằng chứng.

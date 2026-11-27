@@ -1,6 +1,6 @@
 # Danh sách module
 
-Trạng thái: **IMPLEMENTED / TESTED** cho Phase 1–6; các module Phase 7 là SPECIFIED.
+Trạng thái: **IMPLEMENTED / TESTED** cho Phase 1–6 + **CHECKPOINT FIX-01**; các module Phase 7 là SPECIFIED.
 
 Vị trí trong extension: `adblock-spec-kit/src/youtube/`.
 
@@ -35,9 +35,14 @@ Vị trí trong extension: `adblock-spec-kit/src/youtube/`.
 | — | Nhóm layer hiển thị | `config/layers.ts` | `MAIN_LAYERS`, `ISOLATED_LAYERS`, `isMainFlag(flag)` | — | TESTED |
 | — | Thông điệp popup | `state/messages.ts` | `DISPLAY_LABELS`, `displayMessage(state, reason?)`, `hasForbiddenMainPhrase(text)` | — | TESTED |
 | — | Lưu cấu hình layer (ISOLATED) | `isolated/settings.ts` | `YouTubeEngineSettings` (khóa `youtubeEngineFlags`) | — | TESTED |
-| — | Dựng row cho popup | `popup/yt-layers.ts` | `buildYtLayers(desired, adapter, snapshot)`, `mainGroupState(rows)` | — | TESTED |
+| — | Dựng row cho popup | `popup/yt-layers.ts` | `buildYtLayers(desired, adapter, snapshot, engine)`, `mainGroupState(rows)` | — | TESTED |
+| — | Trạng thái runtime (MAIN→popup) | `state/runtime-status.ts` | `buildRuntimeStatus`, `isYtRuntimeStatus`, `isStatusFresh`, `HOOK_MODULE_BY_FLAG` | — | TESTED |
+| — | Phát status (MAIN) | `main/status-publisher.ts` | `createStatusPublisher(deps).publish()` | — | TESTED |
+| — | Lưu status per-tab | `background/youtube-status-store.ts` | `YtStatusStore.save/read/clear` (khóa `wgYtStatus:<tabId>`) | — | TESTED |
 
-17 trách nhiệm logic được giữ nguyên ranh giới; cả 17 đã IMPLEMENTED/TESTED (unit) từ Phase 1–5. Cấu hình/tuning tập trung ở `config/tuning.ts` (`TUNING_VERSION = 4`). Các module Phase 4–5 được nối vào engine ở `main/runtime-modules.ts` và đăng ký trong `main/main.ts`; mỗi module tự-gate theo cờ riêng; engine còn nối thêm module `ad-control` (`main/ad-control-module.ts`). Phase 6 nối popup: `popup/yt-layers.ts` dựng 6 row (3 MAIN + 3 ISOLATED); nhóm MAIN đi qua bảng ưu tiên `resolveDisplay` với `DatasetAdapter` → `READY` khi engine đã đăng ký, `WAITING_FOR_ADAPTER` khi chưa có snapshot hợp lệ; lựa chọn lưu ở `chrome.storage.sync` qua `isolated/settings.ts`.
+17 trách nhiệm logic được giữ nguyên ranh giới; cả 17 đã IMPLEMENTED/TESTED (unit) từ Phase 1–5. Cấu hình/tuning tập trung ở `config/tuning.ts` (`TUNING_VERSION = 4`). Các module Phase 4–5 được nối vào engine ở `main/runtime-modules.ts` và đăng ký trong `main/main.ts`; mỗi module tự-gate theo cờ riêng; engine còn nối thêm module `ad-control` (`main/ad-control-module.ts`). Phase 6 nối popup: `popup/yt-layers.ts` dựng 6 row (3 MAIN + 3 ISOLATED); lựa chọn lưu ở `chrome.storage.sync` qua `isolated/settings.ts`.
+
+**CHECKPOINT FIX-01:** nhóm MAIN không còn suy `READY` từ registration đơn thuần. `main/main.ts` đảo thứ tự (cấu hình an toàn → nhận snapshot → `initAll`) và hook đăng ký lại theo `flags.subscribe` (per-call gate). MAIN phát trạng thái runtime (`main/status-publisher.ts` → `data-wg-yt-status`), ISOLATED relay (`isolated/content-entry.ts` → `MSG_YT_STATUS`), worker lưu per-tab (`background/youtube-status-store.ts`), popup đọc để phân giải qua `resolveLayerDisplay` (`state/toggle-state.ts`) → 8 trạng thái; `READY` (`ENABLED`) chỉ khi trang xác nhận `enabled && installed`.
 
 ## Module YouTube cũ (đã retire khỏi production, KHÔNG xóa)
 

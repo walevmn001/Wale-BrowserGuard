@@ -1,6 +1,6 @@
 # Kiến trúc YT Ad Shield (engine tái triển khai trong WALE GUARD)
 
-Trạng thái: **IMPLEMENTED / TESTED** cho Phase 1–6. Engine đã **TÍCH HỢP / KÍCH HOẠT** (đăng ký động qua `chrome.scripting.registerContentScripts`; T004 đã chốt: thuộc tính `dataset`). Chưa **VERIFIED** trên Chrome thật.
+Trạng thái: **IMPLEMENTED / TESTED** cho Phase 1–6 + **CHECKPOINT FIX-01**. Engine đã **TÍCH HỢP / KÍCH HOẠT** (đăng ký động qua `chrome.scripting.registerContentScripts`; T004 đã chốt: thuộc tính `dataset`; FIX-01: handshake trạng thái runtime). Chưa **VERIFIED** trên Chrome thật.
 
 ## 1. Quyết định phạm vi (đã chốt với người dùng)
 
@@ -39,20 +39,23 @@ ISOLATED (service worker / content script)          MAIN (trang YouTube)
 
 ```
 content-entry.ts → bootYouTubeEngine(win)
-   FeatureFlags (12 cờ, mặc định BẬT theo A-3)  ← T004 đã chốt: DatasetAdapter (thuộc tính data-wg-yt-flags)
-   DebugLogger (tắt mặc định), LifecycleManager
-   registry: selectors, endpoints
-   ModuleRegistry:
-     json-pruner        → installPlayerResponseHook  (ENABLE_JSON_PRUNER)
-     fetch-interceptor  → wrap(win.fetch)            (ENABLE_FETCH_HOOK)
-     xhr-interceptor    → wrap(win.XMLHttpRequest)   (ENABLE_XHR_HOOK)
+   Bước 1: FeatureFlags (12 cờ ở TRẠNG THÁI AN TOÀN)  ← chưa biết cấu hình người dùng
+   Bước 2: DatasetAdapter.start()  ← đọc data-wg-yt-flags NGAY (đồng bộ) → FeatureFlags.applyRemote
+   Bước 3: ModuleRegistry (initAll sau khi đã có snapshot):
+     json-pruner        → installPlayerResponseHook  (ENABLE_JSON_PRUNER)   ← per-call flag gate
+     fetch-interceptor  → wrap(win.fetch)            (ENABLE_FETCH_HOOK)    ← per-call flag gate
+     xhr-interceptor    → wrap(win.XMLHttpRequest)   (ENABLE_XHR_HOOK)     ← per-call flag gate
      playback-watchdog  → sample video mỗi 1s (+ recovery) (ENABLE_PLAYBACK_WATCHDOG / ENABLE_RECOVERY)
      dom-observer       → MutationObserver player, debounce    (ENABLE_DOM_OBSERVER)
      spa-navigation     → yt-navigate-finish / popstate, debounce (ENABLE_SPA_NAVIGATION)
      css-hider          → 1 <style> ẩn ad chrome                (ENABLE_CSS_HIDER)
      ad-control         → skip / fast-forward parity module cũ (ENABLE_AD_STATE_MACHINE)
+   Bước 4: status-publisher → ghi data-wg-yt-status (popup đọc qua handshake)
+   flags.subscribe(...)  ← mọi thay đổi cờ về sau: hook tự bật/tắt + re-publish status
    lifecycle/registry dispose gỡ mọi hook (idempotent)
 ```
+
+> **CHECKPOINT FIX-01 — thứ tự bắt buộc:** khởi tạo cấu hình ở trạng thái an toàn → nhận và xác thực snapshot → mới `initAll(ctx)`. Hook **không** được tự khởi tạo với mặc định ON trước khi biết cấu hình người dùng; mỗi hook kiểm tra cờ tại thời điểm xử lý dữ liệu (per-call gate) nên bật/tắt có hiệu lực suốt vòng đời document, không cần cài lại.
 
 - Quyết định logic thuần ở `core/`: `playback-watchdog` (phát hiện stall), `playback-recovery` (chọn cấp tối thiểu), `dom-observer` (debounce), `spa-navigation` (debounce + phát hiện đổi tham chiếu), `dnr-manager` (planner + rollback), `css-hider` (builder chuỗi CSS).
 - `main/runtime-modules.ts` là **nơi duy nhất** module Phase 4–5 chạm trang: nó đọc `#movie_player`/`video`, gắn timer/observer và thực hiện hai ghi được phép (nudge `currentTime = currentTime` khi recovery NUDGE; chèn `<style>`).
@@ -80,4 +83,24 @@ content-entry.ts → bootYouTubeEngine(win)
 
 ## 6. Kích hoạt (đã bật qua công tắc module)
 
-`src/youtube/isolated/registration.ts` cung cấp `syncEngineRegistration(api, enabled)` (idempotent, fail-open), **đã được gọi** từ worker: `src/background/service-worker.ts` (`applyYouTubeEngineRegistration`) đăng ký/huỷ đăng ký động cả `youtube-main.js` (MAIN) và `youtube-isolated.js` (ISOLATED) theo công tắc module (`createYouTubeModuleSettings().isEnabled()`) VÀ effective config (`loadEffectiveYouTubeConfig()?.enabled`, kill-switch Q6). Vì dùng đăng ký động nên `manifest.json` **không** có `content_scripts` cho engine, và tắt module sẽ gỡ injection mà không cần reload. Popup phản ánh trạng thái thật: 3 cờ MAIN hiển thị `ENABLED`/`DISABLED` khi engine đã đăng ký (`isEngineRegistered` → READY), ngược lại `WAITING_FOR_ADAPTER`. Việc xác nhận hành vi chặn thật vẫn thuộc Phase 7 (chưa VERIFIED).
+`src/youtube/isolated/registration.ts` cung cấp `syncEngineRegistration(api, enabled)` (idempotent, fail-open), **đã được gọi** từ worker: `src/background/service-worker.ts` (`applyYouTubeEngineRegistration`) đăng ký/huỷ đăng ký động cả `youtube-main.js` (MAIN) và `youtube-isolated.js` (ISOLATED) theo công tắc module (`createYouTubeModuleSettings().isEnabled()`) VÀ effective config (`loadEffectiveYouTubeConfig()?.enabled`, kill-switch Q6). Vì dùng đăng ký động nên `manifest.json` **không** có `content_scripts` cho engine, và tắt module sẽ gỡ injection mà không cần reload.
+
+## 6b. Handshake trạng thái runtime (CHECKPOINT FIX-01)
+
+Registration chỉ chứng minh code **đã được tiêm**, không chứng minh hook **đã được cài**. FIX-01 thêm kênh báo trạng thái ngược MAIN → popup để popup không báo `READY` giả:
+
+```
+MAIN: status-publisher → ghi data-wg-yt-status trên <html> (JSON, gồm flags + per-module {enabled, installed, failures, lastError})
+   │
+ISOLATED: content-entry.ts đọc data-wg-yt-status → gửi MSG_YT_STATUS tới worker (kèm tabId từ sender, KHÔNG tin payload)
+   │
+WORKER: youtube-status-store.ts lưu storage.session  key = wgYtStatus:<tabId>  (xóa khi tab đóng)
+   │
+POPUP: đọc record của tab đang mở → resolveLayerDisplay → 8 trạng thái
+```
+
+- `state/runtime-status.ts` là model + guard **pure** dùng chung cho cả hai world và test (kiểm bằng `architecture.test.ts`).
+- Popup: `READY` (`ENABLED`) chỉ khi MAIN xác nhận `enabled && installed`; chưa có status → `INITIALIZING`; chưa đăng ký → `WAITING_FOR_REGISTRATION`; module tắt → `DISABLED`.
+- Thứ tự hai world (A-4) vẫn UNVERIFIED, nhưng thiết kế chịu được cả hai: nếu ISOLATED chạy trước MAIN, MAIN đọc attribute khi `start()`; nếu MAIN chạy trước, `MutationObserver` của adapter bắt lần ghi sau.
+
+Popup phản ánh trạng thái thật theo handshake trên. Việc xác nhận hành vi chặn thật vẫn thuộc Phase 7 (chưa VERIFIED).

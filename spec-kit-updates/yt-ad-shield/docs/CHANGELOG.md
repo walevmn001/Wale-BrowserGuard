@@ -1,5 +1,17 @@
 # Changelog
 
+## [Chưa phát hành] — 2026-11-27 — CHECKPOINT FIX-01: engine hoạt động thực sự (IMPLEMENTED / TESTED, chưa VERIFIED)
+- Loại: **sửa lỗi kích hoạt** — engine đã tích hợp (v10) nhưng chưa chạy thật; FIX-01 làm nó chạy.
+- Nguyên nhân gốc (4): (1) `main.ts` gọi `initAll` trước khi `DatasetAdapter` nhận snapshot → hook init với mặc định ON; (2) hook chỉ đọc flag một lần, không subscribe; (3) `ModuleStatus` thiếu fact `installed`; (4) popup suy `READY` thuần từ `isEngineRegistered()` → READY giả.
+- Module thay đổi:
+  - **Mới:** `src/youtube/state/runtime-status.ts` (model + guard trạng thái runtime), `src/youtube/main/status-publisher.ts` (publish status MAIN), `src/background/youtube-status-store.ts` (lưu status per-tab trong `storage.session`).
+  - **Sửa:** `src/youtube/main/main.ts` (đảo thứ tự adapter→init; hook reactive qua `flags.subscribe`), `main/player-response-hook.ts`, `main/runtime-modules.ts`, `main/ad-control-module.ts` (per-call flag gate), `core/module.ts` + `core/registry.ts` (thêm fact `installed`), `isolated/content-entry.ts` (relay `data-wg-yt-status` → `MSG_YT_STATUS`), `shared/messages.ts`, `popup/{popup,yt-layers,render}.ts`, `state/toggle-state.ts` (`resolveLayerDisplay`, `isPendingState`), `state/messages.ts`.
+- Handshake trạng thái: MAIN phát `data-wg-yt-status` → ISOLATED relay → worker lưu `storage.session` (`wgYtStatus:<tabId>`) → popup đọc per-tab. Popup phân biệt 8 trạng thái: `ENABLED` (READY), `DISABLED`, `WAITING_FOR_REGISTRATION`, `WAITING_FOR_ADAPTER`, `INITIALIZING`, `RECONCILING`, `ERROR`, `UNKNOWN`; `READY` chỉ khi trang xác nhận `enabled && installed`.
+- Tác động playback: mọi hook vẫn fail-open; tắt flag giữ nguyên hành vi request gốc; hook không cài trùng.
+- Kiểm thử (sandbox): unit **708 pass / 708** (65 file; thêm `runtime-status`, `status-publisher`, `youtube-status-store`); `tsc --noEmit` pass; `npm run build` pass. Lint: 6 lỗi tồn tại sẵn (không đổi); 1 lỗi mới do FIX-01 đã sửa.
+- **Chưa xác minh (UNVERIFIED):** ba hook READY, chặn quảng cáo, bảo toàn playback trên Chrome thật, A-2, A-4 → `PENDING REAL-CHROME VERIFICATION` (`verification/FIX-01_REAL_CHROME_CHECKLIST.md`).
+- Git: `5ac4299` (Phase B+C), `9a8e523` (Phase D); nhánh `trae/agent-scTM9F`.
+
 ## [Chưa phát hành] — 2026-11-27 — engine TÍCH HỢP / KÍCH HOẠT + T004 chốt (IMPLEMENTED / TESTED, chưa VERIFIED)
 - Loại: **tích hợp** engine tái triển khai vào extension WALE GUARD — engine **không còn INERT**.
 - Module thay đổi: thêm `src/youtube/adapter/dataset-adapter.ts`, `src/youtube/isolated/content-entry.ts`, `src/youtube/main/ad-control-module.ts`; sửa `src/youtube/isolated/registration.ts` (đăng ký **cả** MAIN+ISOLATED, `isEngineRegistered`, `bridgeRegistration`), `src/youtube/main/main.ts` (boot `DatasetAdapter` + module ad-control), `src/youtube/main/runtime-modules.ts`, `src/youtube/config/tuning.ts` (`TUNING_VERSION` 3→4), `src/background/service-worker.ts` (retire module v1; `applyYouTubeEngineRegistration()`), `src/popup/popup.ts` (phản ánh trạng thái thật), `vite.config.ts` + `vite.youtube-isolated.config.ts` + `scripts/package-release.ts` + `package.json` (3 pass build + release plugin ở pass cuối).

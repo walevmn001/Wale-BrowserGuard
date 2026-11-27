@@ -2,7 +2,9 @@
 
 Cập nhật: 2026-11-27
 
-Trạng thái pha: **Phase 0–6 hoàn tất / TESTED (unit)** (audit, kiến trúc/hợp đồng, interception, phát hiện & điều khiển quảng cáo, bảo vệ playback, vòng đời & tích hợp, tích hợp popup/cấu hình). Phase 7 **PENDING_REAL_CHROME_VALIDATION** — kế hoạch kiểm thử và mẫu ghi kết quả đã bàn giao, đang **chờ người dùng tự chạy trên Chrome thật**; **chưa có kết quả PASS/FAIL nào**. Engine đã **TÍCH HỢP / KÍCH HOẠT** trong extension: seam `isolated/registration.ts` được service worker gọi (đăng ký động MAIN+ISOLATED theo công tắc module), T004 đã chốt (thuộc tính `data-wg-yt-flags`), module YouTube v1 đã retire khỏi production.
+Trạng thái pha: **Phase 0–6 hoàn tất / TESTED (unit)** + **CHECKPOINT FIX-01 hoàn tất / TESTED (unit)** (activation thực sự, feature flags áp dụng đúng thứ tự, handshake trạng thái runtime MAIN→ISOLATED→popup). Phase 7 **PENDING_REAL_CHROME_VALIDATION** — kế hoạch kiểm thử và mẫu ghi kết quả đã bàn giao, đang **chờ người dùng tự chạy trên Chrome thật**; **chưa có kết quả PASS/FAIL nào**. Engine đã **TÍCH HỢP / KÍCH HOẠT** trong extension: seam `isolated/registration.ts` được service worker gọi (đăng ký động MAIN+ISOLATED theo công tắc module), T004 đã chốt (thuộc tính `data-wg-yt-flags`), module YouTube v1 đã retire khỏi production.
+
+> **CHECKPOINT FIX-01 (2026-11-27):** sửa bốn nguyên nhân gốc khiến engine "build được nhưng không chạy" — (1) `initAll` chạy trước snapshot, (2) hook đọc flag một lần, (3) thiếu fact `installed`, (4) popup báo READY giả từ registration. Nay ba hook MAIN có trạng thái READY **thực sự** (dựa trên handshake `data-wg-yt-status`), popup phân biệt đủ 8 trạng thái, không còn `WAITING_FOR_ADAPTER` vô thời hạn khi adapter hoạt động. Chi tiết: `specs/001-yt-ad-shield/status.md` §18, kết quả test: `verification/FIX-01_TEST_RESULTS.md`, checklist Chrome: `verification/FIX-01_REAL_CHROME_CHECKLIST.md`.
 
 ## Bảng tiến độ theo Phase
 
@@ -41,9 +43,9 @@ Trạng thái pha: **Phase 0–6 hoàn tất / TESTED (unit)** (audit, kiến tr
 
 | Lệnh | Kết quả |
 |------|---------|
-| `npx vitest run` | 666 passed / 666 |
+| `npx vitest run` | 708 passed / 708 (65 file) — sau FIX-01 (trước: 666/666) |
 | `npx tsc --noEmit` | pass |
-| `npm run build` | pass, sinh `dist/youtube-main.js` (~58.7 kB) + `dist/youtube-isolated.js` (~8.5 kB) |
+| `npm run build` | pass, sinh `dist/youtube-main.js` (~65.6 kB) + `dist/youtube-isolated.js` (~12.1 kB) |
 | `npm run package` | pass, zip release chứa **đủ** cả hai bundle engine |
 
 ## Phase 7 — Trạng thái bàn giao (PENDING_REAL_CHROME_VALIDATION)
@@ -88,3 +90,10 @@ Trạng thái pha: **Phase 0–6 hoàn tất / TESTED (unit)** (audit, kiến tr
 - **Release GitHub `v1.2.0`** (Latest, target `main`) kèm asset `adblock-security-1.2.0.zip`.
 - Đã **xóa** các release/tag cũ (theo yêu cầu): release `v1.1.1`, `phase-P7-pending`, `phase-P4-done` (kèm tag) và các tag `phase-P1-done`…`phase-P7-done`. Hiện chỉ còn release/tag `v1.2.0`.
 - Remote: `https://github.com/walevmn001/Wale-BrowserGuard`.
+
+### Git cho CHECKPOINT FIX-01
+
+- Commit Phase B+C (activation thực sự + handshake trạng thái runtime): `5ac4299` — `feat(youtube): kích hoạt engine + handshake trạng thái runtime (FIX-01 B/C)` (20 file).
+- Commit Phase D (kiểm thử độc lập): `9a8e523` — `test(youtube): kiểm thử độc lập cho activation, handshake & feature flags (FIX-01 D)` (5 file).
+- Commit Phase E/G (tài liệu + checklist Chrome + package): xem `git log` nhánh `trae/agent-scTM9F`.
+- Nhánh làm việc: `trae/agent-scTM9F` — **không** push thẳng `main`, không force-push.

@@ -1,6 +1,8 @@
 # Contract: Trạng thái popup và mô hình trạng thái cờ
 
-**Trạng thái:** IMPLEMENTED. Mô hình trạng thái và cách hiển thị đã được cài trong `src/youtube/popup/yt-layers.ts` + `src/popup/popup.ts`. Adapter đang hoạt động là `DatasetAdapter` (T004 đã chốt, phương án A) nên phần reconcile đã có đường chạy thật; nhánh `WAITING_FOR_ADAPTER` giữ lại cho trường hợp chưa có snapshot hợp lệ.
+**Trạng thái:** IMPLEMENTED. Mô hình trạng thái và cách hiển thị đã được cài trong `src/youtube/state/toggle-state.ts` (`resolveDisplay` + `resolveLayerDisplay`), `src/youtube/popup/yt-layers.ts` và `src/popup/popup.ts`. Adapter đang hoạt động là `DatasetAdapter` (T004 đã chốt, phương án A) nên phần reconcile đã có đường chạy thật; nhánh `WAITING_FOR_ADAPTER` giữ lại cho trường hợp chưa có snapshot hợp lệ.
+
+> **CHECKPOINT FIX-01:** từ khi có handshake `data-wg-yt-status`, ba cờ MAIN **không** còn suy `READY` từ registration đơn thuần. `resolveLayerDisplay` (mục 3b) dùng thêm hai fact thật — module có đăng ký chưa và hook đã thực sự `installed` chưa — nên có thêm hai trạng thái `WAITING_FOR_REGISTRATION` và `INITIALIZING`. `README` (`WAITING_FOR_ADAPTER`) mô tả trường hợp chưa có snapshot hợp lệ; `INITIALIZING` mô tả trường hợp đã đăng ký nhưng chưa xác nhận hook.
 
 ## 1. Mục đích
 
@@ -28,9 +30,9 @@ Popup không được giả định một lựa chọn đã được áp dụng 
 
 ## 3. Trạng thái hiển thị
 
-Các trạng thái hiển thị: `ENABLED`, `DISABLED`, `WAITING_FOR_ADAPTER`, `RECONCILING`, `ERROR`, `UNKNOWN`.
+Các trạng thái hiển thị: `ENABLED`, `DISABLED`, `WAITING_FOR_REGISTRATION`, `WAITING_FOR_ADAPTER`, `INITIALIZING`, `RECONCILING`, `ERROR`, `UNKNOWN`.
 
-Quy tắc suy ra, thứ tự ưu tiên từ trên xuống:
+Quy tắc suy ra (bảng gốc, cho nhóm MAIN), thứ tự ưu tiên từ trên xuống:
 
 | Thứ tự | Điều kiện (ba cờ MAIN) | Hiển thị |
 |--------|------------------------|----------|
@@ -41,6 +43,26 @@ Quy tắc suy ra, thứ tự ưu tiên từ trên xuống:
 | 5 | `effectiveState` = `ENABLED` và `desiredState` = `ON` | `ENABLED` |
 | 6 | `effectiveState` = `DISABLED` và `desiredState` = `OFF` | `DISABLED` |
 | 7 | Còn lại (desired và effective lệch nhau sau khi đã `AVAILABLE`) | `ERROR` với lý do "không khớp" |
+
+## 3b. Bảng suy ra có runtime handshake (CHECKPOINT FIX-01)
+
+Khi có handshake `data-wg-yt-status`, popup dùng `resolveLayerDisplay` với thêm ba fact: `moduleEnabled` (công tắc module), `registered` (đã đăng ký chưa) và `runtime` (fact thật từ trang: `enabled`, `installed`, `failures`, `lastError`). Thứ tự ưu tiên:
+
+| Thứ tự | Điều kiện | Hiển thị | Lý do |
+|--------|-----------|----------|-------|
+| 0 | `moduleEnabled` = false | `DISABLED` | `module-off` |
+| 1 | chưa đăng ký | `WAITING_FOR_REGISTRATION` | `registration-missing` |
+| 2 | `adapterState` = `ERROR` | `ERROR` | `adapter-error` |
+| 3 | đã đăng ký nhưng chưa có `runtime` | `INITIALIZING` | `awaiting-status` |
+| 4 | `adapterState` = `WAITING` / `snapshotState` = `MISSING`/`INVALID` | `WAITING_FOR_ADAPTER` | `adapter-waiting` / `snapshot-missing` / `snapshot-invalid` |
+| 5 | `snapshotState` = `STALE` | `RECONCILING` | `snapshot-stale` |
+| 6 | `runtime.lastError !== null` hoặc `runtime.failures > 0` | `ERROR` | `lastError` / `module-failures` |
+| 7 | `desiredState` = ON và `runtime.enabled && runtime.installed` | `ENABLED` (READY) | — |
+| 8 | `desiredState` = ON nhưng `enabled && !installed` | `ERROR` | `not-installed` |
+| 9 | `desiredState` = OFF và `!runtime.enabled` | `DISABLED` | — |
+| 10 | còn lại (lệch nhau) | `ERROR` | `mismatch` |
+
+**Không** được suy `READY`/`ENABLED` chỉ từ registration. `isPendingState` trả true cho bốn trạng thái chưa áp dụng: `WAITING_FOR_REGISTRATION`, `WAITING_FOR_ADAPTER`, `INITIALIZING`, `RECONCILING`.
 
 Ba cờ ISOLATED không dùng bảng trên. Chúng dùng `effectiveState` do module ISOLATED báo qua `status()`, và hiển thị `ENABLED`, `DISABLED`, `UNKNOWN`, `ERROR`.
 
