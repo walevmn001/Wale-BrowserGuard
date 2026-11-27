@@ -81,4 +81,6 @@ Trạng thái pha: **Phase 0–6 hoàn tất / TESTED (unit)** (audit, kiến tr
 - Commit Phase 6: `2c60594` (22 file, +916/−74).
 - Push lên `origin main`: **thành công** (`f7ced95..2c60594 HEAD -> main`).
 - Commit checkpoint Phase 7 (validation pending): `chore(release): checkpoint YouTube validation pending` → tag/Release `phase-P7-pending` (hash ghi trong release notes và `git log`).
+- Commit tích hợp/kích hoạt engine (v10): `76b1417` — `feat(youtube): tích hợp và kích hoạt engine YT Ad Shield vào WALE GUARD` (29 file, +968/−195).
+- Push: **thành công** lên nhánh `trae/agent-scTM9F` (`d1b85e3..76b1417 trae/agent-scTM9F -> trae/agent-scTM9F`).
 - Remote: `https://github.com/walevmn001/Wale-BrowserGuard`.
