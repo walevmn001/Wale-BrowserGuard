@@ -1,5 +1,13 @@
 # Changelog
 
+## [Chưa phát hành] — 2026-11-27 — engine Phase 6 (tích hợp popup/cấu hình) (IMPLEMENTED / TESTED)
+- Module thay đổi: thêm `src/youtube/config/layers.ts`, `src/youtube/state/messages.ts`, `src/youtube/isolated/settings.ts`, `src/popup/yt-layers.ts`; sửa `src/youtube/state/toggle-state.ts` (chuyển `displayMessage` sang `state/messages.ts`), `src/popup/{elements,render,popup}.ts`, `src/popup/index.html`, `src/shared/i18n/{vi,en}.ts` (thêm 9 khóa). **Engine vẫn chưa kích hoạt** trong worker (seam `registration.ts` vẫn inert).
+- Nguyên nhân: hoàn tất Phase 6 (tích hợp popup & cấu hình) của speckit `yt-ad-shield`.
+- Tác động playback: popup chỉ đọc/ghi cấu hình; 3 cờ MAIN hiển thị `WAITING_FOR_ADAPTER` (dùng `NullAdapter`, chưa truyền được) và không bao giờ báo "đã tắt/thành công". Cờ ISOLATED áp dụng sau khi tải lại trang. Không thay đổi hành vi chặn hiện tại.
+- Registry: `SELECTORS_VERSION` chưa đặt (selectors vẫn UNVERIFIED), `ENDPOINTS_VERSION` chưa đặt, `RULES_VERSION` chưa đặt.
+- Kiểm thử: unit **652 pass / 652** (61 file, gồm 25 file `tests/unit/youtube/*`); `tsc --noEmit` pass; `npm run build` pass, sinh `dist/youtube-main.js` (48.80 kB, IIFE).
+- Git tag: chưa tạo.
+
 ## [Chưa phát hành] — 2026-11-27 — engine Phase 4–5 (IMPLEMENTED / TESTED)
 - Module thay đổi: thêm `core/timers.ts`, `core/playback-watchdog.ts`, `core/playback-recovery.ts`, `core/dom-observer.ts`, `core/spa-navigation.ts`, `core/css-hider.ts`, `core/dnr-manager.ts`, `main/runtime-modules.ts`; sửa `main/main.ts` (đăng ký 4 module runtime), `config/tuning.ts` (`TUNING_VERSION` 2→3, thêm `recoveryL1Ms`, `dnrMaxRules`), `testing/harness.ts` (thêm `FakeTimers`). **Engine vẫn chưa kích hoạt** trong worker.
 - Nguyên nhân: hoàn tất Phase 4 (bảo vệ playback) và Phase 5 (vòng đời & tích hợp) của speckit `yt-ad-shield`.

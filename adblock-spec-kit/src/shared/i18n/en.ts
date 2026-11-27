@@ -383,6 +383,17 @@ export const EN: Record<keyof typeof VI, string> = {
   ytToastOn: 'YouTube module enabled.',
   ytToastOff: 'YouTube module disabled.',
 
+  // ---- YouTube Ad Shield engine layers (Phase 6 — popup card) ----
+  ppYtEngine: 'YouTube Ad Shield',
+  ppYtReloadNote: 'Takes effect after the page is reloaded.',
+  ppYtSavedShort: 'saved, not applied',
+  ppYtLayerJsonPruner: 'Player JSON pruner',
+  ppYtLayerFetchHook: 'Fetch hook',
+  ppYtLayerXhrHook: 'XHR hook',
+  ppYtLayerDnr: 'Request blocking (DNR)',
+  ppYtLayerRuntimeGuard: 'Runtime guard',
+  ppYtLayerCssHider: 'CSS ad hider',
+
   // ---- About ----
   abtTitle: 'About',
   abtTagline: 'A lightweight, private, easy browser protector.',

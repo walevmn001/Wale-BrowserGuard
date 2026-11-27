@@ -306,3 +306,54 @@ Các mục 5, 10–13, 15 nay **IMPLEMENTED / TESTED (unit)**; 17/17 trách nhi�
 ### Git
 
 - Commit Phase 4–5: `60d9bc4` (23 file, +2514/−23); push `origin main` **thành công** (`f7b3c3a..60d9bc4`).
+
+---
+
+## 15. Cập nhật v8: engine Phase 6 IMPLEMENTED / TESTED (2026-11-27)
+
+**Trạng thái định nghĩa:** SPECIFIED cho Phase 7; **IMPLEMENTED / TESTED (unit)** cho Phase 1–6; **chưa VERIFIED** trên Chrome/YouTube thật.
+
+**Vị trí code:** `adblock-spec-kit/src/youtube/**` và `adblock-spec-kit/src/popup/**`.
+
+### Hạng mục Phase 6 có bằng chứng
+
+| Trách nhiệm | File | Interface | Test |
+|-------------|------|-----------|------|
+| Nhóm layer hiển thị | `config/layers.ts` | `MAIN_LAYERS`, `ISOLATED_LAYERS`, `ENGINE_LAYERS`, `isMainFlag(flag)` | `layers.test.ts` |
+| Thông điệp popup | `state/messages.ts` | `DISPLAY_LABELS`, `displayMessage(state, reason?)`, `FORBIDDEN_MAIN_PHRASES`, `hasForbiddenMainPhrase(text)`, `WAITING_SAVED_NOTE`, `RELOAD_NOTE` | `messages.test.ts` |
+| Lưu cấu hình layer | `isolated/settings.ts` | `YouTubeEngineSettings` (`desired`/`desiredFlags`/`setFlag`), khóa `youtubeEngineFlags` | `engine-settings.test.ts` |
+| Dựng row cho popup | `popup/yt-layers.ts` | `buildYtLayers(desired, adapter, snapshot)`, `mainGroupState(rows)` | `popup-yt-layers.test.ts` |
+| Nối popup | `popup/{popup,render,elements}.ts`, `popup/index.html`, `shared/i18n/{vi,en}.ts` | `renderYtEngine`, `buildYtLayers` | (gián tiếp qua popup-yt-layers) |
+
+### Quyết định thiết kế Phase 6
+
+- `displayMessage` **dời** từ `state/toggle-state.ts` sang `state/messages.ts` để `toggle-state.ts` thuần logic; `resolveDisplay` và các type giữ nguyên. `architecture.test.ts` vẫn xanh (cả hai file đều pure).
+- Popup chỉ dùng **NullAdapter** cho 3 cờ MAIN → luôn `WAITING_FOR_ADAPTER` với `snapshot = MISSING`; đúng nghiệm thu §7 ("desired = OFF mà adapter = WAITING → KHÔNG hiển thị 'Đã tắt'").
+- `buildYtLayers` đặt `effective = desired` cho cờ MAIN để bảng ưu tiên (`resolveDisplay`) quyết định; nhờ vậy khi adapter chuyển `READY` + snapshot `AVAILABLE` thì cờ MAIN mới hiển thị `ENABLED`/`DISABLED`.
+- Cờ ISOLATED (DNR/RUNTIME_GUARD/CSS_HIDER) phản ánh thẳng lựa chọn đã lưu; không đi qua adapter.
+- i18n: thêm 9 khóa (`ppYtEngine`, `ppYtReloadNote`, `ppYtSavedShort`, 6 nhãn layer); EN là `Record<keyof typeof VI, string>` nên lệch khóa sẽ fail build.
+
+### Bằng chứng kiểm thử
+
+- `npx vitest run` → **652 passed / 61 file** (25 file `tests/unit/youtube/*` thuộc engine mới).
+- `npx tsc --noEmit` → pass.
+- `npm run build` → pass, sinh `dist/youtube-main.js` (48.80 kB, IIFE).
+- **Chưa có** bằng chứng trên Chrome/YouTube thật → mọi mục playback vẫn UNVERIFIED.
+
+### Chưa triển khai (Phase 7)
+
+| Trách nhiệm | Trạng thái |
+|-------------|------------|
+| Kiểm thử Chrome thật + regression ngoài YouTube | SPECIFIED (Phase 7) |
+| Task phụ thuộc T004 (T016b, T061–T065, T073–T074) | BLOCKED |
+
+### Ràng buộc đã giữ (không đổi so với v7)
+
+- Engine **chưa được kích hoạt** (seam `registration.ts` inert) → không đổi hành vi hiện tại.
+- Module YouTube cũ **không bị xóa/sửa**.
+- T004 vẫn **OPEN**. A-2, A-4 vẫn **UNVERIFIED**.
+- Logic dùng chung (`core/`, `config/`, `registry/`, `adapter/`, `state/`) không chạm `window`/`document`/`chrome` — kiểm bằng `architecture.test.ts`.
+
+### Git
+
+- Commit Phase 6: `<pending>`; push `origin main`: `<pending>`.

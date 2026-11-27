@@ -1,10 +1,10 @@
 # Danh sách module
 
-Trạng thái: **IMPLEMENTED / TESTED** cho Phase 1–5; các module Phase 6–7 là SPECIFIED.
+Trạng thái: **IMPLEMENTED / TESTED** cho Phase 1–6; các module Phase 7 là SPECIFIED.
 
 Vị trí trong extension: `adblock-spec-kit/src/youtube/`.
 
-## Đã cài đặt (Phase 1–5)
+## Đã cài đặt (Phase 1–6)
 
 | # | Trách nhiệm | File | Interface | Feature flag | Trạng thái |
 |---|-------------|------|-----------|--------------|-----------|
@@ -29,11 +29,15 @@ Vị trí trong extension: `adblock-spec-kit/src/youtube/`.
 | — | Feature Flag Interface | `config/flags.ts` | `FeatureFlags` (get/applyRemote/snapshot/subscribe/dispose) | — | TESTED |
 | — | Adapter boundary | `adapter/adapter.ts`, `adapter/null-adapter.ts` | `FlagAdapter`, `NullAdapter` | — | TESTED |
 | — | Registries | `registry/selectors.ts`, `registry/endpoints.ts`, `registry/rules.ts` | `SelectorRegistry`, `EndpointRegistry`, `buildDnrRules` | ENABLE_DNR | TESTED |
-| — | Trạng thái popup | `state/toggle-state.ts` | `resolveDisplay(inputs)`, `displayMessage(state)` | — | TESTED |
+| — | Trạng thái popup | `state/toggle-state.ts` | `resolveDisplay(inputs)` | — | TESTED |
 | — | Module registry | `core/registry.ts` | `ModuleRegistry` | — | TESTED |
 | — | Đăng ký MAIN (seam) | `isolated/registration.ts` | `syncEngineRegistration(api, enabled)` | — | TESTED (chưa gọi) |
+| — | Nhóm layer hiển thị | `config/layers.ts` | `MAIN_LAYERS`, `ISOLATED_LAYERS`, `isMainFlag(flag)` | — | TESTED |
+| — | Thông điệp popup | `state/messages.ts` | `DISPLAY_LABELS`, `displayMessage(state, reason?)`, `hasForbiddenMainPhrase(text)` | — | TESTED |
+| — | Lưu cấu hình layer (ISOLATED) | `isolated/settings.ts` | `YouTubeEngineSettings` (khóa `youtubeEngineFlags`) | — | TESTED |
+| — | Dựng row cho popup | `popup/yt-layers.ts` | `buildYtLayers(desired, adapter, snapshot)`, `mainGroupState(rows)` | — | TESTED |
 
-17 trách nhiệm logic được giữ nguyên ranh giới; cả 17 đã IMPLEMENTED/TESTED (unit) từ Phase 1–5. Cấu hình/tuning tập trung ở `config/tuning.ts` (`TUNING_VERSION = 3`). Các module Phase 4–5 được nối vào engine ở `main/runtime-modules.ts` và đăng ký trong `main/main.ts`; mỗi module tự-gate theo cờ riêng.
+17 trách nhiệm logic được giữ nguyên ranh giới; cả 17 đã IMPLEMENTED/TESTED (unit) từ Phase 1–5. Cấu hình/tuning tập trung ở `config/tuning.ts` (`TUNING_VERSION = 3`). Các module Phase 4–5 được nối vào engine ở `main/runtime-modules.ts` và đăng ký trong `main/main.ts`; mỗi module tự-gate theo cờ riêng. Phase 6 nối popup: `popup/yt-layers.ts` dựng 6 row (3 MAIN + 3 ISOLATED); nhóm MAIN đi qua bảng ưu tiên `resolveDisplay` nên với `NullAdapter` luôn là `WAITING_FOR_ADAPTER`; lựa chọn lưu ở `chrome.storage.sync` qua `isolated/settings.ts`.
 
 ## Module YouTube cũ (vẫn giữ, KHÔNG xóa)
 

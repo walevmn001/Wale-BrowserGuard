@@ -2,7 +2,7 @@
 
 Cập nhật: 2026-11-27
 
-Trạng thái pha: **Phase 0–5 hoàn tất** (audit, kiến trúc/hợp đồng, interception, phát hiện & điều khiển quảng cáo, bảo vệ playback, vòng đời & tích hợp). Phase 6–7 **chưa bắt đầu**.
+Trạng thái pha: **Phase 0–6 hoàn tất** (audit, kiến trúc/hợp đồng, interception, phát hiện & điều khiển quảng cáo, bảo vệ playback, vòng đời & tích hợp, tích hợp popup/cấu hình). Phase 7 **chưa bắt đầu**.
 
 ## Bảng tiến độ theo Phase
 
@@ -14,20 +14,23 @@ Trạng thái pha: **Phase 0–5 hoàn tất** (audit, kiến trúc/hợp đồn
 | 3 | Ad Detection & Control | DONE (TESTED) | `ad-detector`, `ad-state-machine`, `ad-action-controller`, `audio-state-manager` |
 | 4 | Playback Protection | DONE (TESTED) | `playback-watchdog`, `playback-recovery`, `core/timers` |
 | 5 | Lifecycle & Integration | DONE (TESTED) | `dom-observer`, `spa-navigation`, `dnr-manager`, `css-hider`, `main/runtime-modules.ts` |
-| 6 | Popup & Configuration Integration | CHƯA BẮT ĐẦU | 3 cờ MAIN + `WAITING_FOR_ADAPTER` |
+| 6 | Popup & Configuration Integration | DONE (TESTED) | `config/layers.ts`, `state/messages.ts`, `isolated/settings.ts`, `popup/yt-layers.ts`; popup hiển thị 6 layer + `WAITING_FOR_ADAPTER` |
 | 7 | Regression & Independent Validation | CHƯA BẮT ĐẦU | Cần Chrome thật |
 
-## Đã triển khai (Phase 1–5)
+## Đã triển khai (Phase 1–6)
 
-- Engine TS ở `adblock-spec-kit/src/youtube/**` — 32 file nguồn.
-- 21 file test ở `adblock-spec-kit/tests/unit/youtube/**`.
+- Engine TS ở `adblock-spec-kit/src/youtube/**` — 33 file nguồn.
+- 25 file test ở `adblock-spec-kit/tests/unit/youtube/**`.
 - Build pass thứ hai: `vite.youtube.config.ts` → `dist/youtube-main.js` (IIFE, 48.80 kB).
 - Seam đăng ký MAIN: `src/youtube/isolated/registration.ts` (idempotent, fail-open, **chưa gọi**).
 - Phase 4–5 gắn vào engine qua `main/runtime-modules.ts` (4 module tự-gate theo cờ riêng) và đăng ký trong `main/main.ts`.
+- Phase 6: popup chia 6 layer (3 MAIN + 3 ISOLATED) qua `popup/yt-layers.ts`; nhóm MAIN dùng `NullAdapter` → luôn `WAITING_FOR_ADAPTER`; cờ ISOLATED lưu/nạp qua `chrome.storage.sync` (`isolated/settings.ts`, khóa `youtubeEngineFlags`).
 
-## File thay đổi (Phase 0–5)
+## File thay đổi (Phase 0–6)
 
-- Thêm mới: `adblock-spec-kit/src/youtube/**`, `adblock-spec-kit/tests/unit/youtube/**`, `adblock-spec-kit/vite.youtube.config.ts`.
+- Thêm mới (Phase 1–5): `adblock-spec-kit/src/youtube/**`, `adblock-spec-kit/tests/unit/youtube/**`, `adblock-spec-kit/vite.youtube.config.ts`.
+- Thêm mới (Phase 6): `src/youtube/config/layers.ts`, `src/youtube/state/messages.ts`, `src/youtube/isolated/settings.ts`, `src/popup/yt-layers.ts` + 4 file test tương ứng.
+- Sửa (Phase 6, SHARED tối thiểu): `src/youtube/state/toggle-state.ts` (dời `displayMessage` sang `state/messages.ts`), `src/popup/{elements,render,popup}.ts`, `src/popup/index.html`, `src/shared/i18n/{vi,en}.ts` (thêm 9 khóa).
 - Sửa (SHARED tối thiểu): `adblock-spec-kit/package.json` (thêm build pass thứ hai vào `build` và `package`).
 - Tài liệu: `spec-kit-updates/yt-ad-shield/**` (README, docs/*, specs/.../status.md).
 
@@ -35,14 +38,14 @@ Trạng thái pha: **Phase 0–5 hoàn tất** (audit, kiến trúc/hợp đồn
 
 | Lệnh | Kết quả |
 |------|---------|
-| `npx vitest run` | 620 passed / 620 (57 file) |
+| `npx vitest run` | 652 passed / 652 (61 file) |
 | `npx tsc --noEmit` | pass |
 | `npm run build` | pass, sinh `dist/youtube-main.js` (48.80 kB) |
 
 ## Chưa triển khai
 
-- Phase 6: Tích hợp worker + popup 3 cờ MAIN.
 - Phase 7: Kiểm thử Chrome thật + regression ngoài YouTube.
+- Các task phụ thuộc T004 (T016b, T061–T065, T073–T074) vẫn **BLOCKED**.
 
 ## Giả định chưa xác minh
 

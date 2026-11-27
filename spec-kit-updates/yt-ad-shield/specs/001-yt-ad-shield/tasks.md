@@ -36,10 +36,10 @@ Quy ước: `[P]` nghĩa là có thể làm song song với tác vụ khác cùn
 
 ## Giai đoạn 6: Cấu hình và popup
 
-- [ ] T016a Viết `src/isolated/settings.js` đọc `chrome.storage.sync` và cung cấp cờ cho module ISOLATED. Không phụ thuộc T004. (FR-014, FR-015)
+- [x] T016a Viết `src/isolated/settings.js` đọc `chrome.storage.sync` và cung cấp cờ cho module ISOLATED. Không phụ thuộc T004. (FR-014, FR-015) → `src/youtube/isolated/settings.ts` (`YouTubeEngineSettings`), test `engine-settings.test.ts`.
 - [ ] T016b [BLOCKED bởi T004] Gửi snapshot cờ MAIN qua adapter đã chọn. Chỉ làm sau khi T004 chốt. (contracts/adapter.md)
-- [ ] T017 [P] Viết `src/popup/popup.html`, `popup.css`, `popup.js` với công tắc bật/tắt từng lớp và ghi chú "có hiệu lực sau khi tải lại trang". (FR-014, US-5)
-- [ ] T018 Kiểm tra FR-015: khi cờ một lớp tắt, không đăng ký hook, không chèn CSS, không tạo interval. (FR-015)
+- [x] T017 [P] Viết `src/popup/popup.html`, `popup.css`, `popup.js` với công tắc bật/tắt từng lớp và ghi chú "có hiệu lực sau khi tải lại trang". (FR-014, US-5) → tích hợp vào popup TS hiện có (`src/popup/index.html`, `yt-layers.ts`, `render.ts`, `popup.ts`), nhãn `ppYtReloadNote`.
+- [x] T018 Kiểm tra FR-015: khi cờ một lớp tắt, không đăng ký hook, không chèn CSS, không tạo interval. (FR-015) → các module runtime tự-gate theo cờ (`main/runtime-modules.ts`, test `runtime-modules.test.ts`).
 
 ## Giai đoạn 7: Log, README và bàn giao
 
@@ -131,16 +131,16 @@ Ghi chú: sau khi T004 chốt, chỉ được thay đổi T061 đến T065 và a
 
 ## Giai đoạn 11 (v5): Giả định chưa xác minh và trạng thái popup, không chặn registry
 
-Trạng thái: chưa thực hiện. Mọi tác vụ trong giai đoạn này không chặn T056 đến T060.
+Trạng thái: T068–T072 hoàn tất (Phase 6); T066–T067 chờ Chrome thật; T073–T074 chờ T004. Các tác vụ trong giai đoạn này không chặn T056 đến T060.
 
 ### Không phụ thuộc T004
 - [ ] T066 Viết extension thử nghiệm A-2 theo `verification/A-2-main-storage-access.md` mục 3. Chạy trên Chrome mục tiêu, ghi kết quả vào mục 5 và mục 7 của file đó.
 - [ ] T067 Viết instrumentation A-4 theo `verification/A-4-document-start-order.md` mục 3. Chạy điều hướng mới ≥20 lần và SPA ≥20 lần, có và không có snapshot.
-- [ ] T068 Viết mô hình trạng thái trong `src/core/popup-state.js` (hàm thuần): nhận `{desiredState, effectiveState, adapterState, snapshotState}`, trả về trạng thái hiển thị theo bảng `popup-state.md` mục 3.
-- [ ] T069 Unit test cho T068: mọi tổ hợp quan trọng, đặc biệt `WAITING` với `desired=OFF` không được trả `DISABLED`.
-- [ ] T070 Viết chuỗi thông điệp theo `popup-state.md` mục 4 trong một file riêng. Test không chứa các cụm cấm cho ba cờ MAIN khi `WAITING_FOR_ADAPTER` ("đã tắt", "đã cập nhật", "thành công", "đã áp dụng").
-- [ ] T071 Cập nhật popup (HTML/JS) hiển thị trạng thái và thông báo theo T068 và T070, với ba cờ MAIN ở `WAITING_FOR_ADAPTER` khi `adapterState` là WAITING.
-- [ ] T072 Viết `README.md` đúng nội dung mục "Hành vi chờ adapter" và đồng bộ bốn mệnh đề trong `adapter.md` mục 11 (test so sánh chuỗi hoặc checklist thủ công).
+- [x] T068 Viết mô hình trạng thái trong `src/core/popup-state.js` (hàm thuần): nhận `{desiredState, effectiveState, adapterState, snapshotState}`, trả về trạng thái hiển thị theo bảng `popup-state.md` mục 3. → `src/youtube/state/toggle-state.ts` (`resolveDisplay`).
+- [x] T069 Unit test cho T068: mọi tổ hợp quan trọng, đặc biệt `WAITING` với `desired=OFF` không được trả `DISABLED`. → `toggle-state.test.ts`, `popup-yt-layers.test.ts`.
+- [x] T070 Viết chuỗi thông điệp theo `popup-state.md` mục 4 trong một file riêng. Test không chứa các cụm cấm cho ba cờ MAIN khi `WAITING_FOR_ADAPTER` ("đã tắt", "đã cập nhật", "thành công", "đã áp dụng"). → `src/youtube/state/messages.ts`, test `messages.test.ts`.
+- [x] T071 Cập nhật popup (HTML/JS) hiển thị trạng thái và thông báo theo T068 và T070, với ba cờ MAIN ở `WAITING_FOR_ADAPTER` khi `adapterState` là WAITING. → `src/popup/{render,elements,popup}.ts`, `popup/yt-layers.ts`, `popup/index.html`.
+- [x] T072 Viết `README.md` đúng nội dung mục "Hành vi chờ adapter" và đồng bộ bốn mệnh đề trong `adapter.md` mục 11 (test so sánh chuỗi hoặc checklist thủ công). → `README.md` mục "Hành vi chờ adapter" đã có.
 
 ### Phụ thuộc T004
 - [ ] T073 [BLOCKED T004] Reconcile khi adapter READY: triển khai `RECONCILING` và xác nhận `effectiveState` theo `popup-state.md` mục 5.2, với `RECONCILE_TIMEOUT_MS`.

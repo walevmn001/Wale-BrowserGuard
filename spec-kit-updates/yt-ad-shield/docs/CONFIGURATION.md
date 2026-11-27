@@ -1,6 +1,6 @@
 # Cấu hình
 
-Trạng thái: **IMPLEMENTED / TESTED** cho lớp cấu hình của engine mới (Phase 1–3). Các ngưỡng số vẫn **UNVERIFIED** trên Chrome thật.
+Trạng thái: **IMPLEMENTED / TESTED** cho lớp cấu hình của engine mới (Phase 1–6). Các ngưỡng số vẫn **UNVERIFIED** trên Chrome thật.
 
 ## Đã triển khai (Phase 1)
 
@@ -61,3 +61,9 @@ Schema: `CONFIG_SCHEMA_VERSION` trong `schema.js`, khóa `configSchemaVersion` t
 - Tên cờ cố định, 12 cờ (xem `contracts/feature-flags.md` mục 2).
 - Snapshot có `schemaVersion` = `FLAG_SCHEMA_VERSION`.
 - Với ba cờ MAIN, giá trị mặc định có hiệu lực cho đến khi adapter gửi snapshot. Đây là giả định A-3, có hệ quả trên popup.
+
+## Popup (Phase 6)
+
+- Popup chỉ hiển thị **6 layer người dùng** qua `config/layers.ts`: `MAIN_LAYERS` (`ENABLE_JSON_PRUNER`, `ENABLE_FETCH_HOOK`, `ENABLE_XHR_HOOK`) và `ISOLATED_LAYERS` (`ENABLE_DNR`, `ENABLE_RUNTIME_GUARD`, `ENABLE_CSS_HIDER`). Các cờ còn lại không có công tắc riêng ở popup.
+- Lựa chọn layer lưu trong `chrome.storage.sync` dưới khóa `youtubeEngineFlags` (`isolated/settings.ts`). Giá trị thiếu/hỏng → quay về mặc định A-3 (bật).
+- Nhóm MAIN đi qua `state/toggle-state.ts` (`resolveDisplay`); khi chưa có adapter (NullAdapter) → `WAITING_FOR_ADAPTER`, popup **không** hiển thị "đã tắt"/"thành công". Thông điệp bắt buộc ở `state/messages.ts`, có guard cụm từ cấm.

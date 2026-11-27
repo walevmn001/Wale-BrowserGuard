@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  displayMessage,
-  resolveDisplay,
-  type DisplayState,
-  type ToggleInputs,
-} from '../../../src/youtube/state/toggle-state';
+import { resolveDisplay, type ToggleInputs } from '../../../src/youtube/state/toggle-state';
 
 /** Inputs that resolve to a nominal ENABLED state unless overridden. */
 function inputs(overrides: Partial<ToggleInputs> = {}): ToggleInputs {
@@ -80,28 +75,5 @@ describe('resolveDisplay — priority table', () => {
     expect(
       resolveDisplay(inputs({ desired: 'ON', effective: 'ENABLED', snapshot: 'STALE' })).state,
     ).toBe('RECONCILING');
-  });
-});
-
-describe('displayMessage', () => {
-  const cases: ReadonlyArray<readonly [DisplayState, string]> = [
-    ['ENABLED', 'Đã bật chặn quảng cáo'],
-    ['DISABLED', 'Đã tắt chặn quảng cáo'],
-    ['WAITING_FOR_ADAPTER', 'Đang chờ trình chặn quảng cáo sẵn sàng…'],
-    ['RECONCILING', 'Đang đồng bộ lại trạng thái chặn quảng cáo…'],
-    ['UNKNOWN', 'Chưa xác định được trạng thái chặn quảng cáo'],
-    ['ERROR', 'Không thể xác định trạng thái chặn quảng cáo'],
-  ];
-
-  it('maps every display state to its mandatory Vietnamese message', () => {
-    for (const [state, message] of cases) {
-      expect(displayMessage(state)).toBe(message);
-    }
-  });
-
-  it('specialises the ERROR message for a mismatch', () => {
-    expect(displayMessage('ERROR', 'mismatch')).toBe(
-      'Không thể áp dụng lựa chọn: trạng thái hiện tại không khớp với mong muốn',
-    );
   });
 });

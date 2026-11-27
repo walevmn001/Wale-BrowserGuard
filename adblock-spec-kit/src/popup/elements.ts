@@ -9,6 +9,7 @@
 import type { PauseState } from '../background/pause';
 import { isMessageKey, resolveLocale, t, type Locale } from '../shared/i18n';
 import type { TypedStorage } from '../shared/storage';
+import type { YtLayerRow } from './yt-layers';
 
 /** All popup elements, looked up once. */
 export interface Elements {
@@ -32,6 +33,9 @@ export interface Elements {
   readonly actionScan: HTMLButtonElement;
   readonly actionPick: HTMLButtonElement;
   readonly scanResult: HTMLElement;
+  readonly ytEngineState: HTMLElement;
+  readonly ytLayers: HTMLElement;
+  readonly ytEngineNote: HTMLElement;
   readonly openActivity: HTMLButtonElement;
   readonly openDashboard: HTMLButtonElement;
   readonly openSettings: HTMLButtonElement;
@@ -53,6 +57,8 @@ export interface LiveState {
   readonly today: number;
   readonly failures: number;
   readonly disabled: readonly string[];
+  /** The six YouTube engine layer rows (MAIN first). */
+  readonly ytLayers: readonly YtLayerRow[];
 }
 
 /** Looks up an element by id and throws if the markup and the script disagree. */
@@ -86,6 +92,9 @@ export function collectElements(): Elements {
     actionScan: q<HTMLButtonElement>('action-scan'),
     actionPick: q<HTMLButtonElement>('action-pick'),
     scanResult: q('scan-result'),
+    ytEngineState: q('yt-engine-state'),
+    ytLayers: q('yt-layers'),
+    ytEngineNote: q('yt-engine-note'),
     openActivity: q<HTMLButtonElement>('open-activity'),
     openDashboard: q<HTMLButtonElement>('open-dashboard'),
     openSettings: q<HTMLButtonElement>('open-settings'),

@@ -382,6 +382,17 @@ export const VI = {
   ytToastOn: 'Đã bật module YouTube.',
   ytToastOff: 'Đã tắt module YouTube.',
 
+  // ---- YouTube Ad Shield engine layers (Phase 6 — popup card) ----
+  ppYtEngine: 'YouTube Ad Shield',
+  ppYtReloadNote: 'Có hiệu lực sau khi tải lại trang.',
+  ppYtSavedShort: 'đã lưu, chưa áp dụng',
+  ppYtLayerJsonPruner: 'Bộ lọc JSON player',
+  ppYtLayerFetchHook: 'Hook fetch',
+  ppYtLayerXhrHook: 'Hook XHR',
+  ppYtLayerDnr: 'Chặn request (DNR)',
+  ppYtLayerRuntimeGuard: 'Giám sát runtime',
+  ppYtLayerCssHider: 'Ẩn quảng cáo bằng CSS',
+
   // ---- About ----
   abtTitle: 'Giới thiệu',
   abtTagline: 'Trình bảo vệ trình duyệt nhẹ, riêng tư, dễ dùng.',

@@ -72,25 +72,3 @@ export function resolveDisplay(input: ToggleInputs): DisplayResolution {
   }
   return { state: 'ERROR', reason: 'mismatch' };
 }
-
-/** The mandatory Vietnamese message for a resolved display state. */
-export function displayMessage(state: DisplayState, reason?: string): string {
-  switch (state) {
-    case 'ENABLED':
-      return 'Đã bật chặn quảng cáo';
-    case 'DISABLED':
-      return 'Đã tắt chặn quảng cáo';
-    case 'WAITING_FOR_ADAPTER':
-      return 'Đang chờ trình chặn quảng cáo sẵn sàng…';
-    case 'RECONCILING':
-      return 'Đang đồng bộ lại trạng thái chặn quảng cáo…';
-    case 'UNKNOWN':
-      return 'Chưa xác định được trạng thái chặn quảng cáo';
-    case 'ERROR':
-      return reason === 'mismatch'
-        ? 'Không thể áp dụng lựa chọn: trạng thái hiện tại không khớp với mong muốn'
-        : 'Không thể xác định trạng thái chặn quảng cáo';
-    default:
-      return 'Chưa xác định được trạng thái chặn quảng cáo';
-  }
-}

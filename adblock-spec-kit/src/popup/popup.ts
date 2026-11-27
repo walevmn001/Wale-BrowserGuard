@@ -26,6 +26,10 @@ import { isMessageKey, t, type MessageKey } from '../shared/i18n';
 import { logger } from '../shared/logger';
 import { MSG_START_PICKER } from '../shared/messages';
 import { TypedStorage } from '../shared/storage';
+import { adapterStateOf } from '../youtube/adapter/adapter';
+import { NullAdapter } from '../youtube/adapter/null-adapter';
+import type { FlagName } from '../youtube/config/flags';
+import { createYouTubeEngineSettings } from '../youtube/isolated/settings';
 import {
   applyStaticText,
   applyTheme,
@@ -42,9 +46,11 @@ import {
   renderSite,
   renderStats,
   renderStatus,
+  renderYtEngine,
 } from './render';
 import { domainFromUrl } from './url';
 import { findingKey, verdictKey } from './view';
+import { buildYtLayers } from './yt-layers';
 
 /** Reads every piece of state from its owning module in one pass. */
 async function loadState(storage: TypedStorage): Promise<LiveState> {
@@ -61,6 +67,14 @@ async function loadState(storage: TypedStorage): Promise<LiveState> {
   const tabId = tab?.id;
   const siteCount = tabId === undefined ? 0 : await counter.forTab(tabId);
   const { total } = await counter.snapshot();
+  // The engine ships with a NullAdapter, so the three MAIN layers can only ever
+  // read WAITING_FOR_ADAPTER — a saved "off" is never shown as applied (T004).
+  const engine = createYouTubeEngineSettings();
+  const ytLayers = buildYtLayers(
+    await engine.desiredFlags(),
+    adapterStateOf(new NullAdapter().status()),
+    'MISSING',
+  );
   return {
     locale,
     domain,
@@ -76,6 +90,7 @@ async function loadState(storage: TypedStorage): Promise<LiveState> {
     today: await counter.todayTotal(),
     failures: (await createFilterUpdater().status()).failures,
     disabled: await createRulesetManager().disabledGroups(),
+    ytLayers,
   };
 }
 
@@ -177,6 +192,30 @@ function reportError(error: unknown): void {
   logger.error('popup action failed', error);
 }
 
+/**
+ * Saves one YouTube engine layer choice and re-paints the card. The three MAIN
+ * layers keep showing WAITING_FOR_ADAPTER: the switch stores the desire, but the
+ * contract forbids claiming it was applied before the adapter confirms (§5.1).
+ */
+async function toggleYtLayer(
+  elements: Elements,
+  state: LiveState,
+  input: HTMLInputElement,
+): Promise<void> {
+  const flag = input.dataset['flag'] as FlagName | undefined;
+  if (flag === undefined) {
+    return;
+  }
+  const engine = createYouTubeEngineSettings();
+  await engine.setFlag(flag, input.checked);
+  const ytLayers = buildYtLayers(
+    await engine.desiredFlags(),
+    adapterStateOf(new NullAdapter().status()),
+    'MISSING',
+  );
+  renderYtEngine(elements, state.locale, { ...state, ytLayers });
+}
+
 function wireActions(elements: Elements, state: LiveState): void {
   elements.siteToggle.addEventListener('click', () => {
     void toggleSite(elements, state).catch(reportError);
@@ -195,6 +234,12 @@ function wireActions(elements: Elements, state: LiveState): void {
   });
   elements.fingerprintSite.addEventListener('change', () => {
     void toggleFingerprintSite(elements, state).catch(reportError);
+  });
+  elements.ytLayers.addEventListener('change', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLInputElement) {
+      void toggleYtLayer(elements, state, target).catch(reportError);
+    }
   });
   elements.actionScan.addEventListener('click', () => scanCurrent(elements, state));
   elements.actionPick.addEventListener('click', () => startPicker(state));

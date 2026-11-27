@@ -8,8 +8,11 @@
 
 import type { PauseState } from '../background/pause';
 import { t, type Locale, type MessageKey } from '../shared/i18n';
+import { DISPLAY_LABELS } from '../youtube/state/messages';
+import type { DisplayState } from '../youtube/state/toggle-state';
 import type { Elements, LiveState } from './elements';
 import { renderModules, type ModuleView } from './view';
+import { mainGroupState, type YtLayerRow } from './yt-layers';
 
 function statusKey(masterEnabled: boolean, paused: boolean, failures: number): MessageKey {
   if (paused) return 'statusPaused';
@@ -96,6 +99,77 @@ export function renderModuleList(
   renderModules(elements.modules, modulesFor(state), state.locale, onOpen);
 }
 
+/** Chip tone class per display state (see `components.css`). */
+function chipTone(state: DisplayState): string {
+  switch (state) {
+    case 'ENABLED':
+      return '';
+    case 'RECONCILING':
+      return 'blue';
+    case 'WAITING_FOR_ADAPTER':
+      return 'warn';
+    case 'ERROR':
+      return 'danger';
+    default:
+      return 'off';
+  }
+}
+
+/** One layer switch row: label (+ saved note), state chip and a switch. */
+function buildYtRow(row: YtLayerRow, locale: Locale): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.className = 'row';
+
+  const text = document.createElement('span');
+  text.className = 'grow';
+  const label = document.createElement('span');
+  label.className = 't';
+  label.textContent = t(row.labelKey, locale);
+  text.append(label);
+  if (row.savedNotApplied) {
+    const note = document.createElement('span');
+    note.className = 'd';
+    note.textContent = t('ppYtSavedShort', locale);
+    text.append(note);
+  }
+
+  const chip = document.createElement('span');
+  chip.className = `chip ${chipTone(row.state)}`.trim();
+  chip.textContent = DISPLAY_LABELS[row.state];
+  chip.title = row.message;
+
+  const toggle = document.createElement('label');
+  toggle.className = 'switch';
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.checked = row.desired;
+  input.dataset['flag'] = row.flag;
+  input.setAttribute('aria-label', t(row.labelKey, locale));
+  const track = document.createElement('span');
+  track.className = 'track';
+  toggle.append(input, track);
+
+  wrap.append(text, chip, toggle);
+  return wrap;
+}
+
+/**
+ * Paints the YouTube engine card: the MAIN group's resolved state as a chip,
+ * one switch per layer, and the mandatory note. The three MAIN rows read
+ * WAITING_FOR_ADAPTER while the flag adapter is not ready (contract §3/§7).
+ */
+export function renderYtEngine(elements: Elements, locale: Locale, state: LiveState): void {
+  const group = mainGroupState(state.ytLayers);
+  elements.ytEngineState.className = `chip ${chipTone(group.state)}`.trim();
+  elements.ytEngineState.textContent = DISPLAY_LABELS[group.state];
+  elements.ytEngineNote.textContent = `${group.message} ${t('ppYtReloadNote', locale)}`;
+
+  elements.ytLayers.replaceChildren();
+  for (const row of state.ytLayers) {
+    elements.ytLayers.append(buildYtRow(row, locale));
+  }
+}
+
 /** Paints the whole popup from `state`. */
 export function render(
   elements: Elements,
@@ -107,6 +181,7 @@ export function render(
   renderPause(elements, state.locale, state.paused);
   renderStats(elements, state);
   renderModuleList(elements, state, onOpen);
+  renderYtEngine(elements, state.locale, state);
   elements.fingerprintSite.disabled = state.domain === undefined;
   elements.fingerprintSite.checked = state.domain !== undefined && state.fingerprintOn;
   elements.actionScan.disabled = state.url === undefined;
